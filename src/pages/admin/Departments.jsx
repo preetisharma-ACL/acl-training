@@ -50,8 +50,8 @@ export default function Departments() {
                           <MenuItem icon={<Pencil size={15} />} onClick={() => setEditing(d)}>
                             Edit department
                           </MenuItem>
-                          <MenuItem icon={<ClipboardList size={15} />} onClick={() => navigate(`/admin/assessments/${d.id}`)}>
-                            Question bank
+                          <MenuItem icon={<ClipboardList size={15} />} onClick={() => navigate(`/admin/assessments?dept=${d.id}`)}>
+                            Assessments
                           </MenuItem>
                           <MenuItem icon={<Trash2 size={15} />} danger onClick={() => setRemoving(d)}>
                             Delete
@@ -60,8 +60,8 @@ export default function Departments() {
                       </div>
                     </div>
                     <h2 class="mt-4 text-[17px] font-semibold tracking-[-0.015em]">{d.name}</h2>
-                    <p class="mt-1 text-[13px] text-muted leading-relaxed line-clamp-2">{d.description || "No description yet."}</p>
-                    <div class="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[12px] text-muted">
+                    <p class="mt-1 text-[14px] text-muted leading-relaxed line-clamp-2">{d.description || "No description yet."}</p>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[13px] text-muted">
                       <span class="inline-flex items-center gap-1.5">
                         <UserRound size={13} /> {d.head || "No head assigned"}
                       </span>
@@ -71,12 +71,10 @@ export default function Departments() {
                     </div>
                   </div>
                   <div class="px-5 pb-5 mt-auto">
-                    <div class="flex items-center justify-between pt-4 border-t border-line text-[12px] text-muted">
-                      <span>
-                        {d.durationMinutes} min · pass {d.passPercent}% · {d.maxAttempts} attempts
-                      </span>
-                      <button class="font-semibold text-plum-700 dark:text-lime-300 hover:underline" onClick={() => navigate(`/admin/assessments/${d.id}`)}>
-                        Assessment →
+                    <div class="flex items-center justify-between pt-4 border-t border-line text-[13px] text-muted">
+                      <span>Team heads · Seniors · Juniors</span>
+                      <button class="font-semibold text-plum-700 dark:text-lime-300 hover:underline" onClick={() => navigate(`/admin/assessments?dept=${d.id}`)}>
+                        Assessments →
                       </button>
                     </div>
                   </div>
@@ -166,7 +164,7 @@ function DepartmentModal(props) {
     >
       <div class="grid gap-4">
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[13px] font-medium badge-danger !flex">{error()}</p>
+          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
         </Show>
         <Field label="Name" for="d-name">
           <input id="d-name" class="input" placeholder="e.g. Performance Marketing" value={f().name} onInput={(e) => set("name")(e.currentTarget.value)} />
@@ -186,8 +184,8 @@ function DepartmentModal(props) {
         </div>
         <div class="flex items-center justify-between gap-4 p-4 rounded-2xl border border-line">
           <div>
-            <p class="text-[13.5px] font-semibold">Active</p>
-            <p class="text-[12px] text-muted">Inactive departments hide their module and assessment from employees.</p>
+            <p class="text-[14.5px] font-semibold">Active</p>
+            <p class="text-[13px] text-muted">Inactive departments hide their module and assessment from employees.</p>
           </div>
           <Toggle checked={f().active} onChange={set("active")} label="Active" />
         </div>

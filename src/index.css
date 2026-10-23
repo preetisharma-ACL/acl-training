@@ -9,14 +9,14 @@
    Crimson is reserved for errors and destructive actions. */
 @layer base {
   :root {
-    --canvas: 245 241 232; /* ivory */
-    --surface: 255 254 251;
+    --canvas: 255 255 255; /* plain white page */
+    --surface: 255 255 255;
     --sunken: 238 233 222;
     --line: 228 221 207;
     --line-strong: 210 200 182;
     --ink: 31 20 36;
-    --ink-2: 74 61 80;
-    --muted: 125 112 131;
+    --ink-2: 52 42 58;
+    --muted: 98 86 104;
 
     --shadow-card: 0 1px 2px rgba(47, 24, 53, 0.04), 0 6px 18px -6px rgba(47, 24, 53, 0.08);
     --shadow-lift: 0 2px 4px rgba(47, 24, 53, 0.04), 0 20px 44px -14px rgba(47, 24, 53, 0.22);
@@ -41,7 +41,7 @@
   }
 
   body {
-    @apply bg-canvas text-ink font-sans antialiased text-sm leading-relaxed;
+    @apply bg-canvas text-ink font-sans antialiased text-[15px] leading-relaxed;
     font-feature-settings: "cv11", "ss01", "ss03";
     text-rendering: optimizeLegibility;
   }
@@ -85,10 +85,10 @@
       transition duration-200 ease-out active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0;
   }
   .btn-sm {
-    @apply h-9 px-3.5 text-[13px] rounded-lg gap-1.5;
+    @apply h-9 px-3.5 text-[14px] rounded-lg gap-1.5;
   }
   .btn-lg {
-    @apply h-12 px-6 text-[15px];
+    @apply h-12 px-6 text-[16px];
   }
   .btn-icon {
     @apply w-10 h-10 px-0 rounded-xl;
@@ -166,25 +166,25 @@
     @apply border-crimson-400 focus:border-crimson-500 focus:ring-crimson-500/15;
   }
   .label {
-    @apply block mb-1.5 text-[12.5px] font-semibold text-ink-2;
+    @apply block mb-1.5 text-[13.5px] font-semibold text-ink-2;
   }
   .hint {
-    @apply mt-1.5 text-xs text-muted;
+    @apply mt-1.5 text-[13px] text-muted;
   }
   .error-text {
-    @apply mt-1.5 text-[12.5px] font-medium text-crimson-600 dark:text-crimson-300;
+    @apply mt-1.5 text-[13.5px] font-medium text-crimson-600 dark:text-crimson-300;
   }
 
   .kicker {
-    @apply inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-plum-600 dark:text-lime-300;
+    @apply inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-plum-600 dark:text-lime-300;
   }
   /* Kicker on plum backgrounds. */
   .eyebrow-lime {
-    @apply inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-lime-300;
+    @apply inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.18em] text-lime-300;
   }
 
   .badge {
-    @apply inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[11.5px] font-semibold whitespace-nowrap leading-none;
+    @apply inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[12.5px] font-semibold whitespace-nowrap leading-none;
   }
   .badge-neutral { @apply bg-sunken text-ink-2; }
   .badge-success { @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300; }
@@ -274,10 +274,10 @@
 
   /* Data tables. */
   .table {
-    @apply w-full border-collapse text-[13px];
+    @apply w-full border-collapse text-[14px];
   }
   .table thead th {
-    @apply px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted bg-sunken/60 border-b border-line whitespace-nowrap;
+    @apply px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.08em] text-muted bg-sunken/60 border-b border-line whitespace-nowrap;
   }
   .table tbody td {
     @apply px-4 py-3 border-b border-line/70 align-middle;

@@ -20,12 +20,21 @@
 
 import { db, commit, delay, clone } from "./mockDb";
 import { makePdf } from "../lib/pdf";
+import { levelKey, levelInfo } from "../lib/levels";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 const deptFor = (me) => (me?.department ? db().departments.find((d) => d.id === me.department.id && d.active) : null);
 
-const visibleTo = (me, m) => !m.departmentId || m.departmentId === me?.department?.id;
+const levelOf = (me) => levelKey(me?.designation?.level);
+
+// Department (or company-wide) AND level (or all levels).
+const visibleTo = (me, m) =>
+  (!m.departmentId || m.departmentId === me?.department?.id) && (!m.levels?.length || m.levels.includes(levelOf(me)));
+
+// The assessment for this employee's department and level.
+const trackFor = (me, dept) =>
+  dept ? db().assessments.find((a) => a.departmentId === dept.id && a.level === levelOf(me) && a.active !== false) ?? null : null;
 
 const progressOf = (userId) => {
   const s = db();
@@ -38,6 +47,11 @@ const cycleDue = () => {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59).toISOString();
 };
+
+// How many questions one attempt uses. Defaults to half the bank, so two
+// attempts in a row never share a question.
+export const perAttempt = (dept, bankSize) =>
+  Math.max(1, Math.min(bankSize, dept?.questionsPerAttempt ?? (Math.floor(bankSize / 2) || bankSize)));
 
 const shuffle = (arr) => {
   const a = arr.slice();
@@ -60,6 +74,8 @@ const summarize = (m, p) => ({
   version: m.version,
   author: m.author,
   updatedAt: m.updatedAt,
+  mediaKind: m.type === "media" ? m.content?.kind ?? "video" : null,
+  mediaUrl: m.type === "media" ? m.content?.url ?? null : null,
   progress: {
     opened: !!p?.opened,
     completed: !!p?.completed,
@@ -84,9 +100,12 @@ export async function getMyModule(me) {
 
   const required = materials.filter((m) => m.required);
   const completedRequired = required.filter((m) => m.progress.completed).length;
-  const attempts = s.attempts.filter((a) => a.userId === me.id && a.departmentId === dept?.id);
-  const questionCount = dept ? (s.questions[dept.id] || []).length : 0;
-  const attemptsLeft = dept ? Math.max(0, dept.maxAttempts - attempts.length) : 0;
+  const track = trackFor(me, dept);
+  const attempts = track ? s.attempts.filter((a) => a.userId === me.id && a.assessmentId === track.id) : [];
+  const bankSize = track ? (s.questions[track.id] || []).length : 0;
+  const questionCount = track ? perAttempt(track, bankSize) : 0;
+  const maxAttempts = track?.maxAttempts ?? 0;
+  const attemptsLeft = Math.max(0, maxAttempts - attempts.length);
   const passed = attempts.some((a) => a.passed);
   const best = attempts.reduce((m, a) => (m && m.percentage >= a.percentage ? m : a), null);
 
@@ -101,14 +120,14 @@ export async function getMyModule(me) {
         {
           id: "attempts",
           label: "Have an attempt remaining",
-          detail: `${attemptsLeft} of ${dept.maxAttempts} left`,
+          detail: `${attemptsLeft} of ${maxAttempts} left`,
           met: attemptsLeft > 0,
         },
         {
           id: "questions",
           label: "Assessment is published",
-          detail: questionCount ? `${questionCount} questions ready` : "No questions yet",
-          met: questionCount > 0,
+          detail: !track ? "No assessment for your level yet" : bankSize ? `${questionCount} of ${bankSize} questions per attempt` : "No questions yet",
+          met: bankSize > 0,
         },
       ]
     : [];
@@ -117,10 +136,14 @@ export async function getMyModule(me) {
     department: dept ? clone(dept) : null,
     assessment: dept
       ? {
+          id: track?.id ?? null,
+          level: levelOf(me),
+          title: `${dept.name} · ${levelInfo(levelOf(me)).plural}`,
           questionCount,
-          durationMinutes: dept.durationMinutes,
-          passPercent: dept.passPercent,
-          maxAttempts: dept.maxAttempts,
+          bankSize,
+          durationMinutes: track?.durationMinutes ?? dept.durationMinutes,
+          passPercent: track?.passPercent ?? dept.passPercent,
+          maxAttempts,
           attemptsUsed: attempts.length,
           attemptsLeft,
         }
@@ -197,6 +220,8 @@ const fileCache = new Map();
 // → { url, pages, sizeBytes, fileName }. Backend PDFs come with a fileUrl;
 // in mock mode the file is generated in the browser.
 export async function getMaterialFile(material) {
+  // Video / audio links have no file to download.
+  if (material.type === "media") return null;
   const fileName = material.fileName || `${material.title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-")}.pdf`;
   const key = `${material.id}:${material.updatedAt}`;
   if (material.fileUrl) {
@@ -234,16 +259,31 @@ export async function startAttempt(me) {
     const missing = mod.conditions.find((c) => !c.met);
     throw new Error(`You can't start yet — ${missing.label.toLowerCase()}.`);
   }
-  const d = mod.department;
+  const dept = mod.department;
+  const d = db().assessments.find((a) => a.id === mod.assessment.id);
   const bank = db().questions[d.id] || [];
-  const order = d.shuffle ? shuffle(bank) : bank;
+  const n = perAttempt(d, bank.length);
+  // When did this employee last see each question? 0 = their latest attempt.
+  const past = db().attempts.filter((a) => a.userId === me.id && a.assessmentId === d.id);
+  const lastSeen = new Map();
+  past.forEach((a, i) => {
+    for (const id of a.questionIds ?? a.review?.map((r) => r.id) ?? []) if (!lastSeen.has(id)) lastSeen.set(id, i);
+  });
+  // Unseen questions first, then the ones seen longest ago; ties random.
+  const picked = shuffle(bank)
+    .sort((x, y) => (lastSeen.get(y.id) ?? Infinity) - (lastSeen.get(x.id) ?? Infinity))
+    .slice(0, n);
+  const order = d.shuffle ? shuffle(picked) : bank.filter((q) => picked.includes(q));
   return {
     attemptId: `att-${Date.now()}`,
     userId: me.id,
     name: me.name,
     designation: me.designation?.title ?? "",
-    departmentId: d.id,
-    departmentName: d.name,
+    departmentId: dept.id,
+    departmentName: dept.name,
+    assessmentId: d.id,
+    assessmentTitle: mod.assessment.title,
+    level: d.level,
     durationSeconds: d.durationMinutes * 60,
     passPercent: d.passPercent,
     marksPerQuestion: d.marksPerQuestion,
@@ -257,8 +297,8 @@ export async function startAttempt(me) {
   };
 }
 
-function gradeAttempt({ departmentId, answers, questions, marksPerQuestion, passPercent }) {
-  const bank = db().questions[departmentId] || [];
+function gradeAttempt({ assessmentId, departmentId, answers, questions, marksPerQuestion, passPercent }) {
+  const bank = db().questions[assessmentId ?? departmentId] || [];
   // Grade exactly the questions the candidate saw, in the order they saw them.
   const ordered = questions.map((q) => bank.find((b) => b.id === q.id)).filter(Boolean);
   let correct = 0;
@@ -296,6 +336,9 @@ export async function submitAttempt(attempt) {
     userId: attempt.userId,
     departmentId: attempt.departmentId,
     departmentName: attempt.departmentName,
+    assessmentId: attempt.assessmentId,
+    assessmentTitle: attempt.assessmentTitle,
+    level: attempt.level,
     designation: attempt.designation,
     ...gradeAttempt(attempt),
     timeTakenSeconds: attempt.timeTakenSeconds,
@@ -303,6 +346,7 @@ export async function submitAttempt(attempt) {
     focusViolations: attempt.focusViolations ?? 0,
     autoSubmitted: !!attempt.autoSubmitted,
     submittedAt: new Date().toISOString(),
+    questionIds: attempt.questions.map((q) => q.id),
   };
   const s = db();
   if (!s.attempts.some((a) => a.id === result.id)) s.attempts.unshift(result);
@@ -328,7 +372,7 @@ export async function getAttempt(me, id) {
   if (!a) throw new Error("Result not found.");
   const best = new Map();
   for (const x of s.attempts) {
-    if (x.departmentId !== a.departmentId) continue;
+    if ((x.assessmentId ?? x.departmentId) !== (a.assessmentId ?? a.departmentId)) continue;
     best.set(x.userId, Math.max(best.get(x.userId) ?? 0, x.percentage));
   }
   const scores = [...best.values()].sort((p, q) => q - p);

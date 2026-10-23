@@ -136,13 +136,13 @@ export default function Assessment() {
               <GraduationCap size={19} class="text-lime-300" />
             </span>
             <div class="grid min-w-0 leading-tight">
-              <strong class="truncate text-[14.5px] font-semibold">{s.attempt?.departmentName} assessment</strong>
-              <span class="text-[11.5px] text-white/60 truncate">
+              <strong class="truncate text-[15.5px] font-semibold">{s.attempt?.departmentName} assessment</strong>
+              <span class="text-[12.5px] text-white/60 truncate">
                 {s.attempt?.name} · Attempt {s.attempt?.attemptNumber ?? 1} of {s.attempt?.maxAttempts ?? "—"}
               </span>
             </div>
           </div>
-          <div class="col-span-full row-start-2 md:col-span-1 md:row-start-auto grid gap-1.5 text-[11.5px] font-medium text-white/70">
+          <div class="col-span-full row-start-2 md:col-span-1 md:row-start-auto grid gap-1.5 text-[12.5px] font-medium text-white/70">
             <span class="flex justify-between">
               <span>
                 {answeredCount()} of {questions().length} answered
@@ -182,7 +182,7 @@ export default function Assessment() {
         <main class="card p-5 sm:p-9 grid gap-6">
           <Show when={q()}>
             <div class="flex items-center justify-between gap-3">
-              <p class="flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-plum-600 dark:text-lime-300">
+              <p class="flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.14em] text-plum-600 dark:text-lime-300">
                 Question {s.current + 1} <span class="font-medium text-muted normal-case tracking-normal">of {questions().length}</span>
               </p>
               <button
@@ -204,7 +204,7 @@ export default function Assessment() {
                       aria-checked={picked()}
                       onClick={() => choose(opt.id)}
                       class={cx(
-                        "group flex items-center gap-4 w-full px-4 sm:px-5 py-4 rounded-2xl border-[1.5px] text-left text-[15px] font-medium transition duration-200",
+                        "group flex items-center gap-4 w-full px-4 sm:px-5 py-4 rounded-2xl border-[1.5px] text-left text-[16px] font-medium transition duration-200",
                         picked()
                           ? "border-plum-600 bg-plum-50 ring-4 ring-plum-100 dark:border-lime-400 dark:bg-lime-400/10 dark:ring-lime-400/10"
                           : "border-line bg-surface hover:border-line-strong hover:bg-sunken/40 hover:translate-x-0.5",
@@ -212,7 +212,7 @@ export default function Assessment() {
                     >
                       <span
                         class={cx(
-                          "grid place-items-center shrink-0 w-9 h-9 rounded-xl border text-[13px] font-semibold transition",
+                          "grid place-items-center shrink-0 w-9 h-9 rounded-xl border text-[14px] font-semibold transition",
                           picked()
                             ? "bg-plum-700 border-transparent text-white dark:bg-lime-400 dark:text-plum-950"
                             : "bg-sunken/70 border-line text-ink-2 group-hover:border-line-strong",
@@ -226,7 +226,7 @@ export default function Assessment() {
                 }}
               </For>
             </div>
-            <p class="hidden md:block text-xs text-muted">Tip: press A–D or 1–4 to answer, ← → to move between questions.</p>
+            <p class="hidden md:block text-[13px] text-muted">Tip: press A–D or 1–4 to answer, ← → to move between questions.</p>
             <div class="flex justify-between gap-2.5 pt-5 border-t border-line">
               <button class="btn btn-secondary" disabled={s.current === 0} onClick={() => go(s.current - 1)}>
                 <ChevronLeft size={16} /> Previous
@@ -248,7 +248,7 @@ export default function Assessment() {
         </main>
 
         <aside class="card p-5 grid gap-4 lg:sticky lg:top-[96px]">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Question navigator</p>
+          <p class="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">Question navigator</p>
           <div class="grid grid-cols-5 gap-2">
             <For each={questions()}>
               {(item, i) => {
@@ -258,7 +258,7 @@ export default function Assessment() {
                     onClick={() => go(i())}
                     aria-label={`Question ${i() + 1}${answered() ? ", answered" : ""}${flags()[item.id] ? ", flagged" : ""}`}
                     class={cx(
-                      "relative aspect-square rounded-xl border-[1.5px] text-[13px] font-semibold transition",
+                      "relative aspect-square rounded-xl border-[1.5px] text-[14px] font-semibold transition",
                       answered() ? "bg-plum-700 border-plum-700 text-white dark:bg-lime-400 dark:border-lime-400 dark:text-plum-950" : "bg-surface border-line text-ink-2 hover:border-line-strong",
                       s.current === i() && "ring-[3px] ring-lime-400/70 dark:ring-plum-400/70 !border-plum-500 dark:!border-plum-300",
                     )}
@@ -272,7 +272,7 @@ export default function Assessment() {
               }}
             </For>
           </div>
-          <div class="flex flex-wrap gap-x-3 gap-y-1.5 text-[11.5px] text-muted">
+          <div class="flex flex-wrap gap-x-3 gap-y-1.5 text-[12.5px] text-muted">
             <span class="inline-flex items-center gap-1.5">
               <i class="w-3 h-3 rounded bg-plum-700 dark:bg-lime-400" /> Answered
             </span>
@@ -284,7 +284,7 @@ export default function Assessment() {
             </span>
           </div>
           <Show when={s.violations > 0}>
-            <p class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[12.5px] font-semibold bg-crimson-50 text-crimson-700 dark:bg-crimson-500/15 dark:text-crimson-300">
+            <p class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13.5px] font-semibold bg-crimson-50 text-crimson-700 dark:bg-crimson-500/15 dark:text-crimson-300">
               <TriangleAlert size={15} /> Left the test {s.violations} time{s.violations === 1 ? "" : "s"}
             </p>
           </Show>
@@ -301,18 +301,18 @@ export default function Assessment() {
               <Send size={22} />
             </span>
             <h2 id="submit-title" class="text-xl font-semibold">Submit your assessment?</h2>
-            <p class="text-[13.5px] text-muted">
+            <p class="text-[14.5px] text-muted">
               You've answered <strong class="text-ink">{answeredCount()}</strong> of {questions().length} questions with{" "}
               <strong class="text-ink tabular">{fmtClock(s.remaining)}</strong> left.
             </p>
             <Show when={unanswered() > 0}>
-              <p class="flex items-start gap-2 px-3 py-2.5 rounded-xl text-[13px] text-left bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+              <p class="flex items-start gap-2 px-3 py-2.5 rounded-xl text-[14px] text-left bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
                 <TriangleAlert size={15} class="shrink-0 mt-0.5" /> {unanswered()} question{unanswered() === 1 ? " is" : "s are"} unanswered and will be marked as
                 not attempted.
               </p>
             </Show>
             <Show when={Object.values(flags()).some(Boolean)}>
-              <p class="text-[12.5px] text-muted">You still have flagged questions to review.</p>
+              <p class="text-[13.5px] text-muted">You still have flagged questions to review.</p>
             </Show>
             <Show when={submitError()}>
               <p class="error-text">{submitError()}</p>
@@ -337,7 +337,7 @@ export default function Assessment() {
             </span>
             <h2 id="pause-title" class="text-xl font-semibold">Assessment paused</h2>
             <p class="font-semibold text-crimson-600 dark:text-crimson-300">{PAUSE_COPY[s.pauseReason] || PAUSE_COPY.left}</p>
-            <p class="text-[13.5px] text-muted">
+            <p class="text-[14.5px] text-muted">
               The timer has stopped and your answers are saved. Please stay on this window until you finish — every time you leave is recorded on your
               result.
             </p>
@@ -352,7 +352,7 @@ export default function Assessment() {
                 {([v, l, warn]) => (
                   <div class={cx("py-3 rounded-2xl border", warn ? "bg-crimson-50 border-transparent dark:bg-crimson-500/15" : "bg-sunken/70 border-line")}>
                     <p class={cx("text-lg font-semibold tabular", warn && "text-crimson-600 dark:text-crimson-300")}>{v}</p>
-                    <p class="text-xs text-muted">{l}</p>
+                    <p class="text-[13px] text-muted">{l}</p>
                   </div>
                 )}
               </For>
@@ -368,7 +368,7 @@ export default function Assessment() {
         <Blocking>
           <div class="w-11 h-11 rounded-full border-[3px] border-line border-t-plum-600 dark:border-t-lime-400 animate-spin" />
           <h2 class="text-xl font-semibold">{s.remaining <= 0 ? "Time's up — submitting…" : "Submitting…"}</h2>
-          <p class="text-[13px] text-muted">Grading your answers. Your scoreboard is next.</p>
+          <p class="text-[14px] text-muted">Grading your answers. Your scoreboard is next.</p>
           <Show when={submitError()}>
             <p class="error-text">{submitError()}</p>
             <button class="btn btn-primary" onClick={() => submit(s.remaining <= 0)}>

@@ -35,6 +35,10 @@ import { getMaterial, getMaterialFile, updateProgress, getMyModule } from "../..
 import { getMaterialForAdmin } from "../../services/admin";
 import { Skeleton, ProgressBar, EmptyState } from "../../components/ui";
 import { TypeIcon, MATERIAL_TYPES } from "../../components/icons";
+import { parseMedia, PROVIDER_LABEL } from "../../lib/media";
+
+// Types that are read on the page (scroll progress, text size, print).
+const READING = ["manual", "structured"];
 
 const FONT_SIZES = [14, 15, 16, 17, 18, 20];
 
@@ -70,7 +74,7 @@ export default function Viewer(props) {
       const total = r.height - window.innerHeight * 0.6;
       const pct = total <= 0 ? 100 : Math.min(100, Math.max(0, ((-r.top + window.innerHeight * 0.25) / total) * 100));
       setReadPct(pct);
-      if (!admin && doc() && doc().type !== "pdf" && pct - last >= 10) {
+      if (!admin && doc() && READING.includes(doc().type) && pct - last >= 10) {
         last = pct;
         updateProgress(me, doc().id, { percent: pct });
       }
@@ -113,7 +117,7 @@ export default function Viewer(props) {
   return (
     <div class="grid gap-5">
       {/* Reading progress hairline */}
-      <Show when={doc() && doc().type !== "pdf"}>
+      <Show when={doc() && READING.includes(doc().type)}>
         <div class="fixed top-0 left-0 right-0 h-[3px] z-[60] pointer-events-none">
           <div class="h-full bg-gradient-to-r from-plum-500 via-plum-400 to-lime-400 transition-[width] duration-150" style={{ width: `${readPct()}%` }} />
         </div>
@@ -150,7 +154,9 @@ export default function Viewer(props) {
                   ? "bg-crimson-50 text-crimson-600 dark:bg-crimson-500/15 dark:text-crimson-300"
                   : doc().type === "manual"
                     ? "bg-plum-50 text-plum-700 dark:bg-plum-400/15 dark:text-plum-200"
-                    : "bg-lime-100 text-lime-800 dark:bg-lime-400/15 dark:text-lime-300",
+                    : doc().type === "media"
+                      ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+                      : "bg-lime-100 text-lime-800 dark:bg-lime-400/15 dark:text-lime-300",
               )}
             >
               <TypeIcon type={doc().type} size={20} />
@@ -166,19 +172,19 @@ export default function Viewer(props) {
                 </Show>
               </div>
               <h1 class="mt-1.5 text-[17px] sm:text-[19px] font-semibold leading-snug tracking-[-0.015em]">{doc().title}</h1>
-              <p class="mt-0.5 text-[12px] text-muted">
+              <p class="mt-0.5 text-[13px] text-muted">
                 v{doc().version} · {doc().author} · Updated {fmtDate(doc().updatedAt)} · <Clock size={11} class="inline -mt-0.5" /> {doc().estMinutes} min
                 <Show when={file()?.pages}> · {file().pages} pages</Show>
                 <Show when={file()?.sizeBytes}> · {fmtBytes(file().sizeBytes)}</Show>
               </p>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
-              <Show when={doc().type !== "pdf"}>
+              <Show when={READING.includes(doc().type)}>
                 <div class="flex items-center h-9 rounded-lg border border-line bg-surface" role="group" aria-label="Text size">
                   <button class="grid place-items-center w-9 h-full text-muted hover:text-ink disabled:opacity-40" disabled={fontIdx() === 0} onClick={() => setFontIdx(fontIdx() - 1)} aria-label="Smaller text">
                     <Minus size={14} />
                   </button>
-                  <span class="px-1.5 text-[12px] font-semibold text-ink-2 tabular select-none">Aa</span>
+                  <span class="px-1.5 text-[13px] font-semibold text-ink-2 tabular select-none">Aa</span>
                   <button class="grid place-items-center w-9 h-full text-muted hover:text-ink disabled:opacity-40" disabled={fontIdx() === FONT_SIZES.length - 1} onClick={() => setFontIdx(fontIdx() + 1)} aria-label="Larger text">
                     <Plus size={14} />
                   </button>
@@ -189,19 +195,28 @@ export default function Viewer(props) {
                   <ExternalLink size={14} /> <span class="hidden sm:inline">Open in new tab</span>
                 </a>
               </Show>
-              <Show when={doc().type !== "pdf"}>
+              <Show when={READING.includes(doc().type)}>
                 <button class="btn btn-secondary btn-sm hidden sm:inline-flex" onClick={() => window.print()}>
                   <Printer size={14} /> Print
                 </button>
               </Show>
-              <button class="btn btn-secondary btn-sm" onClick={download} disabled={!file()}>
-                <Download size={14} /> Download
-              </button>
+              <Show
+                when={doc().type === "media"}
+                fallback={
+                  <button class="btn btn-secondary btn-sm" onClick={download} disabled={!file()}>
+                    <Download size={14} /> Download
+                  </button>
+                }
+              >
+                <a href={doc().content?.url} target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+                  <ExternalLink size={14} /> Open link
+                </a>
+              </Show>
               <Show when={!admin}>
                 <Show
                   when={!doc().progress.completed}
                   fallback={
-                    <span class="badge badge-success h-9 px-3 rounded-lg text-[12.5px]">
+                    <span class="badge badge-success h-9 px-3 rounded-lg text-[13.5px]">
                       <CircleCheck size={14} /> Completed
                     </span>
                   }
@@ -222,6 +237,9 @@ export default function Viewer(props) {
               <Match when={doc().type === "manual"}>
                 <ManualReader doc={doc()} fontSize={FONT_SIZES[fontIdx()]} onEnd={() => complete(true)} />
               </Match>
+              <Match when={doc().type === "media"}>
+                <MediaPlayer doc={doc()} onEnded={() => complete(true)} />
+              </Match>
               <Match when={doc().type === "structured"}>
                 <StructuredReader doc={doc()} fontSize={FONT_SIZES[fontIdx()]} onAllSeen={() => complete(true)} admin={admin} />
               </Match>
@@ -236,13 +254,13 @@ export default function Viewer(props) {
                   <Link href={`/training/${siblings().prev.id}`} class="group card card-hover flex items-center gap-3 p-4">
                     <ArrowLeft size={16} class="text-muted group-hover:-translate-x-0.5 transition" />
                     <span class="min-w-0">
-                      <span class="block text-[11px] uppercase tracking-[0.12em] text-muted">Previous</span>
-                      <span class="block text-[13.5px] font-semibold truncate">{siblings().prev.title}</span>
+                      <span class="block text-[12px] uppercase tracking-[0.12em] text-muted">Previous</span>
+                      <span class="block text-[14.5px] font-semibold truncate">{siblings().prev.title}</span>
                     </span>
                   </Link>
                 </Show>
               </div>
-              <span class="hidden sm:block text-center text-xs text-muted tabular">
+              <span class="hidden sm:block text-center text-[13px] text-muted tabular">
                 {siblings().index + 1} / {siblings().total}
               </span>
               <div>
@@ -251,8 +269,8 @@ export default function Viewer(props) {
                   fallback={
                     <Link href="/training" class="group card card-hover flex items-center justify-end gap-3 p-4 text-right">
                       <span>
-                        <span class="block text-[11px] uppercase tracking-[0.12em] text-muted">Done reading?</span>
-                        <span class="block text-[13.5px] font-semibold">Back to your module</span>
+                        <span class="block text-[12px] uppercase tracking-[0.12em] text-muted">Done reading?</span>
+                        <span class="block text-[14.5px] font-semibold">Back to your module</span>
                       </span>
                       <ArrowRight size={16} class="text-muted group-hover:translate-x-0.5 transition" />
                     </Link>
@@ -260,8 +278,8 @@ export default function Viewer(props) {
                 >
                   <Link href={`/training/${siblings().next.id}`} class="group card card-hover flex items-center justify-end gap-3 p-4 text-right">
                     <span class="min-w-0">
-                      <span class="block text-[11px] uppercase tracking-[0.12em] text-muted">Next</span>
-                      <span class="block text-[13.5px] font-semibold truncate">{siblings().next.title}</span>
+                      <span class="block text-[12px] uppercase tracking-[0.12em] text-muted">Next</span>
+                      <span class="block text-[14.5px] font-semibold truncate">{siblings().next.title}</span>
                     </span>
                     <ArrowRight size={16} class="text-muted group-hover:translate-x-0.5 transition" />
                   </Link>
@@ -282,7 +300,7 @@ function UnlockHint() {
   return (
     <div class="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-lime-100 text-lime-900 dark:bg-lime-400/10 dark:text-lime-200 border border-lime-300/60 dark:border-lime-400/20 animate-fade-up">
       <LockOpen size={18} />
-      <p class="flex-1 text-[13.5px] font-medium">All required materials are complete — your assessment is unlocked.</p>
+      <p class="flex-1 text-[14.5px] font-medium">All required materials are complete — your assessment is unlocked.</p>
       <button class="btn btn-primary btn-sm" onClick={() => navigate("/training")}>
         Go to assessment <ArrowRight size={14} />
       </button>
@@ -307,7 +325,7 @@ function ViewerSkeleton() {
 function PdfFrame(props) {
   return (
     <div class="relative rounded-[22px] p-2 sm:p-3 bg-gradient-to-b from-plum-900 to-plum-950 shadow-float">
-      <div class="flex items-center justify-between px-2 pb-2 sm:pb-3 text-[12px] text-white/60">
+      <div class="flex items-center justify-between px-2 pb-2 sm:pb-3 text-[13px] text-white/60">
         <span class="flex items-center gap-2">
           <span class="flex gap-1.5">
             <i class="w-2.5 h-2.5 rounded-full bg-white/20" />
@@ -326,13 +344,65 @@ function PdfFrame(props) {
         />
       </Show>
       {/* Phones often can't render PDFs inline. */}
-      <div class="sm:hidden flex items-center gap-3 mt-3 p-3 rounded-xl bg-white/10 text-white/80 text-[12.5px]">
+      <div class="sm:hidden flex items-center gap-3 mt-3 p-3 rounded-xl bg-white/10 text-white/80 text-[13.5px]">
         <Info size={16} class="shrink-0 text-lime-300" />
         <span class="flex-1">Preview not showing? Open or download the PDF instead.</span>
         <button class="btn btn-lime btn-sm" onClick={props.onDownload}>
           <Download size={14} />
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── Video / audio ───────────────────────────────────────────────────────────
+
+function MediaPlayer(props) {
+  const m = () => parseMedia(props.doc.content?.url);
+  const audio = () => props.doc.content?.kind === "audio";
+  return (
+    <div class="card overflow-hidden">
+      <Switch
+        fallback={
+          <EmptyState
+            icon={<ExternalLink size={24} />}
+            title="This link opens outside the portal"
+            action={
+              <a href={props.doc.content?.url} target="_blank" rel="noopener" class="btn btn-primary">
+                <ExternalLink size={15} /> Open link
+              </a>
+            }
+          >
+            {props.doc.description || "Open it in a new tab, then come back and mark it complete."}
+          </EmptyState>
+        }
+      >
+        <Match when={["youtube", "vimeo", "drive"].includes(m().provider)}>
+          <div class={cx("bg-black", audio() ? "aspect-[16/5]" : "aspect-video")}>
+            <iframe
+              src={m().embed}
+              title={props.doc.title}
+              class="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            />
+          </div>
+        </Match>
+        <Match when={m().provider === "file" && !audio()}>
+          <video src={m().url} controls preload="metadata" class="w-full max-h-[75vh] bg-black" onEnded={props.onEnded} />
+        </Match>
+        <Match when={m().provider === "file" && audio()}>
+          <div class="flex flex-col items-center gap-5 px-6 py-12 bg-gradient-to-br from-plum-50 to-lime-50 dark:from-plum-900/30 dark:to-surface">
+            <span class="grid place-items-center w-16 h-16 rounded-2xl bg-surface border border-line text-plum-700 dark:text-lime-300">
+              <TypeIcon type="media" size={28} />
+            </span>
+            <audio src={m().url} controls preload="metadata" class="w-full max-w-[560px]" onEnded={props.onEnded} />
+          </div>
+        </Match>
+      </Switch>
+      <Show when={props.doc.description && m().provider !== "link"}>
+        <p class="px-5 sm:px-6 py-4 border-t border-line text-[15px] text-ink-2 leading-relaxed">{props.doc.description}</p>
+      </Show>
     </div>
   );
 }
@@ -371,10 +441,10 @@ function Contents(props) {
   return (
     <aside class="hidden lg:block sticky top-[92px] self-start">
       <div class="card p-4">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-3">{props.title ?? "Contents"}</p>
+        <p class="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted mb-3">{props.title ?? "Contents"}</p>
         <Show when={props.progress != null}>
           <ProgressBar value={props.progress} />
-          <p class="mt-2 mb-3 text-[11.5px] text-muted">{props.progressLabel}</p>
+          <p class="mt-2 mb-3 text-[12.5px] text-muted">{props.progressLabel}</p>
         </Show>
         <ol class="grid gap-0.5">
           <For each={props.items}>
@@ -385,13 +455,13 @@ function Contents(props) {
                   <button
                     onClick={() => jump(it.id)}
                     class={cx(
-                      "relative flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-left text-[12.5px] transition",
+                      "relative flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-left text-[13.5px] transition",
                       on() ? "bg-plum-50 text-plum-800 font-semibold dark:bg-lime-400/10 dark:text-lime-200" : "text-ink-2 hover:bg-sunken",
                     )}
                   >
                     <span
                       class={cx(
-                        "grid place-items-center shrink-0 w-5 h-5 rounded-full text-[10px] font-bold",
+                        "grid place-items-center shrink-0 w-5 h-5 rounded-full text-[11px] font-bold",
                         props.seen?.[it.id] ? "bg-lime-400 text-plum-950" : "bg-sunken text-muted",
                       )}
                     >
@@ -542,7 +612,7 @@ function StructuredReader(props) {
           {(sec, i) => (
             <section id={`sec-${sec.id}`} data-section={sec.id} class="card p-6 sm:px-9 sm:py-8 scroll-mt-[96px]">
               <div class="flex items-center gap-3 mb-4">
-                <span class="grid place-items-center w-9 h-9 rounded-xl bg-plum-700 text-white dark:bg-lime-400 dark:text-plum-950 text-[13px] font-semibold tabular">
+                <span class="grid place-items-center w-9 h-9 rounded-xl bg-plum-700 text-white dark:bg-lime-400 dark:text-plum-950 text-[14px] font-semibold tabular">
                   {String(i() + 1).padStart(2, "0")}
                 </span>
                 <h2 class="text-[1.3em] font-semibold tracking-[-0.02em]">{sec.title}</h2>

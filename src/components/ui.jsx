@@ -29,8 +29,8 @@ export function Logo(props) {
       <Show when={props.wordmark !== false}>
         <span class={cx("hidden sm:block h-6 w-px", props.onDark ? "bg-white/20" : "bg-line")} />
         <span class={cx("hidden sm:flex flex-col leading-none", props.onDark ? "text-white" : "text-ink")}>
-          <span class="text-[13px] font-semibold tracking-[-0.01em] whitespace-nowrap">Aajneeti Connect Ltd</span>
-          <span class={cx("mt-1 text-[10px] font-medium uppercase tracking-[0.16em] whitespace-nowrap", props.onDark ? "text-white/55" : "text-muted")}>
+          <span class="text-[14px] font-semibold tracking-[-0.01em] whitespace-nowrap">Aajneeti Connect Ltd</span>
+          <span class={cx("mt-0.5 text-[13px] font-normal whitespace-nowrap", props.onDark ? "text-white/55" : "text-muted")}>
             {props.subtitle ?? "Training & Assessment"}
           </span>
         </span>
@@ -258,10 +258,10 @@ export function StatCard(props) {
         <Show when={props.corner}>{props.corner}</Show>
       </div>
       <div>
-        <p class="text-[12.5px] font-medium text-muted">{props.label}</p>
+        <p class="text-[13.5px] font-medium text-muted">{props.label}</p>
         <p class="mt-0.5 text-[26px] leading-tight font-semibold tracking-[-0.02em] tabular">{props.value}</p>
         <Show when={props.sub}>
-          <p class="mt-1 text-xs text-muted">{props.sub}</p>
+          <p class="mt-1 text-[13px] text-muted">{props.sub}</p>
         </Show>
       </div>
     </div>
@@ -277,7 +277,7 @@ export function PageHeader(props) {
         </Show>
         <h1 class="text-[26px] sm:text-[30px] leading-[1.15] font-semibold tracking-[-0.025em]">{props.title}</h1>
         <Show when={props.subtitle}>
-          <p class="mt-2 max-w-2xl text-[14.5px] text-muted">{props.subtitle}</p>
+          <p class="mt-2 max-w-2xl text-[15.5px] text-muted">{props.subtitle}</p>
         </Show>
       </div>
       <Show when={props.actions}>
@@ -293,7 +293,7 @@ export function SectionTitle(props) {
       <div class="min-w-0">
         <h2 class="text-[16px] font-semibold tracking-[-0.01em]">{props.title}</h2>
         <Show when={props.subtitle}>
-          <p class="text-[12.5px] text-muted mt-0.5">{props.subtitle}</p>
+          <p class="text-[13.5px] text-muted mt-0.5">{props.subtitle}</p>
         </Show>
       </div>
       <Show when={props.action}>{props.action}</Show>
@@ -305,9 +305,9 @@ export function EmptyState(props) {
   return (
     <div class={cx("grid justify-items-center gap-3 px-6 py-12 text-center", props.class)}>
       <span class="grid place-items-center w-14 h-14 rounded-2xl bg-sunken text-muted">{props.icon}</span>
-      <h3 class="text-[15px] font-semibold">{props.title}</h3>
+      <h3 class="text-[16px] font-semibold">{props.title}</h3>
       <Show when={props.children}>
-        <p class="max-w-sm text-[13.5px] text-muted">{props.children}</p>
+        <p class="max-w-sm text-[14.5px] text-muted">{props.children}</p>
       </Show>
       <Show when={props.action}>
         <div class="mt-1">{props.action}</div>
@@ -398,7 +398,7 @@ export function Tabs(props) {
               aria-selected={on()}
               onClick={() => props.onChange(t.id)}
               class={cx(
-                "inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-semibold whitespace-nowrap transition",
+                "inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[14px] font-semibold whitespace-nowrap transition",
                 on() ? "bg-surface text-ink shadow-[0_1px_3px_rgba(47,24,53,0.12)]" : "text-muted hover:text-ink",
               )}
             >
@@ -407,7 +407,7 @@ export function Tabs(props) {
               </Show>
               {t.label}
               <Show when={t.count != null}>
-                <span class={cx("px-1.5 rounded-md text-[11px] tabular", on() ? "bg-plum-50 text-plum-700 dark:bg-lime-400/15 dark:text-lime-300" : "bg-line/60")}>
+                <span class={cx("px-1.5 rounded-md text-[12px] tabular", on() ? "bg-plum-50 text-plum-700 dark:bg-lime-400/15 dark:text-lime-300" : "bg-line/60")}>
                   {t.count}
                 </span>
               </Show>
@@ -463,7 +463,7 @@ export function Modal(props) {
               <div>
                 <h2 id={props.labelledBy} class="text-lg font-semibold">{props.title}</h2>
                 <Show when={props.subtitle}>
-                  <p class="mt-1 text-[13px] text-muted">{props.subtitle}</p>
+                  <p class="mt-1 text-[14px] text-muted">{props.subtitle}</p>
                 </Show>
               </div>
               <Show when={props.onClose}>
@@ -501,7 +501,7 @@ export function Drawer(props) {
               </Show>
               <h2 class="text-lg font-semibold truncate">{props.title}</h2>
               <Show when={props.subtitle}>
-                <p class="mt-0.5 text-[13px] text-muted">{props.subtitle}</p>
+                <p class="mt-0.5 text-[14px] text-muted">{props.subtitle}</p>
               </Show>
             </div>
             <button class="btn btn-ghost btn-icon -mr-2 w-9 h-9" onClick={props.onClose} aria-label="Close">
@@ -541,7 +541,7 @@ export function ConfirmDialog(props) {
           {props.icon ?? <TriangleAlert size={24} />}
         </span>
         <h2 id="confirm-title" class="text-lg font-semibold">{props.title}</h2>
-        <p class="text-[13.5px] text-muted">{props.message}</p>
+        <p class="text-[14.5px] text-muted">{props.message}</p>
         <div class="grid grid-cols-2 gap-2.5 w-full mt-2">
           <button class="btn btn-secondary" disabled={busy()} onClick={props.onClose}>
             Cancel
@@ -567,12 +567,23 @@ export function Menu(props) {
     const r = root.getBoundingClientRect();
     const below = window.innerHeight - r.bottom;
     const up = below < 260 && r.top > below;
+    // Opened from a sticky header: drop below the header, never over its edge.
+    const header = root.closest("header")?.getBoundingClientRect();
+    const top = Math.max(r.bottom + 8, header ? header.bottom + 8 : 0);
     setPos({
-      top: up ? undefined : `${r.bottom + 8}px`,
+      top: up ? undefined : `${top}px`,
       bottom: up ? `${window.innerHeight - r.top + 8}px` : undefined,
       left: props.align === "left" ? `${Math.max(8, r.left)}px` : undefined,
       right: props.align === "left" ? undefined : `${Math.max(8, window.innerWidth - r.right)}px`,
     });
+    // align="center": centre the panel under the trigger, kept on screen.
+    if (props.align === "center") {
+      requestAnimationFrame(() => {
+        const w = panel?.offsetWidth ?? 0;
+        const left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+        setPos((cur) => ({ ...cur, left: `${left}px`, right: undefined }));
+      });
+    }
   };
   const toggle = () => {
     if (!open()) place();
@@ -618,7 +629,7 @@ export function MenuItem(props) {
     <button
       onClick={props.onClick}
       class={cx(
-        "flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-left text-[13px] font-medium transition",
+        "flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-left text-[14px] font-medium transition",
         props.danger ? "text-crimson-600 dark:text-crimson-300 hover:bg-crimson-50 dark:hover:bg-crimson-500/10" : "text-ink-2 hover:bg-sunken hover:text-ink",
       )}
     >
@@ -649,9 +660,9 @@ export function Toaster() {
               </span>
               <div class="flex-1 min-w-0 pt-0.5">
                 <Show when={t.title}>
-                  <p class="text-[13px] font-semibold">{t.title}</p>
+                  <p class="text-[14px] font-semibold">{t.title}</p>
                 </Show>
-                <p class={cx("text-[13px]", t.title ? "text-white/70" : "text-white/90")}>{t.message}</p>
+                <p class={cx("text-[14px]", t.title ? "text-white/70" : "text-white/90")}>{t.message}</p>
               </div>
               <button class="grid place-items-center w-7 h-7 rounded-lg text-white/50 hover:text-white hover:bg-white/10" onClick={() => dismiss(t.id)} aria-label="Dismiss">
                 <X size={15} />

@@ -9,7 +9,7 @@ import { listDesignations, listDepartments, saveDesignation, deleteDesignation }
 import { PageHeader, Skeleton, Modal, Field, ConfirmDialog, SearchInput } from "../../components/ui";
 import { DeptIcon } from "../../components/icons";
 
-const LEVELS = ["Trainee", "Associate", "Senior", "Lead", "Manager"];
+const LEVELS = ["Team head", "Senior", "Junior"];
 
 export default function Designations() {
   const [list, { refetch }] = createResource(listDesignations);
@@ -41,7 +41,7 @@ export default function Designations() {
         <span class="relative z-[1] grid place-items-center w-11 h-11 rounded-xl glass">
           <Workflow size={20} class="text-lime-300" />
         </span>
-        <div class="relative z-[1] flex flex-wrap items-center gap-2.5 text-[13.5px]">
+        <div class="relative z-[1] flex flex-wrap items-center gap-2.5 text-[14.5px]">
           <span class="badge glass text-white px-3 py-1.5">Employee signs in</span>
           <ArrowRight size={15} class="text-white/50" />
           <span class="badge glass text-white px-3 py-1.5">Designation</span>
@@ -53,7 +53,7 @@ export default function Designations() {
       </div>
 
       <Show when={unmapped().length}>
-        <div class="flex items-start gap-3 p-4 rounded-2xl badge-warn !flex !text-[13px] !font-medium !rounded-2xl !py-3.5">
+        <div class="flex items-start gap-3 p-4 rounded-2xl badge-warn !flex !text-[14px] !font-medium !rounded-2xl !py-3.5">
           <TriangleAlert size={17} class="shrink-0" />
           <span>
             {unmapped().length} designation{unmapped().length > 1 ? "s aren't" : " isn't"} mapped to a department ({unmapped().map((d) => d.title).join(", ")}). Employees with{" "}
@@ -65,7 +65,7 @@ export default function Designations() {
       <section class="card overflow-hidden">
         <div class="flex flex-wrap items-center gap-3 p-4 border-b border-line">
           <SearchInput class="flex-1 min-w-[220px] max-w-md" placeholder="Search designations or departments…" value={q()} onInput={setQ} />
-          <span class="ml-auto text-[12.5px] text-muted">{rows().length} designations</span>
+          <span class="ml-auto text-[13.5px] text-muted">{rows().length} designations</span>
         </div>
         <Show when={list()} fallback={<div class="p-4 grid gap-2"><For each={[1, 2, 3, 4]}>{() => <Skeleton class="h-11" />}</For></div>}>
           <div class="overflow-x-auto">
@@ -153,7 +153,7 @@ export default function Designations() {
 function DesignationModal(props) {
   const isNew = !props.des.id;
   const [title, setTitle] = createSignal(props.des.title ?? "");
-  const [level, setLevel] = createSignal(props.des.level ?? "Associate");
+  const [level, setLevel] = createSignal(props.des.level ?? "Junior");
   const [dept, setDept] = createSignal(props.des.departmentId ?? "");
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal(null);
@@ -189,7 +189,7 @@ function DesignationModal(props) {
     >
       <div class="grid gap-4">
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[13px] font-medium badge-danger !flex">{error()}</p>
+          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
         </Show>
         <Field label="Title" for="ds-title">
           <input id="ds-title" class="input" placeholder="e.g. Performance Analyst" value={title()} onInput={(e) => setTitle(e.currentTarget.value)} />
@@ -206,7 +206,7 @@ function DesignationModal(props) {
           </select>
         </Field>
         <Show when={!isNew && props.des.employees && dept() !== (props.des.departmentId ?? "")}>
-          <p class="flex items-start gap-2 px-3.5 py-2.5 rounded-xl text-[12.5px] badge-warn !flex">
+          <p class="flex items-start gap-2 px-3.5 py-2.5 rounded-xl text-[13.5px] badge-warn !flex">
             <TriangleAlert size={14} class="shrink-0 mt-0.5" /> {props.des.employees} employee(s) will move to the new department's module on their next sign-in.
           </p>
         </Show>

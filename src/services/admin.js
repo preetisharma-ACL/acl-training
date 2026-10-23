@@ -5,12 +5,34 @@
 
 import { db, commit, delay, clone, uid, resetDb } from "./mockDb";
 import { MOCK_EMPLOYEE_PASSWORD } from "../data/org";
+import { LEVELS, levelKey, levelInfo, levelsText } from "../lib/levels";
 
 const deptOf = (designationId) => {
   const s = db();
   const des = s.designations.find((d) => d.id === designationId);
   return des?.departmentId ? s.departments.find((d) => d.id === des.departmentId) : null;
 };
+
+const levelOfUser = (u) => levelKey(db().designations.find((d) => d.id === u.designationId)?.level);
+
+// Does material m reach user u? (department or company-wide, and level)
+const reaches = (m, u) =>
+  u.role === "employee" &&
+  (!m.departmentId || deptOf(u.designationId)?.id === m.departmentId) &&
+  (!m.levels?.length || m.levels.includes(levelOfUser(u)));
+
+const newAssessment = (departmentId, level) => ({
+  id: `asm-${departmentId}-${level}`,
+  departmentId,
+  level,
+  durationMinutes: 10,
+  passPercent: level === "junior" ? 70 : level === "senior" ? 75 : 80,
+  marksPerQuestion: 1,
+  maxAttempts: 3,
+  questionsPerAttempt: 5,
+  shuffle: true,
+  active: true,
+});
 
 // Employee row as the admin tables need it (no password).
 function userRow(u) {
@@ -20,7 +42,7 @@ function userRow(u) {
   const attempts = s.attempts.filter((a) => a.userId === u.id);
   const best = attempts.reduce((m, a) => Math.max(m, a.percentage), 0);
   const prog = s.progress[u.id] || {};
-  const required = s.materials.filter((m) => m.required && (!m.departmentId || m.departmentId === dept?.id));
+  const required = s.materials.filter((m) => m.required && reaches(m, u));
   const done = required.filter((m) => prog[m.id]?.completed).length;
   const { password, ...rest } = u;
   return {
@@ -203,7 +225,7 @@ export async function listDepartments() {
     designations: s.designations.filter((x) => x.departmentId === d.id).map((x) => x.title),
     employees: s.users.filter((u) => u.role === "employee" && deptOf(u.designationId)?.id === d.id).length,
     materials: s.materials.filter((m) => m.departmentId === d.id).length,
-    questions: (s.questions[d.id] || []).length,
+    questions: s.assessments.filter((a) => a.departmentId === d.id).reduce((t, a) => t + (s.questions[a.id] || []).length, 0),
   }));
 }
 
@@ -235,7 +257,11 @@ export async function saveDepartment(input) {
       shuffle: true,
       active: input.active ?? true,
     });
-    s.questions[id] = [];
+    for (const lv of LEVELS) {
+      const a = newAssessment(id, lv.key);
+      s.assessments.push(a);
+      s.questions[a.id] = [];
+    }
   }
   commit();
 }
@@ -247,7 +273,8 @@ export async function deleteDepartment(id) {
     throw new Error("Move or delete this department's designations first.");
   }
   s.departments = s.departments.filter((d) => d.id !== id);
-  delete s.questions[id];
+  for (const a of s.assessments.filter((x) => x.departmentId === id)) delete s.questions[a.id];
+  s.assessments = s.assessments.filter((a) => a.departmentId !== id);
   s.materials = s.materials.filter((m) => m.departmentId !== id);
   commit();
 }
@@ -290,13 +317,12 @@ export async function listMaterials() {
   await delay();
   const s = db();
   return s.materials.map(({ content, ...m }) => {
-    const audience = s.users.filter(
-      (u) => u.role === "employee" && (!m.departmentId || deptOf(u.designationId)?.id === m.departmentId),
-    );
+    const audience = s.users.filter((u) => reaches(m, u));
     const completed = audience.filter((u) => s.progress[u.id]?.[m.id]?.completed).length;
     return {
       ...clone(m),
       departmentName: m.departmentId ? s.departments.find((d) => d.id === m.departmentId)?.name ?? "—" : "All departments",
+      levelsLabel: levelsText(m.levels),
       audience: audience.length,
       completed,
       sections: m.type === "structured" ? content.sections.length : m.type === "manual" ? content.chapters.length : null,
@@ -397,6 +423,7 @@ export async function saveMaterial(input) {
     required: !!input.required,
     description: input.description?.trim() || "",
     estMinutes: Number(input.estMinutes) || 5,
+    levels: input.levels?.length && input.levels.length < LEVELS.length ? [...input.levels] : [],
     updatedAt: new Date().toISOString(),
   };
   let file = {};
@@ -410,6 +437,7 @@ export async function saveMaterial(input) {
     const m = s.materials.find((x) => x.id === input.id);
     Object.assign(m, base, file);
     if (m.type === "manual" && input.manualText != null) m.content = parseManual(input.manualText);
+    if (m.type === "media" && input.mediaUrl) m.content = { url: input.mediaUrl.trim(), kind: input.mediaKind || "video" };
     m.version = bump(m.version);
   } else {
     s.materials.unshift({
@@ -423,7 +451,9 @@ export async function saveMaterial(input) {
       content:
         input.type === "manual"
           ? parseManual(input.manualText || "")
-          : { blocks: [{ type: "p", text: base.description || "Uploaded document." }] },
+          : input.type === "media"
+            ? { url: (input.mediaUrl || "").trim(), kind: input.mediaKind || "video" }
+            : { blocks: [{ type: "p", text: base.description || "Uploaded document." }] },
     });
   }
   commit();
@@ -451,26 +481,34 @@ export async function deleteMaterial(id) {
 
 // ── Assessments & question bank ─────────────────────────────────────────────
 
+// One assessment per department per level (team heads, seniors, juniors).
 export async function listAssessments() {
   await delay();
   const s = db();
-  return s.departments.map((d) => {
-    const attempts = s.attempts.filter((a) => a.departmentId === d.id);
+  return s.assessments.map((a) => {
+    const d = s.departments.find((x) => x.id === a.departmentId);
+    const attempts = s.attempts.filter((x) => x.assessmentId === a.id);
+    const people = s.users.filter((u) => u.role === "employee" && deptOf(u.designationId)?.id === a.departmentId && levelOfUser(u) === a.level);
     return {
-      ...clone(d),
-      questions: (s.questions[d.id] || []).length,
+      ...clone(a),
+      name: `${d?.name ?? "—"} · ${levelInfo(a.level).plural}`,
+      departmentName: d?.name ?? "—",
+      levelLabel: levelInfo(a.level).plural,
+      designations: s.designations.filter((x) => x.departmentId === a.departmentId && levelKey(x.level) === a.level).map((x) => x.title),
+      employees: people.length,
+      questions: (s.questions[a.id] || []).length,
       attempts: attempts.length,
-      avgScore: attempts.length ? Math.round(attempts.reduce((t, a) => t + a.percentage, 0) / attempts.length) : null,
-      passRate: attempts.length ? Math.round((attempts.filter((a) => a.passed).length / attempts.length) * 100) : null,
+      avgScore: attempts.length ? Math.round(attempts.reduce((t, x) => t + x.percentage, 0) / attempts.length) : null,
+      passRate: attempts.length ? Math.round((attempts.filter((x) => x.passed).length / attempts.length) * 100) : null,
     };
   });
 }
 
-export async function saveAssessmentSettings(departmentId, patch) {
+export async function saveAssessmentSettings(id, patch) {
   await delay(450);
-  const d = db().departments.find((x) => x.id === departmentId);
-  for (const k of ["durationMinutes", "passPercent", "marksPerQuestion", "maxAttempts", "shuffle"]) {
-    if (k in patch) d[k] = k === "shuffle" ? !!patch[k] : Number(patch[k]);
+  const a = db().assessments.find((x) => x.id === id);
+  for (const k of ["durationMinutes", "passPercent", "marksPerQuestion", "maxAttempts", "questionsPerAttempt", "shuffle"]) {
+    if (k in patch) a[k] = k === "shuffle" ? !!patch[k] : Number(patch[k]);
   }
   commit();
 }
@@ -481,7 +519,7 @@ export async function listQuestions(departmentId) {
   // How often each question is answered correctly (portal attempts only).
   const stats = {};
   for (const a of s.attempts) {
-    if (a.departmentId !== departmentId || !a.review) continue;
+    if ((a.assessmentId ?? a.departmentId) !== departmentId || !a.review) continue;
     for (const r of a.review) {
       stats[r.id] ??= { seen: 0, correct: 0 };
       stats[r.id].seen++;

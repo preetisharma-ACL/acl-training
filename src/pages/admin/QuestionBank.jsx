@@ -1,4 +1,4 @@
-// Admin · Question bank for one department: four options per question, one
+// Admin · Question bank for one assessment (department + level): four options per question, one
 // correct. Edits apply to new attempts.
 
 import { createResource, createSignal, createMemo, For, Show, Index } from "solid-js";
@@ -14,7 +14,7 @@ import { SettingsModal } from "./Assessments";
 const LETTERS = ["A", "B", "C", "D"];
 
 export default function QuestionBank(props) {
-  const deptId = props.params.dept;
+  const deptId = props.params.id; // the assessment id
   const [questions, { refetch }] = createResource(() => listQuestions(deptId));
   const [assessments, { refetch: refetchA }] = createResource(listAssessments);
   const a = () => assessments()?.find((x) => x.id === deptId);
@@ -30,14 +30,14 @@ export default function QuestionBank(props) {
 
   return (
     <div class="grid gap-6">
-      <Link href="/admin/assessments" class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted hover:text-ink w-fit">
+      <Link href="/admin/assessments" class="inline-flex items-center gap-1.5 text-[14px] font-semibold text-muted hover:text-ink w-fit">
         <ArrowLeft size={15} /> All assessments
       </Link>
 
       <section class="relative overflow-hidden rounded-[24px] hero-aurora-soft grain text-white">
         <div class="relative z-[1] flex flex-wrap items-center gap-5 p-6 sm:p-7">
           <span class="grid place-items-center w-14 h-14 rounded-2xl glass">
-            <DeptIcon id={deptId} size={24} class="text-lime-300" />
+            <DeptIcon id={a()?.departmentId} size={24} class="text-lime-300" />
           </span>
           <div class="flex-1 min-w-[200px]">
             <p class="eyebrow-lime">Question bank</p>
@@ -54,7 +54,7 @@ export default function QuestionBank(props) {
                 ]}
               >
                 {([Icon, t]) => (
-                  <span class="badge glass text-white/90 px-3 py-1.5 text-[12px]">
+                  <span class="badge glass text-white/90 px-3 py-1.5 text-[13px]">
                     <Icon size={13} class="text-lime-300" /> {t}
                   </span>
                 )}
@@ -74,7 +74,7 @@ export default function QuestionBank(props) {
 
       <div class="flex flex-wrap items-center gap-3">
         <SearchInput class="flex-1 min-w-[220px] max-w-lg" placeholder="Search questions and options…" value={q()} onInput={setQ} />
-        <span class="text-[12.5px] text-muted">Correct answers are marked in lime. Success rates come from attempts taken in the portal.</span>
+        <span class="text-[13.5px] text-muted">Correct answers are marked in lime. Success rates come from attempts taken in the portal.</span>
       </div>
 
       <Show when={questions()} fallback={<div class="grid gap-3"><For each={[1, 2, 3]}>{() => <Skeleton class="h-[170px] !rounded-2xl" />}</For></div>}>
@@ -93,10 +93,10 @@ export default function QuestionBank(props) {
               {(item) => (
                 <article class="card p-5 flex flex-col">
                   <div class="flex items-start gap-3">
-                    <span class="grid place-items-center shrink-0 w-8 h-8 rounded-lg bg-plum-700 text-white dark:bg-lime-400 dark:text-plum-950 text-[12px] font-semibold tabular">
+                    <span class="grid place-items-center shrink-0 w-8 h-8 rounded-lg bg-plum-700 text-white dark:bg-lime-400 dark:text-plum-950 text-[13px] font-semibold tabular">
                       {item.n}
                     </span>
-                    <h3 class="flex-1 text-[14.5px] font-semibold leading-snug pt-1">{item.text}</h3>
+                    <h3 class="flex-1 text-[15.5px] font-semibold leading-snug pt-1">{item.text}</h3>
                     <div class="flex gap-0.5 -mt-1 -mr-1">
                       <button class="btn btn-ghost btn-icon !w-8 !h-8" onClick={() => setEditing(item)} aria-label="Edit question">
                         <Pencil size={14} />
@@ -111,11 +111,11 @@ export default function QuestionBank(props) {
                       {(o, i) => (
                         <li
                           class={cx(
-                            "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] border",
+                            "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[14px] border",
                             i === item.answer ? "bg-lime-100/80 border-lime-300 text-lime-900 dark:bg-lime-400/10 dark:border-lime-400/30 dark:text-lime-200 font-medium" : "border-line text-ink-2",
                           )}
                         >
-                          <span class={cx("grid place-items-center shrink-0 w-6 h-6 rounded-md text-[11px] font-bold", i === item.answer ? "bg-lime-400 text-plum-950" : "bg-sunken")}>
+                          <span class={cx("grid place-items-center shrink-0 w-6 h-6 rounded-md text-[12px] font-bold", i === item.answer ? "bg-lime-400 text-plum-950" : "bg-sunken")}>
                             <Show when={i === item.answer} fallback={LETTERS[i]}>
                               <Check size={12} stroke-width={3} />
                             </Show>
@@ -126,7 +126,7 @@ export default function QuestionBank(props) {
                     </Index>
                   </ul>
                   <Show when={item.stats}>
-                    <p class="mt-3 text-[11.5px] text-muted">
+                    <p class="mt-3 text-[12.5px] text-muted">
                       Answered correctly {Math.round((item.stats.correct / item.stats.seen) * 100)}% of the time ({item.stats.seen} attempts)
                     </p>
                   </Show>
@@ -239,9 +239,9 @@ function QuestionModal(props) {
                     class="w-4 h-4 accent-lime-600 dark:accent-lime-400"
                     aria-label={`Option ${LETTERS[i]} is correct`}
                   />
-                  <span class={cx("grid place-items-center shrink-0 w-7 h-7 rounded-lg text-[12px] font-bold", answer() === i ? "bg-lime-400 text-plum-950" : "bg-sunken text-ink-2")}>{LETTERS[i]}</span>
+                  <span class={cx("grid place-items-center shrink-0 w-7 h-7 rounded-lg text-[13px] font-bold", answer() === i ? "bg-lime-400 text-plum-950" : "bg-sunken text-ink-2")}>{LETTERS[i]}</span>
                   <input
-                    class="flex-1 h-10 bg-transparent outline-none text-[14px] font-medium placeholder:text-muted/60"
+                    class="flex-1 h-10 bg-transparent outline-none text-[15px] font-medium placeholder:text-muted/60"
                     placeholder={`Option ${LETTERS[i]}`}
                     value={o()}
                     onInput={(e) => {

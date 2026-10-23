@@ -9,11 +9,12 @@
 // deleted — no component imports it.
 
 import { DEPARTMENTS } from "../data/trainingData";
+import { LEVELS } from "../lib/levels";
 import { DEPARTMENT_META, DESIGNATIONS, SEED_USERS } from "../data/org";
 import { SEED_MATERIALS } from "../data/materials";
 import { load, save, remove } from "../lib/storage";
 
-const DB_KEY = "acl.mockdb.v5";
+const DB_KEY = "acl.mockdb.v6";
 
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
 
@@ -32,15 +33,38 @@ function seed() {
     shuffle: true,
     active: true,
   }));
-  const questions = Object.fromEntries(DEPARTMENTS.map((d) => [d.id, d.questions.map((q) => ({ ...q }))]));
+  // Three assessments per department — team heads, seniors, juniors — each
+  // with its own settings and question bank. The banks start as copies of the
+  // department's sample questions; admins tailor each one.
+  const assessments = [];
+  const questions = {};
+  for (const d of DEPARTMENTS) {
+    for (const lv of LEVELS) {
+      const id = `asm-${d.id}-${lv.key}`;
+      assessments.push({
+        id,
+        departmentId: d.id,
+        level: lv.key,
+        durationMinutes: d.durationMinutes,
+        passPercent: lv.key === "junior" ? d.passPercent : lv.key === "senior" ? 75 : 80,
+        marksPerQuestion: d.marksPerQuestion,
+        maxAttempts: 3,
+        questionsPerAttempt: 5,
+        shuffle: true,
+        active: true,
+      });
+      questions[id] = d.questions.map((q) => ({ ...q, id: `${q.id}-${lv.key[0]}` }));
+    }
+  }
   const users = SEED_USERS.map((u) => ({ ...u, preferences: { emailReminders: true, resultEmails: true, weeklyDigest: false } }));
   const designations = DESIGNATIONS.map((d) => ({ ...d }));
   return {
-    version: 5,
+    version: 6,
     departments,
     designations,
     users,
     questions,
+    assessments,
     materials: SEED_MATERIALS.map((m) => ({ ...m })),
     // No sample attempts or reading progress: every employee starts fresh.
     attempts: [],
@@ -67,7 +91,7 @@ function seed() {
 }
 
 let state = load(DB_KEY, null);
-if (!state || state.version !== 5) {
+if (!state || state.version !== 6) {
   state = seed();
   save(DB_KEY, state);
 }

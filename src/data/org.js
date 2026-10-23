@@ -19,24 +19,24 @@ export const DEPARTMENT_META = {
 };
 
 export const DESIGNATIONS = [
-  { id: "acc-exec", title: "Accounts Executive", departmentId: "account", level: "Associate" },
+  { id: "acc-exec", title: "Accounts Executive", departmentId: "account", level: "Junior" },
   { id: "acc-sr", title: "Senior Accountant", departmentId: "account", level: "Senior" },
-  { id: "sales-exec", title: "Sales Executive", departmentId: "sales", level: "Associate" },
-  { id: "sales-mgr", title: "Sales Manager", departmentId: "sales", level: "Manager" },
-  { id: "coord", title: "Client Coordinator", departmentId: "coordination", level: "Associate" },
-  { id: "coord-lead", title: "Coordination Lead", departmentId: "coordination", level: "Lead" },
-  { id: "writer", title: "Content Writer", departmentId: "content", level: "Associate" },
+  { id: "sales-exec", title: "Sales Executive", departmentId: "sales", level: "Junior" },
+  { id: "sales-mgr", title: "Sales Manager", departmentId: "sales", level: "Team head" },
+  { id: "coord", title: "Client Coordinator", departmentId: "coordination", level: "Junior" },
+  { id: "coord-lead", title: "Coordination Lead", departmentId: "coordination", level: "Team head" },
+  { id: "writer", title: "Content Writer", departmentId: "content", level: "Junior" },
   { id: "strategist", title: "Content Strategist", departmentId: "content", level: "Senior" },
-  { id: "seo-exec", title: "SEO Executive", departmentId: "seo", level: "Associate" },
+  { id: "seo-exec", title: "SEO Executive", departmentId: "seo", level: "Junior" },
   { id: "seo-analyst", title: "SEO Analyst", departmentId: "seo", level: "Senior" },
-  { id: "cm", title: "Campaign Manager", departmentId: "operation", level: "Associate" },
+  { id: "cm", title: "Campaign Manager", departmentId: "operation", level: "Junior" },
   { id: "scm", title: "Senior Campaign Manager", departmentId: "operation", level: "Senior" },
-  { id: "hr-exec", title: "HR Executive", departmentId: "hr", level: "Associate" },
-  { id: "hr-mgr", title: "HR Manager", departmentId: "hr", level: "Manager" },
-  { id: "crm-exec", title: "CRM Executive", departmentId: "crm_dashboard", level: "Associate" },
+  { id: "hr-exec", title: "HR Executive", departmentId: "hr", level: "Junior" },
+  { id: "hr-mgr", title: "HR Manager", departmentId: "hr", level: "Team head" },
+  { id: "crm-exec", title: "CRM Executive", departmentId: "crm_dashboard", level: "Junior" },
   { id: "dash-analyst", title: "Dashboard Analyst", departmentId: "crm_dashboard", level: "Senior" },
   // Deliberately unmapped: shows the "no training assigned" state.
-  { id: "intern", title: "Intern", departmentId: null, level: "Trainee" },
+  { id: "intern", title: "Intern", departmentId: null, level: "Junior" },
 ];
 
 const LOCATIONS = ["Lucknow HQ", "Noida", "Gurugram", "Delhi", "Remote"];

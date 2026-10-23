@@ -112,7 +112,7 @@ export default function Results() {
         >
           {([Icon, label, value], i) => (
             <div class={cx("card px-4 py-3.5", i() === 4 && "col-span-2 lg:col-span-1")}>
-              <p class="flex items-center gap-1.5 text-[12px] text-muted">
+              <p class="flex items-center gap-1.5 text-[13px] text-muted">
                 <Icon size={13} /> {label}
               </p>
               <p class="mt-1 text-[22px] font-semibold tabular tracking-[-0.02em]">{results() ? value : "—"}</p>
@@ -140,12 +140,12 @@ export default function Results() {
               { id: "failed", label: "Failed" },
             ]}
           />
-          <label class="flex items-center gap-2 text-[12.5px] font-medium text-ink-2">
+          <label class="flex items-center gap-2 text-[13.5px] font-medium text-ink-2">
             <Toggle checked={flagged()} onChange={setFlagged} label="Focus flagged only" /> Flagged only
           </label>
         </div>
         <Show when={userFilter()}>
-          <div class="flex items-center gap-2 px-4 py-2.5 border-b border-line bg-plum-50/60 dark:bg-plum-400/10 text-[12.5px]">
+          <div class="flex items-center gap-2 px-4 py-2.5 border-b border-line bg-plum-50/60 dark:bg-plum-400/10 text-[13.5px]">
             Showing results for <strong>{userName() ?? "this employee"}</strong>
             <button class="ml-1 inline-flex items-center gap-1 font-semibold text-plum-700 dark:text-lime-300" onClick={() => navigate("/admin/results", { replace: true })}>
               <X size={13} /> Clear
@@ -193,7 +193,7 @@ export default function Results() {
                             <Avatar name={r.userName} size={32} />
                             <span>
                               <span class="block font-semibold whitespace-nowrap">{r.userName}</span>
-                              <span class="block text-[11.5px] text-muted whitespace-nowrap">{r.designation}</span>
+                              <span class="block text-[12.5px] text-muted whitespace-nowrap">{r.designation}</span>
                             </span>
                           </span>
                         </td>
@@ -234,7 +234,7 @@ export default function Results() {
               </table>
             </div>
             <Show when={filtered().length > 100}>
-              <p class="px-4 py-3 border-t border-line text-[12.5px] text-muted">Showing the first 100 of {filtered().length}. Export to CSV for everything.</p>
+              <p class="px-4 py-3 border-t border-line text-[13.5px] text-muted">Showing the first 100 of {filtered().length}. Export to CSV for everything.</p>
             </Show>
           </Show>
         </Show>
@@ -259,10 +259,10 @@ function ResultDrawer(props) {
             </ProgressRing>
             <div class="relative z-[1]">
               <span class={cx("badge", r().passed ? "bg-lime-400 text-plum-950" : "bg-crimson-500 text-white")}>{r().passed ? "Passed" : "Failed"}</span>
-              <p class="mt-2 text-[15px] font-semibold">
+              <p class="mt-2 text-[16px] font-semibold">
                 {r().marks}/{r().totalMarks} marks · pass {r().passPercent}%
               </p>
-              <p class="text-[12.5px] text-white/60">
+              <p class="text-[13.5px] text-white/60">
                 {r().designation} · {r().userEmail}
               </p>
             </div>
@@ -280,18 +280,18 @@ function ResultDrawer(props) {
             >
               {([, l, v]) => (
                 <div class="p-3 rounded-xl bg-sunken/60">
-                  <p class="text-[11.5px] text-muted">{l}</p>
+                  <p class="text-[12.5px] text-muted">{l}</p>
                   <p class="text-[16px] font-semibold tabular">{v}</p>
                 </div>
               )}
             </For>
           </div>
           <div>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-3">Answer review</p>
+            <p class="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted mb-3">Answer review</p>
             <Show
               when={r().review}
               fallback={
-                <p class="flex items-start gap-2.5 p-3.5 rounded-xl bg-sunken/60 text-[12.5px] text-muted">
+                <p class="flex items-start gap-2.5 p-3.5 rounded-xl bg-sunken/60 text-[13.5px] text-muted">
                   <Info size={15} class="shrink-0 mt-0.5" /> Imported attempt from {fmtDate(r().submittedAt)} — only summary scores were recorded.
                 </p>
               }
@@ -300,7 +300,7 @@ function ResultDrawer(props) {
                 <For each={r().review}>
                   {(it, i) => (
                     <li class="p-3.5 rounded-xl border border-line">
-                      <p class="flex items-start gap-2 text-[13px] font-semibold">
+                      <p class="flex items-start gap-2 text-[14px] font-semibold">
                         <span class={cx("shrink-0 mt-0.5", it.isCorrect ? "text-emerald-600" : it.chosen === null ? "text-muted" : "text-crimson-600")}>
                           <Show when={it.isCorrect} fallback={<CircleX size={15} />}>
                             <CircleCheck size={15} />
@@ -308,7 +308,7 @@ function ResultDrawer(props) {
                         </span>
                         {i() + 1}. {it.text}
                       </p>
-                      <p class="mt-1.5 pl-6 text-[12.5px] text-muted">
+                      <p class="mt-1.5 pl-6 text-[13.5px] text-muted">
                         Answer: <span class={cx("font-medium", it.isCorrect ? "text-emerald-700 dark:text-emerald-300" : "text-ink-2")}>{it.chosen === null ? "Not attempted" : `${LETTERS[it.chosen]}. ${it.options[it.chosen]}`}</span>
                         <Show when={!it.isCorrect}>
                           {" "}· Correct: <span class="font-medium text-emerald-700 dark:text-emerald-300">{LETTERS[it.correctIndex]}. {it.options[it.correctIndex]}</span>

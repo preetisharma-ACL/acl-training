@@ -40,11 +40,11 @@ function SrTable(props) {
 function Tooltip(props) {
   return (
     <div
-      class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full px-3 py-2 rounded-xl bg-plum-950 text-white text-xs shadow-float border border-white/10 whitespace-nowrap"
+      class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full px-3 py-2 rounded-xl bg-plum-950 text-white text-[13px] shadow-float border border-white/10 whitespace-nowrap"
       style={{ left: `${props.x}%`, top: `calc(${props.y}% - 8px)` }}
     >
       <p class="text-white/60">{props.label}</p>
-      <p class="font-semibold text-[13px] tabular">{props.value}</p>
+      <p class="font-semibold text-[14px] tabular">{props.value}</p>
     </div>
   );
 }
@@ -79,7 +79,7 @@ export function ColumnChart(props) {
           {(t) => (
             <g>
               <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} class="stroke-line" stroke-width="1" stroke-dasharray={t === 0 ? "" : "3 4"} />
-              <text x={pad.l - 8} y={y(t) + 3.5} text-anchor="end" class="fill-muted text-[10px] tabular">
+              <text x={pad.l - 8} y={y(t) + 3.5} text-anchor="end" class="fill-muted text-[11px] tabular">
                 {fmt(t)}
               </text>
             </g>
@@ -87,7 +87,7 @@ export function ColumnChart(props) {
         </For>
         <Show when={props.reference != null}>
           <line x1={pad.l} x2={W - pad.r} y1={y(props.reference)} y2={y(props.reference)} class="stroke-ink-2/45" stroke-width="1.5" stroke-dasharray="6 4" />
-          <text x={W - pad.r} y={y(props.reference) - 6} text-anchor="end" class="fill-muted text-[10.5px]">
+          <text x={W - pad.r} y={y(props.reference) - 6} text-anchor="end" class="fill-muted text-[11.5px]">
             {props.referenceLabel}
           </text>
         </Show>
@@ -118,7 +118,7 @@ export function ColumnChart(props) {
                   fill="transparent"
                   onMouseEnter={() => setHover(i())}
                 />
-                <text x={cx_()} y={H - 8} text-anchor="middle" class={cx("text-[10.5px]", hover() === i() ? "fill-ink font-semibold" : "fill-muted")}>
+                <text x={cx_()} y={H - 8} text-anchor="middle" class={cx("text-[11.5px]", hover() === i() ? "fill-ink font-semibold" : "fill-muted")}>
                   {d.short ?? d.label}
                 </text>
               </g>
@@ -189,7 +189,7 @@ export function LineChart(props) {
           {(t) => (
             <g>
               <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} class="stroke-line" stroke-width="1" stroke-dasharray={t === min ? "" : "3 4"} />
-              <text x={pad.l - 8} y={y(t) + 3.5} text-anchor="end" class="fill-muted text-[10px] tabular">
+              <text x={pad.l - 8} y={y(t) + 3.5} text-anchor="end" class="fill-muted text-[11px] tabular">
                 {t}
               </text>
             </g>
@@ -197,7 +197,7 @@ export function LineChart(props) {
         </For>
         <Show when={props.reference != null}>
           <line x1={pad.l} x2={W - pad.r} y1={y(props.reference)} y2={y(props.reference)} class="stroke-ink-2/40" stroke-width="1" stroke-dasharray="6 4" />
-          <text x={W - pad.r} y={y(props.reference) - 5} text-anchor="end" class="fill-muted text-[10px]">
+          <text x={W - pad.r} y={y(props.reference) - 5} text-anchor="end" class="fill-muted text-[11px]">
             {props.referenceLabel}
           </text>
         </Show>
@@ -237,7 +237,7 @@ export function LineChart(props) {
         </For>
         <For each={props.data}>
           {(d, i) => (
-            <text x={x(i())} y={H - 8} text-anchor="middle" class={cx("text-[10.5px]", hover() === i() ? "fill-ink font-semibold" : "fill-muted")}>
+            <text x={x(i())} y={H - 8} text-anchor="middle" class={cx("text-[11.5px]", hover() === i() ? "fill-ink font-semibold" : "fill-muted")}>
               {d.label}
             </text>
           )}
@@ -264,7 +264,7 @@ export function BarList(props) {
       <For each={props.rows}>
         {(r) => (
           <li class="grid gap-1.5" title={r.tooltip}>
-            <div class="flex items-center justify-between gap-3 text-[13px]">
+            <div class="flex items-center justify-between gap-3 text-[14px]">
               <span class="flex items-center gap-2 min-w-0 font-medium text-ink-2">
                 {r.icon}
                 <span class="truncate">{r.label}</span>

@@ -34,7 +34,7 @@ export default function Overview() {
             <Sparkles size={13} /> {greeting()} · {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
           </p>
           <h1 class="mt-2 text-[28px] sm:text-[32px] leading-[1.1] font-semibold tracking-[-0.03em]">Welcome back, {user().name.split(" ")[0]}.</h1>
-          <p class="mt-2 text-[14.5px] text-muted">Manage people, training material and assessments for the whole team.</p>
+          <p class="mt-2 text-[15.5px] text-muted">Manage people, training material and assessments for the whole team.</p>
         </div>
         <div class="flex flex-wrap gap-2.5">
           <button class="btn btn-primary" onClick={() => setAnnounce(true)}>
@@ -100,7 +100,7 @@ export default function Overview() {
             </tbody>
           </table>
           <Show when={data() && !data().recent.length}>
-            <p class="px-6 py-10 text-center text-[13px] text-muted">No attempts yet. They'll appear here as employees finish their assessments.</p>
+            <p class="px-6 py-10 text-center text-[14px] text-muted">No attempts yet. They'll appear here as employees finish their assessments.</p>
           </Show>
         </div>
       </section>
@@ -111,13 +111,13 @@ export default function Overview() {
           <ol class="mt-4 grid gap-1">
             <For
               each={data()?.topPerformers}
-              fallback={data() ? <p class="py-8 text-center text-[13px] text-muted">No scores yet.</p> : <Skeleton class="h-[220px]" />}
+              fallback={data() ? <p class="py-8 text-center text-[14px] text-muted">No scores yet.</p> : <Skeleton class="h-[220px]" />}
             >
               {(p, i) => (
                 <li class="flex items-center gap-3 p-2 rounded-xl hover:bg-sunken/60">
                   <span
                     class={cx(
-                      "w-6 text-center text-[12px] font-semibold tabular",
+                      "w-6 text-center text-[13px] font-semibold tabular",
                       i() === 0 ? "text-lime-700 dark:text-lime-300" : "text-muted",
                     )}
                   >
@@ -125,10 +125,10 @@ export default function Overview() {
                   </span>
                   <Avatar name={p.name} size={34} />
                   <span class="flex-1 min-w-0">
-                    <span class="block text-[13px] font-semibold truncate">{p.name}</span>
-                    <span class="block text-[11.5px] text-muted truncate">{p.designation}</span>
+                    <span class="block text-[14px] font-semibold truncate">{p.name}</span>
+                    <span class="block text-[12.5px] text-muted truncate">{p.designation}</span>
                   </span>
-                  <span class="text-[14px] font-semibold tabular">{p.bestScore}%</span>
+                  <span class="text-[15px] font-semibold tabular">{p.bestScore}%</span>
                 </li>
               )}
             </For>
@@ -146,13 +146,13 @@ export default function Overview() {
             }
           />
           <ul class="mt-4 grid gap-2">
-            <For each={data()?.attention} fallback={<p class="py-8 text-center text-[13px] text-muted">Everyone is on track.</p>}>
+            <For each={data()?.attention} fallback={<p class="py-8 text-center text-[14px] text-muted">Everyone is on track.</p>}>
               {(p) => (
                 <li class="flex items-center gap-3 p-2.5 rounded-xl border border-line">
                   <Avatar name={p.name} size={34} />
                   <span class="flex-1 min-w-0">
-                    <span class="block text-[13px] font-semibold truncate">{p.name}</span>
-                    <span class="flex items-center gap-1.5 text-[11.5px] text-muted truncate">
+                    <span class="block text-[14px] font-semibold truncate">{p.name}</span>
+                    <span class="flex items-center gap-1.5 text-[12.5px] text-muted truncate">
                       <DeptIcon id={p.departmentId} size={11} /> {p.departmentName}
                     </span>
                   </span>
@@ -178,7 +178,7 @@ export default function Overview() {
           <Show when={data()} fallback={<Skeleton class="h-[260px]" />}>
             <Show
               when={data().departments.some((d) => d.avgScore > 0)}
-              fallback={<p class="py-16 text-center text-[13px] text-muted">No assessment results yet — the chart fills in as employees take their tests.</p>}
+              fallback={<p class="py-16 text-center text-[14px] text-muted">No assessment results yet — the chart fills in as employees take their tests.</p>}
             >
             <ColumnChart
               ariaLabel="Average assessment score by department"

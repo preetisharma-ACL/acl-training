@@ -15,6 +15,7 @@ import {
   FileText,
   ScrollText,
   Layers,
+  MonitorPlay,
 } from "lucide-solid";
 
 const DEPT_ICONS = {
@@ -34,6 +35,7 @@ export const MATERIAL_TYPES = {
   pdf: { label: "PDF document", short: "PDF", icon: FileText, badge: "badge-danger" },
   manual: { label: "Written manual", short: "Manual", icon: ScrollText, badge: "badge-plum" },
   structured: { label: "Structured guide", short: "Guide", icon: Layers, badge: "badge-lime" },
+  media: { label: "Video / audio", short: "Media", icon: MonitorPlay, badge: "badge-warn" },
 };
 
 export const TypeIcon = (props) => (

@@ -22,7 +22,6 @@ import Training from "./pages/employee/Training";
 import Viewer from "./pages/employee/Viewer";
 import Assessment from "./pages/employee/Assessment";
 import Scoreboard from "./pages/employee/Scoreboard";
-import Profile from "./pages/Profile";
 import AdminOverview from "./pages/admin/Overview";
 import AdminUsers from "./pages/admin/Users";
 import AdminDepartments from "./pages/admin/Departments";
@@ -39,7 +38,6 @@ const EMPLOYEE_ROUTES = [
   ["/training/:id", Viewer],
   ["/scoreboard", Scoreboard],
   ["/scoreboard/:id", Scoreboard],
-  ["/profile", Profile],
 ];
 
 const ADMIN_ROUTES = [
@@ -50,9 +48,8 @@ const ADMIN_ROUTES = [
   ["/admin/materials", AdminMaterials],
   ["/admin/materials/:id", Viewer],
   ["/admin/assessments", AdminAssessments],
-  ["/admin/assessments/:dept", AdminQuestionBank],
+  ["/admin/assessments/:id", AdminQuestionBank],
   ["/admin/results", AdminResults],
-  ["/admin/profile", Profile],
 ];
 
 const find = (routes, path) => {

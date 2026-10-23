@@ -3,7 +3,7 @@
 // preview), structured guides come from the department playbooks.
 
 import { createResource, createSignal, createMemo, For, Show, onMount } from "solid-js";
-import { Plus, Eye, Pencil, Trash2, Ellipsis, Upload, FileText, ScrollText, Layers, Library, CircleCheck, X, Info } from "lucide-solid";
+import { Plus, Eye, Pencil, Trash2, Ellipsis, Upload, FileText, ScrollText, Layers, Library, CircleCheck, X, Info, MonitorPlay, Link2 } from "lucide-solid";
 import { navigate, query } from "../../lib/router";
 import { cx, fmtDate, fmtBytes } from "../../lib/format";
 import { toast } from "../../store/toast";
@@ -20,11 +20,14 @@ import {
 } from "../../services/admin";
 import { PageHeader, Tabs, SearchInput, Skeleton, Toggle, Menu, MenuItem, Drawer, Field, ConfirmDialog, EmptyState, ProgressBar } from "../../components/ui";
 import { TypeIcon, MATERIAL_TYPES } from "../../components/icons";
+import { parseMedia, PROVIDER_LABEL } from "../../lib/media";
+import { LEVELS } from "../../lib/levels";
 
 const TYPE_TILE = {
   pdf: "bg-crimson-50 text-crimson-600 dark:bg-crimson-500/15 dark:text-crimson-300",
   manual: "bg-plum-50 text-plum-700 dark:bg-plum-400/15 dark:text-plum-200",
   structured: "bg-lime-100 text-lime-800 dark:bg-lime-400/15 dark:text-lime-300",
+  media: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
 };
 
 export default function Materials() {
@@ -77,6 +80,7 @@ export default function Materials() {
             { id: "pdf", label: "PDFs", icon: FileText, count: count("pdf") },
             { id: "manual", label: "Manuals", icon: ScrollText, count: count("manual") },
             { id: "structured", label: "Guides", icon: Layers, count: count("structured") },
+            { id: "media", label: "Video / audio", icon: MonitorPlay, count: count("media") },
           ]}
         />
         <SearchInput class="flex-1 min-w-[200px]" placeholder="Search materials…" value={q()} onInput={setQ} />
@@ -107,19 +111,19 @@ export default function Materials() {
                   </span>
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                      <button class="text-[14.5px] font-semibold text-left hover:text-plum-700 dark:hover:text-lime-300 truncate" onClick={() => navigate(`/admin/materials/${m.id}`)}>
+                      <button class="text-[15.5px] font-semibold text-left hover:text-plum-700 dark:hover:text-lime-300 truncate" onClick={() => navigate(`/admin/materials/${m.id}`)}>
                         {m.title}
                       </button>
                       <span class={cx("badge", MATERIAL_TYPES[m.type].badge)}>{MATERIAL_TYPES[m.type].short}</span>
                     </div>
-                    <p class="mt-1 text-[12px] text-muted truncate">
-                      {m.departmentName} · v{m.version} · {m.estMinutes} min · updated {fmtDate(m.updatedAt)}
+                    <p class="mt-1 text-[13px] text-muted truncate">
+                      {m.departmentName} · {m.levelsLabel} · v{m.version} · {m.estMinutes} min · updated {fmtDate(m.updatedAt)}
                       <Show when={m.sizeBytes}> · {fmtBytes(m.sizeBytes)}</Show>
                       <Show when={m.sections}> · {m.sections} {m.type === "manual" ? "chapters" : "sections"}</Show>
                     </p>
                   </div>
                   <div class="col-span-2 md:col-span-1">
-                    <div class="flex justify-between text-[11.5px] text-muted mb-1.5">
+                    <div class="flex justify-between text-[12.5px] text-muted mb-1.5">
                       <span>Completed</span>
                       <span class="tabular">
                         {m.completed}/{m.audience}
@@ -127,7 +131,7 @@ export default function Materials() {
                     </div>
                     <ProgressBar value={m.audience ? (m.completed / m.audience) * 100 : 0} tone="plum" />
                   </div>
-                  <label class="flex items-center gap-2.5 text-[12.5px] font-medium text-ink-2 cursor-pointer">
+                  <label class="flex items-center gap-2.5 text-[13.5px] font-medium text-ink-2 cursor-pointer">
                     <Toggle checked={m.required} onChange={(v) => toggleRequired(m, v)} label={`Required: ${m.title}`} />
                     {m.required ? "Required" : "Optional"}
                   </label>
@@ -217,6 +221,12 @@ function MaterialDrawer(props) {
   const [drag, setDrag] = createSignal(false);
   const [text, setText] = createSignal(props.m.type === "manual" && props.m.content ? manualToText(props.m.content) : MANUAL_TEMPLATE);
   const [mode, setMode] = createSignal("write");
+  const [mediaUrl, setMediaUrl] = createSignal(props.m.type === "media" ? props.m.content?.url ?? "" : "");
+  // Levels that get this material; all three by default.
+  const [levels, setLevels] = createSignal(props.m.levels?.length ? [...props.m.levels] : LEVELS.map((l) => l.key));
+  const toggleLevel = (k, on) => setLevels(on ? [...new Set([...levels(), k])] : levels().filter((x) => x !== k));
+  const [mediaKind, setMediaKind] = createSignal(props.m.type === "media" ? props.m.content?.kind ?? "video" : "video");
+  const media = createMemo(() => parseMedia(mediaUrl()));
   const [busy, setBusy] = createSignal(false);
   const [touched, setTouched] = createSignal(false);
   const [error, setError] = createSignal(null);
@@ -241,6 +251,8 @@ function MaterialDrawer(props) {
     title: f().title.trim().length < 3 ? "Give it a clear title." : null,
     file: isNew && type() === "pdf" && !file() ? "Upload a PDF." : null,
     manual: type() === "manual" && text().trim().length < 20 ? "Write the manual content." : null,
+    media: type() === "media" && media().provider === "invalid" ? "Paste a full link starting with https://" : null,
+    levels: levels().length ? null : "Choose at least one level.",
   });
   const valid = () => !Object.values(errors()).some(Boolean);
 
@@ -250,7 +262,7 @@ function MaterialDrawer(props) {
     setBusy(true);
     setError(null);
     try {
-      await saveMaterial({ id: props.m.id, type: type(), ...f(), file: file(), manualText: type() === "manual" ? text() : null, author: user().name });
+      await saveMaterial({ id: props.m.id, type: type(), ...f(), file: file(), manualText: type() === "manual" ? text() : null, mediaUrl: type() === "media" ? mediaUrl() : null, mediaKind: mediaKind(), levels: levels(), author: user().name });
       toast(isNew ? "Material published to the selected employees' modules." : "Material updated — employees see the new version.", { title: isNew ? "Published" : "Saved" });
       props.onSaved();
     } catch (e) {
@@ -264,7 +276,7 @@ function MaterialDrawer(props) {
       width="max-w-[640px]"
       kicker={isNew ? "New material" : `Edit · ${MATERIAL_TYPES[type()].label}`}
       title={isNew ? "Add training material" : props.m.title}
-      subtitle={isNew ? "Upload a PDF or write a manual. Employees see it in their module right away." : `Version ${props.m.version} — saving publishes the next version.`}
+      subtitle={isNew ? "Upload a PDF, write a manual or attach a video / audio link. Employees see it in their module right away." : `Version ${props.m.version} — saving publishes the next version.`}
       onClose={() => !busy() && props.onClose()}
       footer={
         <>
@@ -279,17 +291,18 @@ function MaterialDrawer(props) {
     >
       <div class="grid gap-5">
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[13px] font-medium badge-danger !flex">{error()}</p>
+          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
         </Show>
 
         <Show when={isNew}>
           <div>
             <p class="label">Type</p>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <For
                 each={[
-                  ["pdf", FileText, "PDF document", "Upload an existing file"],
-                  ["manual", ScrollText, "Written manual", "Write it right here"],
+                  ["pdf", FileText, "PDF document", "Upload a file"],
+                  ["manual", ScrollText, "Written manual", "Write it here"],
+                  ["media", MonitorPlay, "Video / audio", "Attach a link"],
                 ]}
               >
                 {([id, Icon, label, hint]) => (
@@ -305,13 +318,56 @@ function MaterialDrawer(props) {
                       <Icon size={18} />
                     </span>
                     <span>
-                      <span class="block text-[13.5px] font-semibold">{label}</span>
-                      <span class="block text-[11.5px] text-muted">{hint}</span>
+                      <span class="block text-[14.5px] font-semibold">{label}</span>
+                      <span class="block text-[12.5px] text-muted">{hint}</span>
                     </span>
                   </button>
                 )}
               </For>
             </div>
+          </div>
+        </Show>
+
+        <Show when={type() === "media"}>
+          <div class="grid gap-4">
+            <div>
+              <p class="label">Kind</p>
+              <Tabs
+                value={mediaKind()}
+                onChange={setMediaKind}
+                tabs={[
+                  { id: "video", label: "Video" },
+                  { id: "audio", label: "Audio" },
+                ]}
+              />
+            </div>
+            <Field
+              label="Link"
+              for="m-url"
+              error={touched() && errors().media}
+              hint="YouTube, Vimeo and Google Drive links play inside the portal, as do direct .mp4 / .mp3 files. Other links open in a new tab."
+            >
+              <div class="relative">
+                <Link2 size={16} class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+                <input
+                  id="m-url"
+                  type="url"
+                  inputmode="url"
+                  placeholder="https://www.youtube.com/watch?v=…"
+                  class={cx("input pl-10", touched() && errors().media && "input-invalid")}
+                  value={mediaUrl()}
+                  onInput={(e) => setMediaUrl(e.currentTarget.value)}
+                />
+              </div>
+            </Field>
+            <Show when={media().provider !== "invalid"}>
+              <p class="flex items-center gap-2 -mt-2 text-[13px] text-ink-2">
+                <CircleCheck size={15} class="text-emerald-600" /> Recognised: <strong class="font-semibold">{PROVIDER_LABEL[media().provider]}</strong>
+                <Show when={media().provider === "link"}>
+                  <span class="text-muted">— employees will open it in a new tab</span>
+                </Show>
+              </p>
+            </Show>
           </div>
         </Show>
 
@@ -342,8 +398,8 @@ function MaterialDrawer(props) {
                     <span class="grid place-items-center w-12 h-12 rounded-2xl bg-plum-50 text-plum-700 dark:bg-lime-400/15 dark:text-lime-300">
                       <Upload size={21} />
                     </span>
-                    <p class="text-[13.5px] font-semibold">Drop a PDF here, or <span class="text-plum-700 dark:text-lime-300 underline underline-offset-2">browse</span></p>
-                    <p class="text-[12px] text-muted">PDF up to 25 MB{props.m.fileName ? ` · current: ${props.m.fileName}` : ""}</p>
+                    <p class="text-[14.5px] font-semibold">Drop a PDF here, or <span class="text-plum-700 dark:text-lime-300 underline underline-offset-2">browse</span></p>
+                    <p class="text-[13px] text-muted">PDF up to 25 MB{props.m.fileName ? ` · current: ${props.m.fileName}` : ""}</p>
                   </>
                 }
               >
@@ -352,8 +408,8 @@ function MaterialDrawer(props) {
                     <FileText size={18} />
                   </span>
                   <span class="flex-1 min-w-0">
-                    <span class="block text-[13px] font-semibold truncate">{file().name}</span>
-                    <span class="block text-[11.5px] text-muted">{fmtBytes(file().size)} · ready to upload</span>
+                    <span class="block text-[14px] font-semibold truncate">{file().name}</span>
+                    <span class="block text-[12.5px] text-muted">{fmtBytes(file().size)} · ready to upload</span>
                   </span>
                   <CircleCheck size={18} class="text-emerald-500" />
                   <button
@@ -389,17 +445,38 @@ function MaterialDrawer(props) {
               <For each={props.departments}>{(d) => <option value={d.id}>{d.name}</option>}</For>
             </select>
           </Field>
-          <Field label="Reading time" for="m-min">
+          <Field label={type() === "media" ? "Duration" : "Reading time"} for="m-min">
             <div class="relative">
               <input id="m-min" type="number" min="1" max="240" class="input pr-12" value={f().estMinutes} onInput={(e) => set("estMinutes")(e.currentTarget.value)} />
-              <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] text-muted">min</span>
+              <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[13px] text-muted">min</span>
             </div>
           </Field>
         </div>
+        <div>
+          <p class="label">Who gets it</p>
+          <div class="rounded-2xl border border-line divide-y divide-line">
+            <For each={LEVELS}>
+              {(lv) => (
+                <label class="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer">
+                  <span>
+                    <span class="block text-[14.5px] font-semibold">{lv.plural}</span>
+                    <span class="block text-[12.5px] text-muted">
+                      {lv.key === "head" ? "Team heads and managers" : lv.key === "senior" ? "Senior and experienced staff" : "Juniors, executives and trainees"}
+                    </span>
+                  </span>
+                  <Toggle checked={levels().includes(lv.key)} onChange={(v) => toggleLevel(lv.key, v)} label={lv.plural} />
+                </label>
+              )}
+            </For>
+          </div>
+          <Show when={touched() && errors().levels}>
+            <p class="error-text">{errors().levels}</p>
+          </Show>
+        </div>
         <div class="flex items-center justify-between gap-4 p-4 rounded-2xl border border-line">
           <div>
-            <p class="text-[13.5px] font-semibold">Required before the assessment</p>
-            <p class="text-[12px] text-muted">Employees must complete it to unlock their test.</p>
+            <p class="text-[14.5px] font-semibold">Required before the assessment</p>
+            <p class="text-[13px] text-muted">Employees must complete it to unlock their test.</p>
           </div>
           <Toggle checked={f().required} onChange={set("required")} label="Required" />
         </div>
@@ -420,11 +497,11 @@ function MaterialDrawer(props) {
             <Show
               when={mode() === "write"}
               fallback={
-                <div class="max-h-[420px] overflow-y-auto scrollbar-thin p-5 rounded-2xl border border-line bg-surface prose-doc text-[14px]">
+                <div class="max-h-[420px] overflow-y-auto scrollbar-thin p-5 rounded-2xl border border-line bg-surface prose-doc text-[15px]">
                   <For each={preview().chapters}>
                     {(ch, i) => (
                       <section class="mb-6">
-                        <p class="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-plum-500 dark:text-lime-300">Chapter {i() + 1}</p>
+                        <p class="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-plum-500 dark:text-lime-300">Chapter {i() + 1}</p>
                         <h3 class="!mt-1">{ch.title}</h3>
                         <For each={ch.blocks}>
                           {(b) =>
@@ -453,7 +530,7 @@ function MaterialDrawer(props) {
             >
               <textarea
                 rows="14"
-                class={cx("input font-mono text-[12.5px] leading-relaxed", touched() && errors().manual && "input-invalid")}
+                class={cx("input font-mono text-[13.5px] leading-relaxed", touched() && errors().manual && "input-invalid")}
                 value={text()}
                 onInput={(e) => setText(e.currentTarget.value)}
                 spellcheck
@@ -466,7 +543,7 @@ function MaterialDrawer(props) {
         </Show>
 
         <Show when={type() === "structured"}>
-          <p class="flex items-start gap-2.5 p-3.5 rounded-2xl bg-sunken/60 text-[12.5px] text-muted">
+          <p class="flex items-start gap-2.5 p-3.5 rounded-2xl bg-sunken/60 text-[13.5px] text-muted">
             <Info size={15} class="shrink-0 mt-0.5" /> Structured guides come from the department playbook. Their sections are edited by the department head; here you can change the title,
             description, reading time and whether it's required.
           </p>

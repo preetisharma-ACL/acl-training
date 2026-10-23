@@ -47,7 +47,7 @@ function Showcase() {
               ]}
             >
               {([Icon, text]) => (
-                <div class="flex items-center gap-3 text-[14px] text-white/80">
+                <div class="flex items-center gap-3 text-[15px] text-white/80">
                   <span class="grid place-items-center w-8 h-8 rounded-lg glass">
                     <Icon size={15} class="text-lime-300" />
                   </span>
@@ -62,7 +62,7 @@ function Showcase() {
         <div class="relative hidden xl:block w-[270px] h-[330px]">
           <div class="absolute top-0 right-0 w-[250px] p-5 rounded-3xl glass animate-float" style={{ "animation-delay": "0s" }}>
             <div class="flex items-center justify-between">
-              <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Your score</span>
+              <span class="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/55">Your score</span>
               <span class="badge bg-lime-400 text-plum-950">Passed</span>
             </div>
             <div class="flex items-center gap-4 mt-4">
@@ -70,17 +70,17 @@ function Showcase() {
                 <span class="text-[19px] font-semibold tabular">92%</span>
               </ProgressRing>
               <div>
-                <p class="text-[13px] font-semibold">Training assessment</p>
-                <p class="text-[11.5px] text-white/55">9 of 10 correct</p>
-                <p class="text-[11.5px] text-white/55">Pass mark 70%</p>
+                <p class="text-[14px] font-semibold">Training assessment</p>
+                <p class="text-[12.5px] text-white/55">9 of 10 correct</p>
+                <p class="text-[12.5px] text-white/55">Pass mark 70%</p>
               </div>
             </div>
           </div>
           <div class="absolute top-[178px] left-0 w-[230px] p-4 rounded-3xl glass animate-float" style={{ "animation-delay": "-2s" }}>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Training module</p>
-            <p class="mt-2 text-[13px] font-semibold">Required modules completed</p>
+            <p class="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/55">Training module</p>
+            <p class="mt-2 text-[14px] font-semibold">Required modules completed</p>
             <ProgressBar value={100} class="mt-3" trackClass="bg-white/10" />
-            <p class="flex items-center gap-2 mt-4 text-[12px] text-white/70">
+            <p class="flex items-center gap-2 mt-4 text-[13px] text-white/70">
               <CircleCheck size={14} class="text-lime-300" /> Ready for your assessment
             </p>
           </div>
@@ -165,12 +165,12 @@ export default function Login() {
               <Show when={mode() === "signin"}>
                 <p class="kicker mb-3">Welcome back</p>
                 <h2 class="text-[28px] leading-tight font-semibold tracking-[-0.025em]">Sign in to your portal</h2>
-                <p class="mt-2 text-[14px] text-muted">
+                <p class="mt-2 text-[15px] text-muted">
                   Use your work email. We'll take you straight to the training set for your role.
                 </p>
 
                 <Show when={error()}>
-                  <div class="mt-6 flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-crimson-50 text-crimson-700 dark:bg-crimson-500/10 dark:text-crimson-300 text-[13px] font-medium animate-fade-in" role="alert">
+                  <div class="mt-6 flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-crimson-50 text-crimson-700 dark:bg-crimson-500/10 dark:text-crimson-300 text-[14px] font-medium animate-fade-in" role="alert">
                     <CircleAlert size={17} class="shrink-0 mt-px" /> {error()}
                   </div>
                 </Show>
@@ -201,7 +201,7 @@ export default function Login() {
                       <label class="label" for="password">Password</label>
                       <button
                         type="button"
-                        class="mb-1.5 text-[12.5px] font-semibold text-plum-600 hover:text-plum-800 dark:text-lime-300 dark:hover:text-lime-200"
+                        class="mb-1.5 text-[13.5px] font-semibold text-plum-600 hover:text-plum-800 dark:text-lime-300 dark:hover:text-lime-200"
                         onClick={() => {
                           setMode("forgot");
                           setTouched(false);
@@ -240,7 +240,7 @@ export default function Login() {
                     </Show>
                   </div>
 
-                  <label class="flex items-center gap-2.5 text-[13px] font-medium text-ink-2 cursor-pointer select-none">
+                  <label class="flex items-center gap-2.5 text-[14px] font-medium text-ink-2 cursor-pointer select-none">
                     <input type="checkbox" checked={remember()} onChange={(e) => setRemember(e.currentTarget.checked)} class="w-4 h-4 rounded accent-plum-700 dark:accent-lime-400" />
                     Keep me signed in on this device
                   </label>
@@ -261,7 +261,7 @@ export default function Login() {
 
                 {/* Mock mode only — remove with the real backend. */}
                 <div class="mt-9">
-                  <div class="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+                  <div class="flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">
                     <span class="h-px flex-1 bg-line" /> Demo accounts <span class="h-px flex-1 bg-line" />
                   </div>
                   <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -279,14 +279,14 @@ export default function Login() {
                         >
                           <Avatar name={acc.label} size={32} />
                           <span class="min-w-0">
-                            <span class="block text-[12.5px] font-semibold truncate">{acc.label}</span>
-                            <span class="block text-[11px] text-muted truncate">{acc.hint}</span>
+                            <span class="block text-[13.5px] font-semibold truncate">{acc.label}</span>
+                            <span class="block text-[12px] text-muted truncate">{acc.hint}</span>
                           </span>
                         </button>
                       )}
                     </For>
                   </div>
-                  <p class="mt-3 text-[11.5px] text-muted text-center">
+                  <p class="mt-3 text-[12.5px] text-muted text-center">
                     Mock mode · employees <code class="font-semibold text-ink-2">{MOCK_EMPLOYEE_PASSWORD}</code> · admins{" "}
                     <code class="font-semibold text-ink-2">{MOCK_ADMIN_PASSWORD}</code>
                   </p>
@@ -294,12 +294,12 @@ export default function Login() {
               </Show>
 
               <Show when={mode() === "forgot"}>
-                <button class="inline-flex items-center gap-1.5 mb-6 text-[13px] font-semibold text-muted hover:text-ink" onClick={() => setMode("signin")}>
+                <button class="inline-flex items-center gap-1.5 mb-6 text-[14px] font-semibold text-muted hover:text-ink" onClick={() => setMode("signin")}>
                   <ArrowLeft size={15} /> Back to sign in
                 </button>
                 <p class="kicker mb-3">Account recovery</p>
                 <h2 class="text-[28px] leading-tight font-semibold tracking-[-0.025em]">Reset your password</h2>
-                <p class="mt-2 text-[14px] text-muted">Enter your work email and we'll send you a secure link to choose a new password.</p>
+                <p class="mt-2 text-[15px] text-muted">Enter your work email and we'll send you a secure link to choose a new password.</p>
                 <form class="mt-7 grid gap-5" onSubmit={forgot} novalidate>
                   <div>
                     <label class="label" for="femail">Work email</label>
@@ -330,7 +330,7 @@ export default function Login() {
                     <Mail size={26} />
                   </span>
                   <h2 class="text-[24px] font-semibold tracking-[-0.02em]">Check your inbox</h2>
-                  <p class="text-[14px] text-muted max-w-[320px]">
+                  <p class="text-[15px] text-muted max-w-[320px]">
                     If <strong class="text-ink">{email()}</strong> has an account, a reset link is on its way. It expires in 30 minutes.
                   </p>
                   <button class="btn btn-secondary mt-3" onClick={() => setMode("signin")}>
@@ -342,7 +342,7 @@ export default function Login() {
           </div>
         </div>
 
-        <p class="pb-6 text-center text-[11.5px] text-muted">
+        <p class="pb-6 text-center text-[12.5px] text-muted">
           © {new Date().getFullYear()} Aajneeti · Trouble signing in? Contact your training admin.
         </p>
       </section>

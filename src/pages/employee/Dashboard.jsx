@@ -83,12 +83,12 @@ export default function Dashboard() {
                         </span>
                         <span class="flex-1 min-w-0">
                           <span class="flex items-center gap-2">
-                            <span class="min-w-0 font-semibold text-[14px] truncate">{m.title}</span>
+                            <span class="min-w-0 font-semibold text-[15px] truncate">{m.title}</span>
                             <Show when={m.required}>
                               <span class="badge badge-neutral hidden sm:inline-flex">Required</span>
                             </Show>
                           </span>
-                          <span class="flex flex-wrap items-center gap-x-2 mt-1 text-xs text-muted whitespace-nowrap">
+                          <span class="flex flex-wrap items-center gap-x-2 mt-1 text-[13px] text-muted whitespace-nowrap">
                             <span>{MATERIAL_TYPES[m.type].short}</span>·<span>{m.estMinutes} min</span>
                             <Show when={m.scope === "company"}>
                               ·<span>Company-wide</span>
@@ -100,7 +100,7 @@ export default function Dashboard() {
                             when={!m.progress.completed}
                             fallback={<span class="badge badge-success float-right"><Check size={12} /> Done</span>}
                           >
-                            <span class="flex justify-between text-[11px] text-muted mb-1.5">
+                            <span class="flex justify-between text-[12px] text-muted mb-1.5">
                               <span>{m.progress.opened ? "In progress" : "Not started"}</span>
                               <span class="tabular">{m.progress.percent}%</span>
                             </span>
@@ -143,11 +143,11 @@ export default function Dashboard() {
                       <li>
                         <Link href={`/scoreboard/${a.id}`} class="flex items-center gap-4 py-3.5 group">
                           <ProgressRing value={a.percentage} size={48} stroke={5} tone={a.passed ? "lime" : "danger"}>
-                            <span class="text-[11px] font-semibold tabular">{Math.round(a.percentage)}</span>
+                            <span class="text-[12px] font-semibold tabular">{Math.round(a.percentage)}</span>
                           </ProgressRing>
                           <span class="flex-1 min-w-0">
-                            <span class="block font-semibold text-[14px] truncate">{a.departmentName} assessment</span>
-                            <span class="block text-xs text-muted">
+                            <span class="block font-semibold text-[15px] truncate">{a.departmentName} assessment</span>
+                            <span class="block text-[13px] text-muted">
                               {fmtDate(a.submittedAt)} · {a.marks}/{a.totalMarks} marks
                             </span>
                           </span>
@@ -184,12 +184,12 @@ export default function Dashboard() {
                     <DeptIcon id={mod().department.id} size={22} class="text-lime-300" />
                   </span>
                   <div class="min-w-0">
-                    <p class="text-[11px] uppercase tracking-[0.16em] text-white/55 font-semibold">Your department</p>
+                    <p class="text-[12px] uppercase tracking-[0.16em] text-white/55 font-semibold">Your department</p>
                     <p class="text-[16px] font-semibold truncate">{mod().department.name}</p>
                   </div>
                 </div>
               </div>
-              <dl class="grid gap-3 p-5 text-[13px]">
+              <dl class="grid gap-3 p-5 text-[14px]">
                 <Row icon={<UserRound size={15} />} label="Department head" value={mod().department.head} />
                 <Row icon={<MapPin size={15} />} label="Location" value={mod().department.location} />
                 <Row icon={<ListChecks size={15} />} label="Assessment" value={`${mod().assessment.questionCount} questions`} />
@@ -206,12 +206,12 @@ export default function Dashboard() {
                 {(a) => (
                   <article class="relative p-4 rounded-2xl bg-sunken/60 border border-line/70">
                     <span class={cx("absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full", a.tone === "lime" ? "bg-lime-400" : "bg-plum-500")} />
-                    <p class="flex items-center gap-2 text-[13.5px] font-semibold">
+                    <p class="flex items-center gap-2 text-[14.5px] font-semibold">
                       <Megaphone size={14} class="text-plum-500 dark:text-lime-300 shrink-0" />
                       {a.title}
                     </p>
-                    <p class="mt-1.5 text-[12.5px] text-muted leading-relaxed">{a.body}</p>
-                    <p class="mt-2 text-[11px] text-muted/80">
+                    <p class="mt-1.5 text-[13.5px] text-muted leading-relaxed">{a.body}</p>
+                    <p class="mt-2 text-[12px] text-muted/80">
                       {a.author} · {fmtRelative(a.createdAt)}
                     </p>
                   </article>
@@ -244,7 +244,7 @@ function MiniStat(props) {
         {props.icon}
       </IconTile>
       <p class="mt-3 text-[22px] leading-none font-semibold tracking-[-0.02em] tabular">{props.value}</p>
-      <p class="mt-1.5 text-[11.5px] font-medium text-muted">{props.label}</p>
+      <p class="mt-1.5 text-[12.5px] font-medium text-muted">{props.label}</p>
     </div>
   );
 }
@@ -279,37 +279,35 @@ function Hero(props) {
     })[mod().stage];
 
   return (
-    <section class="relative overflow-hidden rounded-[28px] hero-mid grain text-white shadow-float">
-      <div class="absolute inset-0 grid-lines pointer-events-none" />
-      <div class="absolute -top-24 right-[18%] w-80 h-80 rounded-full bg-lime-400/15 blur-[80px] pointer-events-none" />
+    <section class="relative overflow-hidden rounded-[28px] border border-line bg-gradient-to-br from-white via-plum-50 to-lime-50 dark:from-surface dark:via-plum-900/30 dark:to-surface">
       <div class="relative z-[1] grid lg:grid-cols-[minmax(0,1fr)_auto] gap-8 items-center p-6 sm:p-8 lg:px-10 lg:py-8">
         <div class="min-w-0 stagger">
-          <p class="eyebrow-lime">
+          <p class="kicker">
             <Sparkles size={13} /> {greeting()} · {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
           </p>
           <h1 class="mt-3 text-[32px] sm:text-[42px] leading-[1.05] font-semibold tracking-[-0.035em]">
-            Welcome back, <span class="text-lime-gradient">{props.firstName}.</span>
+            Welcome back, <span class="text-plum-700 dark:text-lime-300">{props.firstName}.</span>
           </h1>
           <div class="mt-4 flex flex-wrap gap-2">
             <Show when={props.me.department}>
-              <span class="badge glass text-white/90 px-3 py-1.5 text-[12px]">
-                <DeptIcon id={props.me.department.id} size={13} class="text-lime-300" /> {props.me.department.name}
+              <span class="badge badge-outline px-3 py-1.5 text-[13px]">
+                <DeptIcon id={props.me.department.id} size={13} class="text-plum-600 dark:text-lime-300" /> {props.me.department.name}
               </span>
             </Show>
-            <span class="badge glass text-white/90 px-3 py-1.5 text-[12px]">
-              <UserRound size={13} class="text-lime-300" /> {props.me.designation?.title ?? "No designation"}
+            <span class="badge badge-outline px-3 py-1.5 text-[13px]">
+              <UserRound size={13} class="text-plum-600 dark:text-lime-300" /> {props.me.designation?.title ?? "No designation"}
             </span>
-            <span class="badge glass text-white/60 px-3 py-1.5 text-[12px]" title="Set by your organisation">
+            <span class="badge badge-outline !text-muted px-3 py-1.5 text-[13px]" title="Set by your organisation">
               <Lock size={12} /> Assigned by HR
             </span>
           </div>
-          <p class="mt-4 max-w-[560px] text-[15px] leading-relaxed text-white/75">{message()}</p>
+          <p class="mt-4 max-w-[560px] text-[16px] leading-relaxed text-ink-2">{message()}</p>
           <div class="mt-5 flex flex-wrap items-center gap-3">
-            <button class="btn btn-lime btn-lg" onClick={() => navigate(cta().href.split("#")[0])}>
+            <button class="btn btn-primary btn-lg !shadow-none" onClick={() => navigate(cta().href.split("#")[0])}>
               {cta().label} <ArrowRight size={17} />
             </button>
             <Show when={mod().department && mod().stage !== "done"}>
-              <span class={cx("inline-flex items-center gap-2 text-[13px]", due() <= 3 ? "text-lime-300" : "text-white/65")}>
+              <span class={cx("inline-flex items-center gap-2 text-[14px]", due() <= 3 ? "text-crimson-600 dark:text-crimson-300" : "text-muted")}>
                 <CalendarClock size={16} />
                 {due() >= 0 ? `Due ${fmtDate(mod().dueAt)} · ${plural(due(), "day")} left` : `Overdue since ${fmtDate(mod().dueAt)}`}
               </span>
@@ -318,23 +316,23 @@ function Hero(props) {
         </div>
 
         <Show when={mod().department}>
-          <div class="hidden sm:flex items-center gap-6 lg:flex-col lg:gap-4 p-5 rounded-3xl glass">
-            <ProgressRing value={mod().stage === "done" ? 100 : props.readPct} size={140} stroke={11} trackClass="stroke-white/10">
+          <div class="hidden sm:flex items-center gap-6 lg:flex-col lg:gap-4 p-5 rounded-3xl bg-surface/80 border border-line">
+            <ProgressRing value={mod().stage === "done" ? 100 : props.readPct} size={140} stroke={11} trackClass="stroke-sunken">
               <span class="text-[32px] leading-none font-semibold tracking-[-0.03em]">
                 <CountUp value={mod().stage === "done" ? 100 : props.readPct} suffix="%" />
               </span>
-              <span class="mt-1.5 text-[11px] uppercase tracking-[0.14em] text-white/55">{mod().stage === "done" ? "Certified" : "Module read"}</span>
+              <span class="mt-1.5 text-[12px] uppercase tracking-[0.14em] text-muted">{mod().stage === "done" ? "Certified" : "Module read"}</span>
             </ProgressRing>
             <div class="grid grid-cols-2 gap-2 lg:w-full text-center">
-              <div class="px-3 py-2.5 rounded-2xl bg-white/[0.06]">
+              <div class="px-3 py-2.5 rounded-2xl bg-sunken/70">
                 <p class="text-[18px] font-semibold tabular">
                   {mod().completedRequired}/{mod().requiredCount}
                 </p>
-                <p class="text-[10.5px] uppercase tracking-[0.1em] text-white/50">Required</p>
+                <p class="text-[11.5px] uppercase tracking-[0.1em] text-muted">Required</p>
               </div>
-              <div class="px-3 py-2.5 rounded-2xl bg-white/[0.06]">
+              <div class="px-3 py-2.5 rounded-2xl bg-sunken/70">
                 <p class="text-[18px] font-semibold tabular">{mod().best ? `${Math.round(mod().best.percentage)}%` : "—"}</p>
-                <p class="text-[10.5px] uppercase tracking-[0.1em] text-white/50">Best</p>
+                <p class="text-[11.5px] uppercase tracking-[0.1em] text-muted">Best</p>
               </div>
             </div>
           </div>
@@ -383,7 +381,7 @@ function Journey(props) {
               >
                 <span
                   class={cx(
-                    "grid place-items-center shrink-0 w-9 h-9 rounded-full text-[13px] font-semibold",
+                    "grid place-items-center shrink-0 w-9 h-9 rounded-full text-[14px] font-semibold",
                     s.state === "done" && "bg-lime-400 text-plum-950",
                     s.state === "current" && "bg-plum-700 text-white dark:bg-lime-400 dark:text-plum-950 shadow-[0_0_0_4px_rgba(84,44,95,0.12)]",
                     s.state === "locked" && "bg-sunken text-muted",
@@ -399,8 +397,8 @@ function Journey(props) {
                   </Switch>
                 </span>
                 <span class="min-w-0">
-                  <span class={cx("block text-[13px] font-semibold truncate", s.state === "locked" && "text-muted")}>{s.label}</span>
-                  <span class="block text-[11.5px] text-muted truncate">{s.sub}</span>
+                  <span class={cx("block text-[14px] font-semibold truncate", s.state === "locked" && "text-muted")}>{s.label}</span>
+                  <span class="block text-[12.5px] text-muted truncate">{s.sub}</span>
                 </span>
               </Link>
             </li>
@@ -408,7 +406,7 @@ function Journey(props) {
         </For>
       </ol>
       <Show when={!mod().eligible && mod().stage === "assess"}>
-        <p class="flex items-center gap-2 mx-2 mb-1.5 mt-1 px-3 py-2 rounded-xl text-[12.5px] font-medium badge-warn">
+        <p class="flex items-center gap-2 mx-2 mb-1.5 mt-1 px-3 py-2 rounded-xl text-[13.5px] font-medium badge-warn">
           <TriangleAlert size={14} /> No attempts left — ask your training admin to reset your attempts.
         </p>
       </Show>

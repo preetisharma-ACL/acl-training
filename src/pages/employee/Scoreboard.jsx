@@ -124,7 +124,7 @@ function ResultHero(props) {
 
       <div class="relative grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] gap-8 lg:gap-14 items-center p-6 sm:p-10">
         <div class="min-w-0 stagger order-2">
-          <span class={cx("badge px-3 py-1.5 text-[12px]", r().passed ? "bg-lime-400 text-plum-950" : "badge-danger")}>
+          <span class={cx("badge px-3 py-1.5 text-[13px]", r().passed ? "bg-lime-400 text-plum-950" : "badge-danger")}>
             <Show when={r().passed} fallback={<CircleX size={14} />}>
               <Trophy size={14} />
             </Show>
@@ -138,11 +138,11 @@ function ResultHero(props) {
             </span>
             {r().passed ? "!" : "."}
           </h1>
-          <p class="mt-3 text-[14.5px] text-muted">
+          <p class="mt-3 text-[15.5px] text-muted">
             {r().departmentName} assessment · {fmtDateTime(r().submittedAt)}
             <Show when={r().autoSubmitted}> · submitted automatically when time ran out</Show>
           </p>
-          <p class="mt-4 text-[15px] font-medium text-ink-2">
+          <p class="mt-4 text-[16px] font-medium text-ink-2">
             Pass mark {r().passPercent}% — {r().passed ? "you cleared it." : `you needed ${gap()}% more.`}
           </p>
 
@@ -158,20 +158,15 @@ function ResultHero(props) {
           </div>
         </div>
 
-        {/* Score medallion: plum disc inside a dashed orbit with lime and plum beads */}
-        <div class="relative justify-self-center md:justify-self-start order-1 w-[260px] h-[260px] grid place-items-center">
-          <div class="absolute inset-0 rounded-full border-2 border-dashed border-plum-300/70 dark:border-plum-500/50 animate-[spin_40s_linear_infinite]" />
-          <span class="absolute top-3 right-8 w-4 h-4 rounded-full bg-lime-400 ring-4 ring-surface" />
-          <span class="absolute bottom-6 left-5 w-3 h-3 rounded-full bg-plum-500 ring-4 ring-surface" />
-          <div class="relative grid place-items-center w-[218px] h-[218px] rounded-full bg-gradient-to-br from-plum-600 to-plum-900">
-            <ProgressRing value={r().percentage} size={190} stroke={13} tone={r().passed ? "lime" : "light"} trackClass="stroke-white/15">
-              <span class="text-[46px] leading-none font-semibold tracking-[-0.04em] text-white">
-                <CountUp value={r().percentage} decimals={r().percentage % 1 ? 1 : 0} />
-                <span class="text-[22px] text-white/60">%</span>
-              </span>
-              <span class="mt-2 text-[11px] uppercase tracking-[0.16em] text-lime-300">Your score</span>
-            </ProgressRing>
-          </div>
+        {/* Score: a light disc with the progress ring */}
+        <div class="relative justify-self-center md:justify-self-start order-1 grid place-items-center w-[218px] h-[218px] rounded-full bg-surface border border-line">
+          <ProgressRing value={r().percentage} size={190} stroke={13} tone={r().passed ? "success" : "plum"} trackClass="stroke-sunken">
+            <span class="text-[46px] leading-none font-semibold tracking-[-0.04em] text-ink">
+              <CountUp value={r().percentage} decimals={r().percentage % 1 ? 1 : 0} />
+              <span class="text-[22px] text-muted">%</span>
+            </span>
+            <span class="mt-2 text-[12px] uppercase tracking-[0.16em] text-plum-600 dark:text-lime-300">Your score</span>
+          </ProgressRing>
         </div>
       </div>
     </section>
@@ -204,7 +199,7 @@ function StatsGrid(props) {
     <section class="card p-5 sm:p-7">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h2 class="text-[16px] font-semibold tracking-[-0.01em]">Result breakdown</h2>
-        <p class="text-[12.5px] text-muted tabular">{r().totalQuestions} questions</p>
+        <p class="text-[13.5px] text-muted tabular">{r().totalQuestions} questions</p>
       </div>
 
       {/* Segmented bar: 2px surface gaps between segments, rounded ends. */}
@@ -216,7 +211,7 @@ function StatsGrid(props) {
       <div class="flex flex-wrap gap-x-6 gap-y-2 mt-3">
         <For each={parts()}>
           {(x) => (
-            <span class="inline-flex items-center gap-2 text-[13px] text-ink-2">
+            <span class="inline-flex items-center gap-2 text-[14px] text-ink-2">
               <span class={cx("w-2.5 h-2.5 rounded-full", x.dot)} />
               {x.label} <strong class="text-ink tabular">{x.value}</strong>
             </span>
@@ -237,11 +232,11 @@ function StatsGrid(props) {
                 <Dynamic component={f.icon} size={17} />
               </span>
               <div>
-                <dt class="text-[12px] text-muted">{f.label}</dt>
+                <dt class="text-[13px] text-muted">{f.label}</dt>
                 <dd class="text-[18px] font-semibold tabular leading-tight">
                   {f.value}
                   <Show when={f.sub}>
-                    <span class="ml-1.5 text-[12px] font-normal text-muted">{f.sub}</span>
+                    <span class="ml-1.5 text-[13px] font-normal text-muted">{f.sub}</span>
                   </Show>
                 </dd>
               </div>
@@ -270,7 +265,7 @@ function Review(props) {
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="min-w-0">
           <h2 class="text-[16px] font-semibold tracking-[-0.01em]">Answer review</h2>
-          <p class="mt-0.5 text-[12.5px] text-muted">
+          <p class="mt-0.5 text-[13.5px] text-muted">
             {r().correct} correct · {r().incorrect} incorrect · {r().unanswered} skipped
           </p>
         </div>
@@ -284,7 +279,7 @@ function Review(props) {
       <Show
         when={r().review}
         fallback={
-          <div class="flex items-start gap-3 mt-5 p-4 rounded-2xl bg-sunken/60 text-[13px] text-muted">
+          <div class="flex items-start gap-3 mt-5 p-4 rounded-2xl bg-sunken/60 text-[14px] text-muted">
             <Info size={17} class="shrink-0 mt-0.5" />
             A detailed review isn't available for this attempt — it was recorded before answer reviews were kept. Summary scores are shown above.
           </div>
@@ -304,19 +299,19 @@ function Review(props) {
           ]}
         />
         <div class="grid gap-3 mt-5">
-          <For each={items()} fallback={<p class="py-6 text-center text-[13px] text-muted">Nothing in this group.</p>}>
+          <For each={items()} fallback={<p class="py-6 text-center text-[14px] text-muted">Nothing in this group.</p>}>
             {(item) => {
               const wrong = !item.isCorrect && item.chosen !== null;
               return (
                 <article class="relative p-5 rounded-2xl border border-line bg-surface overflow-hidden">
                   <span class={cx("absolute left-0 inset-y-0 w-1", item.isCorrect ? "bg-emerald-500" : wrong ? "bg-crimson-500" : "bg-line-strong")} />
-                  <p class="flex flex-wrap items-center gap-2.5 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-muted">
+                  <p class="flex flex-wrap items-center gap-2.5 text-[12.5px] font-semibold uppercase tracking-[0.12em] text-muted">
                     Question {item.n}
                     <span class={cx("badge normal-case tracking-normal", item.isCorrect ? "badge-success" : wrong ? "badge-danger" : "badge-neutral")}>
                       {item.isCorrect ? "Correct" : item.chosen === null ? "Not attempted" : "Incorrect"}
                     </span>
                   </p>
-                  <h3 class="mt-2 text-[15px] font-semibold leading-snug">{item.text}</h3>
+                  <h3 class="mt-2 text-[16px] font-semibold leading-snug">{item.text}</h3>
                   <ul class="grid gap-1.5 mt-3">
                     <Index each={item.options}>
                       {(opt, oi) => {
@@ -325,7 +320,7 @@ function Review(props) {
                         return (
                           <li
                             class={cx(
-                              "flex flex-wrap items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px]",
+                              "flex flex-wrap items-center gap-2.5 px-3 py-2 rounded-xl text-[14.5px]",
                               isCorrect
                                 ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200"
                                 : isWrong
@@ -335,7 +330,7 @@ function Review(props) {
                           >
                             <span
                               class={cx(
-                                "grid place-items-center shrink-0 w-6 h-6 rounded-lg text-[11px] font-bold border",
+                                "grid place-items-center shrink-0 w-6 h-6 rounded-lg text-[12px] font-bold border",
                                 isCorrect ? "bg-emerald-600 border-transparent text-white" : isWrong ? "bg-crimson-600 border-transparent text-white" : "bg-sunken border-line",
                               )}
                             >
@@ -343,10 +338,10 @@ function Review(props) {
                             </span>
                             <span class="flex-1">{opt()}</span>
                             <Show when={isCorrect}>
-                              <span class="text-[11.5px] font-semibold">Correct answer</span>
+                              <span class="text-[12.5px] font-semibold">Correct answer</span>
                             </Show>
                             <Show when={isWrong}>
-                              <span class="text-[11.5px] font-semibold">Your answer</span>
+                              <span class="text-[12.5px] font-semibold">Your answer</span>
                             </Show>
                           </li>
                         );
@@ -391,8 +386,8 @@ function History(props) {
                     </Show>
                   </span>
                   <span class="flex-1 min-w-0">
-                    <span class="block text-[13.5px] font-semibold tabular">{a.percentage}%</span>
-                    <span class="block text-[11.5px] text-muted truncate">{fmtDate(a.submittedAt)} · {a.marks}/{a.totalMarks}</span>
+                    <span class="block text-[14.5px] font-semibold tabular">{a.percentage}%</span>
+                    <span class="block text-[12.5px] text-muted truncate">{fmtDate(a.submittedAt)} · {a.marks}/{a.totalMarks}</span>
                   </span>
                   <Show when={on()}>
                     <span class="badge badge-plum">Viewing</span>

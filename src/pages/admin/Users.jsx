@@ -141,7 +141,7 @@ export default function Users() {
               </span>
               <div>
                 <p class="text-[20px] leading-none font-semibold tabular">{users() ? value : "—"}</p>
-                <p class="mt-1 text-[12px] text-muted">{label}</p>
+                <p class="mt-1 text-[13px] text-muted">{label}</p>
               </div>
             </div>
           )}
@@ -206,7 +206,7 @@ export default function Users() {
                                   <span class="badge badge-lime">Admin</span>
                                 </Show>
                               </span>
-                              <span class="block text-[12px] text-muted whitespace-nowrap">
+                              <span class="block text-[13px] text-muted whitespace-nowrap">
                                 {u.email} · {u.code}
                               </span>
                             </span>
@@ -215,7 +215,7 @@ export default function Users() {
                         <td class="whitespace-nowrap">
                           <Show when={u.role === "employee"} fallback={<span class="text-ink-2">{u.adminTitle}</span>}>
                             <span class="block font-medium text-ink-2">{u.designation ?? "—"}</span>
-                            <span class="block text-[12px] text-muted">{u.departmentName ?? "Unmapped designation"}</span>
+                            <span class="block text-[13px] text-muted">{u.departmentName ?? "Unmapped designation"}</span>
                           </Show>
                         </td>
                         <td>
@@ -289,7 +289,7 @@ export default function Users() {
                 </tbody>
               </table>
             </div>
-            <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-line text-[12.5px] text-muted">
+            <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-line text-[13.5px] text-muted">
               <span>
                 Showing <strong class="text-ink">{page() * PAGE + 1}</strong>–<strong class="text-ink">{Math.min(filtered().length, (page() + 1) * PAGE)}</strong> of{" "}
                 <strong class="text-ink">{filtered().length}</strong>
@@ -421,7 +421,7 @@ function UserDrawer(props) {
     >
       <div class="grid gap-5">
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[13px] font-medium badge-danger !flex">{error()}</p>
+          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
         </Show>
         <div>
           <p class="label">Role</p>
@@ -506,7 +506,7 @@ function UserDrawer(props) {
               </For>
             </select>
           </Field>
-          <div class="flex items-start gap-3 p-3.5 rounded-2xl bg-plum-50/70 dark:bg-plum-400/10 border border-plum-200/60 dark:border-plum-400/20 text-[13px]">
+          <div class="flex items-start gap-3 p-3.5 rounded-2xl bg-plum-50/70 dark:bg-plum-400/10 border border-plum-200/60 dark:border-plum-400/20 text-[14px]">
             <Info size={17} class="shrink-0 mt-px text-plum-600 dark:text-plum-200" />
             <p class="text-ink-2">
               <Show when={derived()} fallback="The department is set automatically from the designation.">
@@ -520,8 +520,8 @@ function UserDrawer(props) {
 
         <div class="flex items-center justify-between gap-4 p-4 rounded-2xl border border-line">
           <div>
-            <p class="text-[13.5px] font-semibold">Account active</p>
-            <p class="text-[12px] text-muted">Inactive users can't sign in.</p>
+            <p class="text-[14.5px] font-semibold">Account active</p>
+            <p class="text-[13px] text-muted">Inactive users can't sign in.</p>
           </div>
           <Toggle checked={f().status === "active"} onChange={(v) => set("status")(v ? "active" : "inactive")} label="Account active" />
         </div>

@@ -77,6 +77,22 @@ and a manual editor with live preview), assessments with a question bank, and
 results with CSV export. Admin changes show up in the employee experience
 straight away.
 
+## Levels: team heads, seniors, juniors
+
+Every designation has a level: **Team head**, **Senior** or **Junior**. Inside
+a department:
+
+- **Materials** go to the department (or company-wide) **and** to chosen
+  levels. In "Add material" an admin switches Team heads / Seniors / Juniors on
+  or off; all three are on by default.
+- **Assessments**: each department has **three**, one per level, each with its
+  own question bank and settings (time, pass mark, attempts, questions per
+  attempt). An employee automatically gets the one for their level.
+- Each attempt draws a fresh set of questions from the bank (unseen first).
+
+The backend should resolve the level from the designation, exactly as it
+resolves the department.
+
 ## Code map
 
 | Path | What |
