@@ -1,0 +1,586 @@
+// Document viewer for all three material types:
+//   pdf        → the browser's PDF viewer in a framed preview
+//   manual     → a paper-style reader with chapters and a contents rail
+//   structured → section cards with key points and tips
+// Every type can be downloaded as a PDF. Reading progress is reported to the
+// backend; manuals and guides complete themselves when read to the end, PDFs
+// are marked complete by the reader.
+//
+// Also used by admins (/admin/materials/:id) as a read-only preview.
+
+import { createResource, createSignal, createEffect, onCleanup, onMount, For, Show, Switch, Match } from "solid-js";
+import { createStore } from "solid-js/store";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Download,
+  ExternalLink,
+  CircleCheck,
+  Clock,
+  Minus,
+  Plus,
+  Lightbulb,
+  Info,
+  TriangleAlert,
+  FileText,
+  LockOpen,
+  Check,
+  Printer,
+} from "lucide-solid";
+import { Link, navigate } from "../../lib/router";
+import { cx, fmtDate, fmtBytes } from "../../lib/format";
+import { user, isAdmin } from "../../store/auth";
+import { toast } from "../../store/toast";
+import { getMaterial, getMaterialFile, updateProgress, getMyModule } from "../../services/training";
+import { getMaterialForAdmin } from "../../services/admin";
+import { Skeleton, ProgressBar, EmptyState } from "../../components/ui";
+import { TypeIcon, MATERIAL_TYPES } from "../../components/icons";
+
+const FONT_SIZES = [14, 15, 16, 17, 18, 20];
+
+export default function Viewer(props) {
+  const me = user();
+  const admin = isAdmin();
+  const backHref = admin ? "/admin/materials" : "/training";
+
+  const [doc, { mutate }] = createResource(
+    () => props.params.id,
+    async (id) => {
+      if (!admin) return getMaterial(me, id);
+      const m = await getMaterialForAdmin(id);
+      if (!m) throw new Error("Material not found.");
+      return { ...m, progress: { opened: true, completed: false, percent: 0 } };
+    },
+  );
+  const [mod, { refetch: refetchModule }] = createResource(() => (admin ? null : getMyModule(me)));
+  const [file] = createResource(
+    () => doc(),
+    (d) => getMaterialFile(d),
+  );
+  const [fontIdx, setFontIdx] = createSignal(2);
+  const [readPct, setReadPct] = createSignal(0);
+
+  // Reading progress from scroll position (manual + structured).
+  onMount(() => {
+    let last = 0;
+    const onScroll = () => {
+      const el = document.getElementById("doc-body");
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const total = r.height - window.innerHeight * 0.6;
+      const pct = total <= 0 ? 100 : Math.min(100, Math.max(0, ((-r.top + window.innerHeight * 0.25) / total) * 100));
+      setReadPct(pct);
+      if (!admin && doc() && doc().type !== "pdf" && pct - last >= 10) {
+        last = pct;
+        updateProgress(me, doc().id, { percent: pct });
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onCleanup(() => window.removeEventListener("scroll", onScroll));
+  });
+
+  // Mark opened.
+  createEffect(() => {
+    if (!admin && doc() && !doc().progress.opened) updateProgress(me, doc().id, {});
+  });
+
+  const complete = async (auto = false) => {
+    if (admin || !doc() || doc().progress.completed) return;
+    await updateProgress(me, doc().id, { completed: true });
+    mutate({ ...doc(), progress: { ...doc().progress, completed: true, percent: 100 } });
+    refetchModule();
+    toast(auto ? "You've reached the end — marked as complete." : "Nice work — this material is complete.", { title: doc().title });
+  };
+
+  const download = () => {
+    const f = file();
+    if (!f) return;
+    const a = document.createElement("a");
+    a.href = f.url;
+    a.download = f.fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast(`${f.fileName} is downloading.`, { title: "Download started" });
+  };
+
+  const siblings = () => {
+    const list = mod()?.materials ?? [];
+    const i = list.findIndex((m) => m.id === props.params.id);
+    return { prev: list[i - 1], next: list[i + 1], index: i, total: list.length };
+  };
+
+  return (
+    <div class="grid gap-5">
+      {/* Reading progress hairline */}
+      <Show when={doc() && doc().type !== "pdf"}>
+        <div class="fixed top-0 left-0 right-0 h-[3px] z-[60] pointer-events-none">
+          <div class="h-full bg-gradient-to-r from-plum-500 via-plum-400 to-lime-400 transition-[width] duration-150" style={{ width: `${readPct()}%` }} />
+        </div>
+      </Show>
+
+      <Show
+        when={!doc.error}
+        fallback={
+          <div class="card">
+            <EmptyState
+              icon={<FileText size={24} />}
+              title="Material unavailable"
+              action={
+                <Link href={backHref} class="btn btn-secondary">
+                  <ArrowLeft size={15} /> Back
+                </Link>
+              }
+            >
+              {doc.error?.message}
+            </EmptyState>
+          </div>
+        }
+      >
+        <Show when={doc()} fallback={<ViewerSkeleton />}>
+          {/* Toolbar */}
+          <header class="card px-4 sm:px-5 py-4 flex flex-wrap items-center gap-x-4 gap-y-3">
+            <Link href={backHref} class="btn btn-ghost btn-icon !w-10 shrink-0" aria-label="Back to module" title="Back">
+              <ArrowLeft size={18} />
+            </Link>
+            <span
+              class={cx(
+                "hidden sm:grid place-items-center shrink-0 w-11 h-11 rounded-xl",
+                doc().type === "pdf"
+                  ? "bg-crimson-50 text-crimson-600 dark:bg-crimson-500/15 dark:text-crimson-300"
+                  : doc().type === "manual"
+                    ? "bg-plum-50 text-plum-700 dark:bg-plum-400/15 dark:text-plum-200"
+                    : "bg-lime-100 text-lime-800 dark:bg-lime-400/15 dark:text-lime-300",
+              )}
+            >
+              <TypeIcon type={doc().type} size={20} />
+            </span>
+            <div class="min-w-0 flex-1 basis-[220px]">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class={cx("badge", MATERIAL_TYPES[doc().type].badge)}>{MATERIAL_TYPES[doc().type].label}</span>
+                <Show when={doc().required}>
+                  <span class="badge badge-outline">Required</span>
+                </Show>
+                <Show when={admin}>
+                  <span class="badge badge-warn">Admin preview</span>
+                </Show>
+              </div>
+              <h1 class="mt-1.5 text-[17px] sm:text-[19px] font-semibold leading-snug tracking-[-0.015em]">{doc().title}</h1>
+              <p class="mt-0.5 text-[12px] text-muted">
+                v{doc().version} · {doc().author} · Updated {fmtDate(doc().updatedAt)} · <Clock size={11} class="inline -mt-0.5" /> {doc().estMinutes} min
+                <Show when={file()?.pages}> · {file().pages} pages</Show>
+                <Show when={file()?.sizeBytes}> · {fmtBytes(file().sizeBytes)}</Show>
+              </p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <Show when={doc().type !== "pdf"}>
+                <div class="flex items-center h-9 rounded-lg border border-line bg-surface" role="group" aria-label="Text size">
+                  <button class="grid place-items-center w-9 h-full text-muted hover:text-ink disabled:opacity-40" disabled={fontIdx() === 0} onClick={() => setFontIdx(fontIdx() - 1)} aria-label="Smaller text">
+                    <Minus size={14} />
+                  </button>
+                  <span class="px-1.5 text-[12px] font-semibold text-ink-2 tabular select-none">Aa</span>
+                  <button class="grid place-items-center w-9 h-full text-muted hover:text-ink disabled:opacity-40" disabled={fontIdx() === FONT_SIZES.length - 1} onClick={() => setFontIdx(fontIdx() + 1)} aria-label="Larger text">
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </Show>
+              <Show when={doc().type === "pdf" && file()}>
+                <a href={file().url} target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+                  <ExternalLink size={14} /> <span class="hidden sm:inline">Open in new tab</span>
+                </a>
+              </Show>
+              <Show when={doc().type !== "pdf"}>
+                <button class="btn btn-secondary btn-sm hidden sm:inline-flex" onClick={() => window.print()}>
+                  <Printer size={14} /> Print
+                </button>
+              </Show>
+              <button class="btn btn-secondary btn-sm" onClick={download} disabled={!file()}>
+                <Download size={14} /> Download
+              </button>
+              <Show when={!admin}>
+                <Show
+                  when={!doc().progress.completed}
+                  fallback={
+                    <span class="badge badge-success h-9 px-3 rounded-lg text-[12.5px]">
+                      <CircleCheck size={14} /> Completed
+                    </span>
+                  }
+                >
+                  <button class="btn btn-primary btn-sm" onClick={() => complete(false)}>
+                    <Check size={14} /> Mark as complete
+                  </button>
+                </Show>
+              </Show>
+            </div>
+          </header>
+
+          <div id="doc-body">
+            <Switch>
+              <Match when={doc().type === "pdf"}>
+                <PdfFrame file={file()} title={doc().title} onDownload={download} />
+              </Match>
+              <Match when={doc().type === "manual"}>
+                <ManualReader doc={doc()} fontSize={FONT_SIZES[fontIdx()]} onEnd={() => complete(true)} />
+              </Match>
+              <Match when={doc().type === "structured"}>
+                <StructuredReader doc={doc()} fontSize={FONT_SIZES[fontIdx()]} onAllSeen={() => complete(true)} admin={admin} />
+              </Match>
+            </Switch>
+          </div>
+
+          {/* Next steps */}
+          <Show when={!admin && mod()}>
+            <footer class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3">
+              <div>
+                <Show when={siblings().prev}>
+                  <Link href={`/training/${siblings().prev.id}`} class="group card card-hover flex items-center gap-3 p-4">
+                    <ArrowLeft size={16} class="text-muted group-hover:-translate-x-0.5 transition" />
+                    <span class="min-w-0">
+                      <span class="block text-[11px] uppercase tracking-[0.12em] text-muted">Previous</span>
+                      <span class="block text-[13.5px] font-semibold truncate">{siblings().prev.title}</span>
+                    </span>
+                  </Link>
+                </Show>
+              </div>
+              <span class="hidden sm:block text-center text-xs text-muted tabular">
+                {siblings().index + 1} / {siblings().total}
+              </span>
+              <div>
+                <Show
+                  when={siblings().next}
+                  fallback={
+                    <Link href="/training" class="group card card-hover flex items-center justify-end gap-3 p-4 text-right">
+                      <span>
+                        <span class="block text-[11px] uppercase tracking-[0.12em] text-muted">Done reading?</span>
+                        <span class="block text-[13.5px] font-semibold">Back to your module</span>
+                      </span>
+                      <ArrowRight size={16} class="text-muted group-hover:translate-x-0.5 transition" />
+                    </Link>
+                  }
+                >
+                  <Link href={`/training/${siblings().next.id}`} class="group card card-hover flex items-center justify-end gap-3 p-4 text-right">
+                    <span class="min-w-0">
+                      <span class="block text-[11px] uppercase tracking-[0.12em] text-muted">Next</span>
+                      <span class="block text-[13.5px] font-semibold truncate">{siblings().next.title}</span>
+                    </span>
+                    <ArrowRight size={16} class="text-muted group-hover:translate-x-0.5 transition" />
+                  </Link>
+                </Show>
+              </div>
+            </footer>
+            <Show when={doc().progress.completed && mod().eligible && !mod().passed && !mod().lastAttempt}>
+              <UnlockHint />
+            </Show>
+          </Show>
+        </Show>
+      </Show>
+    </div>
+  );
+}
+
+function UnlockHint() {
+  return (
+    <div class="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-lime-100 text-lime-900 dark:bg-lime-400/10 dark:text-lime-200 border border-lime-300/60 dark:border-lime-400/20 animate-fade-up">
+      <LockOpen size={18} />
+      <p class="flex-1 text-[13.5px] font-medium">All required materials are complete — your assessment is unlocked.</p>
+      <button class="btn btn-primary btn-sm" onClick={() => navigate("/training")}>
+        Go to assessment <ArrowRight size={14} />
+      </button>
+    </div>
+  );
+}
+
+function ViewerSkeleton() {
+  return (
+    <>
+      <Skeleton class="h-[92px] !rounded-2xl" />
+      <div class="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-6">
+        <Skeleton class="hidden lg:block h-[320px] !rounded-2xl" />
+        <Skeleton class="h-[620px] !rounded-2xl" />
+      </div>
+    </>
+  );
+}
+
+// ── PDF ─────────────────────────────────────────────────────────────────────
+
+function PdfFrame(props) {
+  return (
+    <div class="relative rounded-[22px] p-2 sm:p-3 bg-gradient-to-b from-plum-900 to-plum-950 shadow-float">
+      <div class="flex items-center justify-between px-2 pb-2 sm:pb-3 text-[12px] text-white/60">
+        <span class="flex items-center gap-2">
+          <span class="flex gap-1.5">
+            <i class="w-2.5 h-2.5 rounded-full bg-white/20" />
+            <i class="w-2.5 h-2.5 rounded-full bg-white/20" />
+            <i class="w-2.5 h-2.5 rounded-full bg-lime-400/80" />
+          </span>
+          <span class="ml-2 truncate max-w-[50vw]">{props.file?.fileName ?? "Loading document…"}</span>
+        </span>
+        <span class="hidden sm:inline">Scroll inside the document to read</span>
+      </div>
+      <Show when={props.file} fallback={<div class="skeleton !rounded-xl h-[70vh] !bg-white/5" />}>
+        <iframe
+          src={`${props.file.url}#toolbar=1&navpanes=0&view=FitH`}
+          title={props.title}
+          class="w-full h-[calc(100vh-260px)] min-h-[560px] rounded-xl bg-white"
+        />
+      </Show>
+      {/* Phones often can't render PDFs inline. */}
+      <div class="sm:hidden flex items-center gap-3 mt-3 p-3 rounded-xl bg-white/10 text-white/80 text-[12.5px]">
+        <Info size={16} class="shrink-0 text-lime-300" />
+        <span class="flex-1">Preview not showing? Open or download the PDF instead.</span>
+        <button class="btn btn-lime btn-sm" onClick={props.onDownload}>
+          <Download size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Shared reader pieces ────────────────────────────────────────────────────
+
+// Scroll-spy for [data-section]; marks sections seen once they've been on screen.
+function useSections(ids, onSeen) {
+  const [active, setActive] = createSignal(null);
+  let observer;
+  createEffect(() => {
+    if (!ids().length) return;
+    queueMicrotask(() => {
+      observer?.disconnect();
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const en of entries) {
+            if (en.isIntersecting) {
+              setActive(en.target.dataset.section);
+              onSeen?.(en.target.dataset.section);
+            }
+          }
+        },
+        { rootMargin: "-20% 0px -55% 0px" },
+      );
+      document.querySelectorAll("[data-section]").forEach((el) => observer.observe(el));
+    });
+  });
+  onCleanup(() => observer?.disconnect());
+  return active;
+}
+
+const jump = (id) => document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+function Contents(props) {
+  return (
+    <aside class="hidden lg:block sticky top-[92px] self-start">
+      <div class="card p-4">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted mb-3">{props.title ?? "Contents"}</p>
+        <Show when={props.progress != null}>
+          <ProgressBar value={props.progress} />
+          <p class="mt-2 mb-3 text-[11.5px] text-muted">{props.progressLabel}</p>
+        </Show>
+        <ol class="grid gap-0.5">
+          <For each={props.items}>
+            {(it, i) => {
+              const on = () => props.active === it.id;
+              return (
+                <li>
+                  <button
+                    onClick={() => jump(it.id)}
+                    class={cx(
+                      "relative flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-left text-[12.5px] transition",
+                      on() ? "bg-plum-50 text-plum-800 font-semibold dark:bg-lime-400/10 dark:text-lime-200" : "text-ink-2 hover:bg-sunken",
+                    )}
+                  >
+                    <span
+                      class={cx(
+                        "grid place-items-center shrink-0 w-5 h-5 rounded-full text-[10px] font-bold",
+                        props.seen?.[it.id] ? "bg-lime-400 text-plum-950" : "bg-sunken text-muted",
+                      )}
+                    >
+                      <Show when={props.seen?.[it.id]} fallback={i() + 1}>
+                        <Check size={11} stroke-width={3} />
+                      </Show>
+                    </span>
+                    <span class="line-clamp-2">{it.title}</span>
+                  </button>
+                </li>
+              );
+            }}
+          </For>
+        </ol>
+      </div>
+    </aside>
+  );
+}
+
+// ── Manual ──────────────────────────────────────────────────────────────────
+
+function Block(props) {
+  const b = props.b;
+  return (
+    <Switch>
+      <Match when={b.type === "p"}>
+        <p>{b.text}</p>
+      </Match>
+      <Match when={b.type === "h"}>
+        <h3>{b.text}</h3>
+      </Match>
+      <Match when={b.type === "ul"}>
+        <ul>
+          <For each={b.items}>{(i) => <li>{i}</li>}</For>
+        </ul>
+      </Match>
+      <Match when={b.type === "ol"}>
+        <ol>
+          <For each={b.items}>{(i) => <li>{i}</li>}</For>
+        </ol>
+      </Match>
+      <Match when={b.type === "callout"}>
+        <div
+          class={cx(
+            "flex gap-3 my-5 p-4 rounded-2xl border",
+            b.tone === "warn"
+              ? "bg-amber-50 border-amber-200/70 dark:bg-amber-500/10 dark:border-amber-400/20"
+              : "bg-plum-50/70 border-plum-200/60 dark:bg-plum-400/10 dark:border-plum-400/20",
+          )}
+        >
+          <span class={cx("shrink-0 mt-0.5", b.tone === "warn" ? "text-amber-600 dark:text-amber-300" : "text-plum-600 dark:text-plum-200")}>
+            <Show when={b.tone === "warn"} fallback={<Info size={18} />}>
+              <TriangleAlert size={18} />
+            </Show>
+          </span>
+          <div>
+            <p class="!mb-1 font-semibold !text-ink">{b.title}</p>
+            <p class="!mb-0">{b.text}</p>
+          </div>
+        </div>
+      </Match>
+    </Switch>
+  );
+}
+
+function ManualReader(props) {
+  const chapters = () => props.doc.content.chapters;
+  const [seen, setSeen] = createStore({});
+  const active = useSections(() => chapters().map((c) => c.id), (id) => setSeen(id, true));
+  let end;
+  onMount(() => {
+    const io = new IntersectionObserver((e) => e[0].isIntersecting && props.onEnd(), { threshold: 1 });
+    if (end) io.observe(end);
+    onCleanup(() => io.disconnect());
+  });
+  const seenCount = () => chapters().filter((c) => seen[c.id]).length;
+
+  return (
+    <div class="grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)] gap-6 items-start">
+      <Contents
+        items={chapters()}
+        active={active()}
+        seen={seen}
+        progress={(seenCount() / chapters().length) * 100}
+        progressLabel={`${seenCount()} of ${chapters().length} chapters`}
+      />
+      <article class="card overflow-hidden" style={{ "font-size": `${props.fontSize}px` }}>
+        {/* Title page */}
+        <div class="relative px-6 sm:px-14 pt-12 pb-10 border-b border-line bg-gradient-to-br from-plum-50/70 via-surface to-lime-50/60 dark:from-plum-900/40 dark:via-surface dark:to-surface">
+          <p class="kicker">{MATERIAL_TYPES.manual.label} · v{props.doc.version}</p>
+          <h2 class="mt-3 text-[1.9em] leading-[1.1] font-semibold tracking-[-0.03em] max-w-[640px]">{props.doc.title}</h2>
+          <p class="mt-4 text-[1em] text-muted max-w-[620px] leading-relaxed">{props.doc.description}</p>
+        </div>
+        <div class="px-6 sm:px-14 py-10 max-w-[820px] prose-doc">
+          <For each={chapters()}>
+            {(ch, i) => (
+              <section id={`sec-${ch.id}`} data-section={ch.id} class="scroll-mt-[96px] mb-12 last:mb-4">
+                <p class="text-[0.72em] font-semibold uppercase tracking-[0.18em] text-plum-500 dark:text-lime-300">Chapter {String(i() + 1).padStart(2, "0")}</p>
+                <h2 class="mt-2 mb-5 text-[1.45em] leading-tight font-semibold tracking-[-0.02em] text-ink">{ch.title}</h2>
+                <For each={ch.blocks}>{(b) => <Block b={b} />}</For>
+              </section>
+            )}
+          </For>
+          <div ref={end} class="flex items-center gap-3 pt-6 border-t border-line text-[0.85em] text-muted">
+            <CircleCheck size={16} class="text-lime-600 dark:text-lime-300" /> End of document
+          </div>
+        </div>
+      </article>
+    </div>
+  );
+}
+
+// ── Structured guide ────────────────────────────────────────────────────────
+
+function StructuredReader(props) {
+  const sections = () => props.doc.content.sections;
+  const [seen, setSeen] = createStore({});
+  let fired = false;
+  const active = useSections(
+    () => sections().map((s) => s.id),
+    (id) => {
+      setSeen(id, true);
+      if (!fired && sections().every((s) => seen[s.id])) {
+        fired = true;
+        props.onAllSeen();
+      }
+    },
+  );
+  const seenCount = () => sections().filter((s) => seen[s.id]).length;
+
+  return (
+    <div class="grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)] gap-6 items-start">
+      <Contents
+        items={sections()}
+        active={active()}
+        seen={seen}
+        progress={(seenCount() / sections().length) * 100}
+        progressLabel={`${seenCount()} of ${sections().length} sections read`}
+      />
+      <article class="grid grid-cols-1 gap-4 min-w-0" style={{ "font-size": `${props.fontSize}px` }}>
+        <Show when={props.doc.content.intro}>
+          <div class="card p-6 sm:px-9 sm:py-7 bg-gradient-to-br from-plum-50/80 to-surface dark:from-plum-900/40 dark:to-surface">
+            <p class="kicker">Introduction</p>
+            <p class="mt-3 text-[1.05em] leading-[1.75] text-ink-2 max-w-[760px]">{props.doc.content.intro}</p>
+          </div>
+        </Show>
+        <For each={sections()}>
+          {(sec, i) => (
+            <section id={`sec-${sec.id}`} data-section={sec.id} class="card p-6 sm:px-9 sm:py-8 scroll-mt-[96px]">
+              <div class="flex items-center gap-3 mb-4">
+                <span class="grid place-items-center w-9 h-9 rounded-xl bg-plum-700 text-white dark:bg-lime-400 dark:text-plum-950 text-[13px] font-semibold tabular">
+                  {String(i() + 1).padStart(2, "0")}
+                </span>
+                <h2 class="text-[1.3em] font-semibold tracking-[-0.02em]">{sec.title}</h2>
+              </div>
+              <div class="prose-doc max-w-[780px]">
+                <For each={sec.body}>{(p) => <p>{p}</p>}</For>
+              </div>
+              <Show when={sec.points?.length}>
+                <div class="mt-2 p-5 rounded-2xl bg-sunken/60 border border-line/70 max-w-[780px]">
+                  <p class="text-[0.72em] font-semibold uppercase tracking-[0.16em] text-muted mb-3">Key points</p>
+                  <ul class="grid gap-2.5">
+                    <For each={sec.points}>
+                      {(pt) => (
+                        <li class="flex items-start gap-3 text-ink-2 leading-relaxed">
+                          <span class="grid place-items-center shrink-0 w-5 h-5 mt-[0.2em] rounded-full bg-lime-400 text-plum-950">
+                            <Check size={11} stroke-width={3} />
+                          </span>
+                          {pt}
+                        </li>
+                      )}
+                    </For>
+                  </ul>
+                </div>
+              </Show>
+              <Show when={sec.tip}>
+                <div class="flex gap-3 mt-4 p-4 rounded-2xl bg-lime-100/70 dark:bg-lime-400/10 border border-lime-300/60 dark:border-lime-400/20 max-w-[780px]">
+                  <Lightbulb size={18} class="shrink-0 mt-0.5 text-lime-700 dark:text-lime-300" />
+                  <p class="text-ink-2 leading-relaxed">
+                    <strong class="text-ink">Tip · </strong>
+                    {sec.tip}
+                  </p>
+                </div>
+              </Show>
+            </section>
+          )}
+        </For>
+      </article>
+    </div>
+  );
+}
+
