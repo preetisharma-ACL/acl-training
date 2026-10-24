@@ -113,7 +113,7 @@ export async function getMyModule(me) {
     ? [
         {
           id: "materials",
-          label: "Complete all required materials",
+          label: "Finish your required training",
           detail: `${completedRequired} of ${required.length} complete`,
           met: completedRequired === required.length,
         },
@@ -125,8 +125,8 @@ export async function getMyModule(me) {
         },
         {
           id: "questions",
-          label: "Assessment is published",
-          detail: !track ? "No assessment for your level yet" : bankSize ? `${questionCount} of ${bankSize} questions per attempt` : "No questions yet",
+          label: "Your test is ready",
+          detail: !track ? "No test for your level yet" : bankSize ? `${questionCount} of ${bankSize} questions per attempt` : "No questions yet",
           met: bankSize > 0,
         },
       ]
@@ -254,7 +254,7 @@ export async function getMaterialFile(material) {
 export async function startAttempt(me) {
   await delay(450);
   const mod = await getMyModule(me);
-  if (!mod.department) throw new Error("No assessment is assigned to your designation.");
+  if (!mod.department) throw new Error("No test is assigned to your designation.");
   if (!mod.eligible) {
     const missing = mod.conditions.find((c) => !c.met);
     throw new Error(`You can't start yet — ${missing.label.toLowerCase()}.`);

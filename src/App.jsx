@@ -19,6 +19,7 @@ import AdminShell from "./layouts/AdminShell";
 import Login from "./pages/Login";
 import Dashboard from "./pages/employee/Dashboard";
 import Training from "./pages/employee/Training";
+import Test from "./pages/employee/Test";
 import Viewer from "./pages/employee/Viewer";
 import Assessment from "./pages/employee/Assessment";
 import Scoreboard from "./pages/employee/Scoreboard";
@@ -35,6 +36,7 @@ import NotFound from "./pages/NotFound";
 const EMPLOYEE_ROUTES = [
   ["/dashboard", Dashboard],
   ["/training", Training],
+  ["/test", Test],
   ["/training/:id", Viewer],
   ["/scoreboard", Scoreboard],
   ["/scoreboard/:id", Scoreboard],
@@ -83,7 +85,7 @@ function resolve(path, u, testRunning) {
 
   // Employee. A running assessment locks the whole portal.
   if (testRunning) return path === "/assessment" ? { kind: "assessment" } : { redirect: "/assessment" };
-  if (path === "/assessment") return { redirect: "/training" };
+  if (path === "/assessment") return { redirect: "/test" };
   if (path.startsWith("/admin")) return { redirect: "/dashboard" };
   const r = find(EMPLOYEE_ROUTES, path);
   return r ? { kind: "employee", ...r } : { kind: "employee", component: NotFound, params: {} };

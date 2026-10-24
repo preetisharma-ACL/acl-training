@@ -21,8 +21,8 @@ const LETTERS = ["A", "B", "C", "D"];
 
 const PAUSE_COPY = {
   hidden: "You switched tabs or minimised the browser.",
-  blur: "The assessment window lost focus.",
-  left: "You left the assessment before finishing it.",
+  blur: "The test window lost focus.",
+  left: "You left the test before finishing it.",
 };
 
 export default function Assessment() {
@@ -130,15 +130,15 @@ export default function Assessment() {
     <div class="fixed inset-0 z-[1000] flex flex-col overflow-y-auto select-none bg-canvas" onContextMenu={(e) => e.preventDefault()}>
       {/* Top bar */}
       <header class={cx("sticky top-0 z-[2] hero-aurora-soft text-white shadow-[0_10px_30px_-10px_rgba(29,14,33,0.5)] transition", behind())}>
-        <div class="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_minmax(180px,360px)_auto] items-center gap-3 md:gap-6 max-w-[1280px] mx-auto px-4 md:px-6 py-3">
+        <div class="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_minmax(180px,360px)_auto] items-center gap-x-3 gap-y-2.5 md:gap-6 max-w-[1280px] mx-auto px-4 md:px-6 py-3 pt-[max(env(safe-area-inset-top),12px)]">
           <div class="flex items-center gap-3 min-w-0">
-            <span class="grid place-items-center shrink-0 w-10 h-10 rounded-xl glass">
+            <span class="hidden sm:grid place-items-center shrink-0 w-10 h-10 rounded-xl glass">
               <GraduationCap size={19} class="text-lime-300" />
             </span>
             <div class="grid min-w-0 leading-tight">
-              <strong class="truncate text-[15.5px] font-semibold">{s.attempt?.departmentName} assessment</strong>
+              <strong class="truncate text-[15.5px] font-semibold">{s.attempt?.departmentName} test</strong>
               <span class="text-[12.5px] text-white/60 truncate">
-                {s.attempt?.name} · Attempt {s.attempt?.attemptNumber ?? 1} of {s.attempt?.maxAttempts ?? "—"}
+                <span class="hidden sm:inline">{s.attempt?.name} · </span>Attempt {s.attempt?.attemptNumber ?? 1} of {s.attempt?.maxAttempts ?? "—"}
               </span>
             </div>
           </div>
@@ -147,7 +147,7 @@ export default function Assessment() {
               <span>
                 {answeredCount()} of {questions().length} answered
               </span>
-              <span class="inline-flex items-center gap-1 text-white/50">
+              <span class="hidden sm:inline-flex items-center gap-1 text-white/50">
                 <Lock size={11} /> Training locked
               </span>
             </span>
@@ -162,7 +162,7 @@ export default function Assessment() {
             role="timer"
             aria-label={`Time remaining ${fmtClock(s.remaining)}`}
             class={cx(
-              "relative inline-flex items-center gap-2 px-4 pt-2 pb-2.5 rounded-xl overflow-hidden font-semibold shadow-[0_6px_16px_rgba(0,0,0,0.2)]",
+              "relative inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 pt-1.5 sm:pt-2 pb-2 sm:pb-2.5 rounded-xl overflow-hidden font-semibold shadow-[0_6px_16px_rgba(0,0,0,0.2)]",
               lowTime() ? "bg-crimson-500 text-white" : "bg-lime-400 text-plum-950",
               lowTime() && !s.paused && "animate-pulse",
               s.paused && "opacity-75",
@@ -178,8 +178,32 @@ export default function Assessment() {
         <span class="absolute inset-x-0 bottom-0 h-px hairline opacity-70" />
       </header>
 
-      <div class={cx("grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-5 items-start w-full max-w-[1280px] mx-auto px-3 py-4 md:px-6 md:py-7 transition", behind())}>
-        <main class="card p-5 sm:p-9 grid gap-6">
+      <div class={cx("grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-5 items-start w-full max-w-[1280px] mx-auto px-3 pt-3 pb-[calc(96px+env(safe-area-inset-bottom))] md:px-6 md:py-7 transition", behind())}>
+        {/* Phones: question numbers as a strip */}
+        <div class="lg:hidden flex gap-2 overflow-x-auto no-scrollbar px-1 py-1 -mb-1">
+          <For each={questions()}>
+            {(item, i) => {
+              const answered = () => s.answers[item.id] !== undefined;
+              return (
+                <button
+                  onClick={() => go(i())}
+                  aria-label={`Question ${i() + 1}${answered() ? ", answered" : ""}`}
+                  class={cx(
+                    "relative shrink-0 w-10 h-10 rounded-xl border-[1.5px] text-[14px] font-semibold transition",
+                    answered() ? "bg-plum-700 border-plum-700 text-white dark:bg-lime-400 dark:border-lime-400 dark:text-plum-950" : "bg-surface border-line text-ink-2",
+                    s.current === i() && "ring-[3px] ring-lime-400/70 dark:ring-plum-400/70",
+                  )}
+                >
+                  {i() + 1}
+                  <Show when={flags()[item.id]}>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-canvas" />
+                  </Show>
+                </button>
+              );
+            }}
+          </For>
+        </div>
+        <main class="card p-4 sm:p-9 grid gap-5 sm:gap-6">
           <Show when={q()}>
             <div class="flex items-center justify-between gap-3">
               <p class="flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.14em] text-plum-600 dark:text-lime-300">
@@ -190,10 +214,10 @@ export default function Assessment() {
                 onClick={toggleFlag}
                 aria-pressed={!!flags()[q().id]}
               >
-                <Flag size={14} /> {flags()[q().id] ? "Flagged" : "Flag for review"}
+                <Flag size={14} /> {flags()[q().id] ? "Flagged" : <><span class="sm:hidden">Flag</span><span class="hidden sm:inline">Flag for review</span></>}
               </button>
             </div>
-            <h2 class="text-[21px] sm:text-[24px] leading-snug font-semibold tracking-[-0.02em]">{q().text}</h2>
+            <h2 class="text-[19px] sm:text-[24px] leading-snug font-semibold tracking-[-0.02em]">{q().text}</h2>
             <div class="grid gap-3" role="radiogroup" aria-label="Answer options">
               <For each={q().options}>
                 {(opt, i) => {
@@ -204,7 +228,7 @@ export default function Assessment() {
                       aria-checked={picked()}
                       onClick={() => choose(opt.id)}
                       class={cx(
-                        "group flex items-center gap-4 w-full px-4 sm:px-5 py-4 rounded-2xl border-[1.5px] text-left text-[16px] font-medium transition duration-200",
+                        "group flex items-center gap-3 sm:gap-4 w-full px-3.5 sm:px-5 py-3.5 sm:py-4 rounded-2xl border-[1.5px] text-left text-[15.5px] sm:text-[16px] font-medium transition duration-200 active:scale-[0.99]",
                         picked()
                           ? "border-plum-600 bg-plum-50 ring-4 ring-plum-100 dark:border-lime-400 dark:bg-lime-400/10 dark:ring-lime-400/10"
                           : "border-line bg-surface hover:border-line-strong hover:bg-sunken/40 hover:translate-x-0.5",
@@ -227,7 +251,7 @@ export default function Assessment() {
               </For>
             </div>
             <p class="hidden md:block text-[13px] text-muted">Tip: press A–D or 1–4 to answer, ← → to move between questions.</p>
-            <div class="flex justify-between gap-2.5 pt-5 border-t border-line">
+            <div class="hidden sm:flex justify-between gap-2.5 pt-5 border-t border-line">
               <button class="btn btn-secondary" disabled={s.current === 0} onClick={() => go(s.current - 1)}>
                 <ChevronLeft size={16} /> Previous
               </button>
@@ -247,7 +271,7 @@ export default function Assessment() {
           </Show>
         </main>
 
-        <aside class="card p-5 grid gap-4 lg:sticky lg:top-[96px]">
+        <aside class="hidden lg:grid card p-5 gap-4 lg:sticky lg:top-[96px]">
           <p class="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">Question navigator</p>
           <div class="grid grid-cols-5 gap-2">
             <For each={questions()}>
@@ -294,13 +318,32 @@ export default function Assessment() {
         </aside>
       </div>
 
+      {/* Phones: Previous / Next (or Submit) within thumb reach */}
+      <div class={cx("sm:hidden fixed bottom-0 inset-x-0 z-[3] bg-surface/95 backdrop-blur-xl border-t border-line px-3 pt-3 pb-[max(env(safe-area-inset-bottom),12px)] grid grid-cols-[auto_1fr] gap-2.5", behind())}>
+        <button class="btn btn-secondary h-12 px-4" disabled={s.current === 0} onClick={() => go(s.current - 1)} aria-label="Previous question">
+          <ChevronLeft size={18} />
+        </button>
+        <Show
+          when={!isLast()}
+          fallback={
+            <button class="btn btn-primary h-12" onClick={() => setConfirmSubmit(true)}>
+              <Send size={16} /> Submit test
+            </button>
+          }
+        >
+          <button class="btn btn-primary h-12" onClick={() => go(s.current + 1)}>
+            Next question <ChevronRight size={18} />
+          </button>
+        </Show>
+      </div>
+
       <Show when={confirmSubmit()}>
         <Modal onClose={() => !submitting() && setConfirmSubmit(false)} labelledBy="submit-title" size="sm">
           <div class="grid justify-items-center gap-3.5 text-center">
             <span class="grid place-items-center w-14 h-14 rounded-2xl bg-plum-50 text-plum-700 dark:bg-lime-400/15 dark:text-lime-300">
               <Send size={22} />
             </span>
-            <h2 id="submit-title" class="text-xl font-semibold">Submit your assessment?</h2>
+            <h2 id="submit-title" class="text-xl font-semibold">Submit your test?</h2>
             <p class="text-[14.5px] text-muted">
               You've answered <strong class="text-ink">{answeredCount()}</strong> of {questions().length} questions with{" "}
               <strong class="text-ink tabular">{fmtClock(s.remaining)}</strong> left.
@@ -335,7 +378,7 @@ export default function Assessment() {
             <span class="grid place-items-center w-16 h-16 rounded-full bg-crimson-50 text-crimson-600 dark:bg-crimson-500/15 dark:text-crimson-300 animate-ring">
               <TriangleAlert size={26} />
             </span>
-            <h2 id="pause-title" class="text-xl font-semibold">Assessment paused</h2>
+            <h2 id="pause-title" class="text-xl font-semibold">Test paused</h2>
             <p class="font-semibold text-crimson-600 dark:text-crimson-300">{PAUSE_COPY[s.pauseReason] || PAUSE_COPY.left}</p>
             <p class="text-[14.5px] text-muted">
               The timer has stopped and your answers are saved. Please stay on this window until you finish — every time you leave is recorded on your
@@ -358,7 +401,7 @@ export default function Assessment() {
               </For>
             </div>
             <button class="btn btn-primary w-full" onClick={() => setS({ paused: false, pauseReason: null })} autofocus>
-              <Play size={15} /> Resume assessment
+              <Play size={15} /> Resume test
             </button>
           </div>
         </Blocking>

@@ -39,8 +39,8 @@ export default function Dashboard() {
   const firstName = me.name.split(" ")[0];
 
   return (
-    <div class="grid gap-6 sm:gap-7">
-      <Show when={mod()} fallback={<Skeleton class="h-[300px] !rounded-[28px]" />}>
+    <div class="grid gap-4 sm:gap-7">
+      <Show when={mod()} fallback={<Skeleton class="h-[260px] !rounded-[24px]" />}>
         <Hero me={me} mod={mod()} readPct={readPct()} firstName={firstName} />
       </Show>
 
@@ -48,26 +48,26 @@ export default function Dashboard() {
         <Journey mod={mod()} />
       </Show>
 
-      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
-        <div class="grid grid-cols-1 gap-6 min-w-0">
-          <section class="card p-5 sm:p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-4 sm:gap-6 items-start">
+        <div class="grid grid-cols-1 gap-4 sm:gap-6 min-w-0">
+          <section class="card p-4 sm:p-6">
             <SectionTitle
-              title="Your training module"
+              title="Your training"
               subtitle={mod() ? `${plural(mod().materials.length, "material")} · ${mod().readingMinutesLeft} min of reading left` : "Loading…"}
               action={
                 <Link href="/training" class="btn btn-secondary btn-sm">
-                  Open module <ArrowRight size={14} />
+                  Open <ArrowRight size={14} />
                 </Link>
               }
             />
             <Show when={mod()} fallback={<div class="grid gap-3 mt-5"><Skeleton class="h-16" /><Skeleton class="h-16" /><Skeleton class="h-16" /></div>}>
-              <ul class="mt-5 grid gap-2.5 stagger">
+              <ul class="mt-4 sm:mt-5 grid gap-2.5 stagger">
                 <For each={mod().materials.slice(0, 5)}>
                   {(m) => (
                     <li>
                       <Link
                         href={`/training/${m.id}`}
-                        class="group flex items-center gap-4 p-3.5 rounded-2xl border border-line bg-surface hover:border-line-strong hover:shadow-card hover:-translate-y-px transition"
+                        class="group flex items-center gap-3 sm:gap-4 p-3 sm:p-3.5 rounded-2xl border border-line bg-surface hover:border-line-strong hover:shadow-card transition active:bg-sunken/50"
                       >
                         <span
                           class={cx(
@@ -116,10 +116,10 @@ export default function Dashboard() {
             </Show>
           </section>
 
-          <section class="card p-5 sm:p-6">
+          <section class="card p-4 sm:p-6">
             <SectionTitle
               title="Recent results"
-              subtitle="Your assessment history"
+              subtitle="Your test history"
               action={
                 <Show when={attempts()?.length}>
                   <Link href="/scoreboard" class="btn btn-ghost btn-sm">
@@ -133,7 +133,7 @@ export default function Dashboard() {
                 when={attempts()?.length}
                 fallback={
                   <EmptyState icon={<Trophy size={24} />} title="No results yet" class="!py-8">
-                    Finish your required materials, then take the assessment — your score will appear here.
+                    Finish your training, then take your test. Your score will appear here.
                   </EmptyState>
                 }
               >
@@ -146,13 +146,13 @@ export default function Dashboard() {
                             <span class="text-[12px] font-semibold tabular">{Math.round(a.percentage)}</span>
                           </ProgressRing>
                           <span class="flex-1 min-w-0">
-                            <span class="block font-semibold text-[15px] truncate">{a.departmentName} assessment</span>
+                            <span class="block font-semibold text-[15px] truncate">{a.departmentName} test</span>
                             <span class="block text-[13px] text-muted">
                               {fmtDate(a.submittedAt)} · {a.marks}/{a.totalMarks} marks
                             </span>
                           </span>
                           <span class={cx("badge", a.passed ? "badge-success" : "badge-danger")}>{a.passed ? "Passed" : "Not passed"}</span>
-                          <ArrowRight size={16} class="text-muted group-hover:text-ink transition" />
+                          <ArrowRight size={16} class="hidden sm:block text-muted group-hover:text-ink transition" />
                         </Link>
                       </li>
                     )}
@@ -163,8 +163,8 @@ export default function Dashboard() {
           </section>
         </div>
 
-        <aside class="grid gap-6">
-          <div class="grid grid-cols-2 gap-3">
+        <aside class="grid gap-4 sm:gap-6">
+          <div class="hidden sm:grid grid-cols-2 gap-3">
             <MiniStat icon={<BookOpen size={17} />} tone="plum" label="Materials done" value={mod() ? `${mod().completedTotal}/${mod().materials.length}` : "—"} />
             <MiniStat
               icon={<Trophy size={17} />}
@@ -192,14 +192,14 @@ export default function Dashboard() {
               <dl class="grid gap-3 p-5 text-[14px]">
                 <Row icon={<UserRound size={15} />} label="Department head" value={mod().department.head} />
                 <Row icon={<MapPin size={15} />} label="Location" value={mod().department.location} />
-                <Row icon={<ListChecks size={15} />} label="Assessment" value={`${mod().assessment.questionCount} questions`} />
+                <Row icon={<ListChecks size={15} />} label="Test" value={`${mod().assessment.questionCount} questions`} />
                 <Row icon={<Timer size={15} />} label="Time limit" value={`${mod().assessment.durationMinutes} minutes`} />
                 <Row icon={<Target size={15} />} label="Pass mark" value={`${mod().assessment.passPercent}%`} />
               </dl>
             </section>
           </Show>
 
-          <section class="card p-5">
+          <section class="card p-4 sm:p-5">
             <SectionTitle title="Announcements" />
             <div class="mt-4 grid gap-3">
               <For each={news()} fallback={<Skeleton class="h-20" />}>
@@ -256,39 +256,38 @@ function Hero(props) {
     switch (mod().stage) {
       case "learn": {
         const next = mod().materials.find((m) => m.required && !m.progress.completed);
-        return { label: next?.progress.opened ? "Continue reading" : "Start training", href: next ? `/training/${next.id}` : "/training", icon: BookOpen };
+        return { label: next?.progress.opened ? "Continue training" : "Start training", href: next ? `/training/${next.id}` : "/training", icon: BookOpen };
       }
       case "assess":
         return mod().eligible
-          ? { label: "Take the assessment", href: "/training#assessment", icon: Play }
-          : { label: "View your module", href: "/training", icon: BookOpen };
+          ? { label: "Take your test", href: "/test", icon: Play }
+          : { label: "View test details", href: "/test", icon: BookOpen };
       case "done":
-        return { label: "View scoreboard", href: "/scoreboard", icon: Trophy };
+        return { label: "See your results", href: "/scoreboard", icon: Trophy };
       default:
         return { label: "Browse company materials", href: "/training", icon: BookOpen };
     }
   };
   const message = () =>
     ({
-      learn: `You've completed ${mod().completedRequired} of ${mod().requiredCount} required materials. Finish them to unlock your assessment.`,
-      assess: mod().eligible
-        ? "Your reading is complete — the assessment is unlocked and ready when you are."
-        : "Your reading is complete, but you have no attempts left. Please contact your training admin.",
-      done: `You're certified for ${mod().department?.name}. Keep your materials handy — they're always here for reference.`,
+      learn: `${mod().completedRequired} of ${mod().requiredCount} required modules done. Finish them to unlock your test.`,
+      assess: mod().eligible ? "Training complete. Your test is ready when you are." : "Training complete, but you have no attempts left. Please contact your training admin.",
+      done: `You've passed your ${mod().department?.name} test. Your modules stay here for reference.`,
       unassigned: "There's no training module mapped to your designation yet. Company-wide materials are still available to you.",
     })[mod().stage];
 
   return (
     <section class="relative overflow-hidden rounded-[28px] border border-line bg-gradient-to-br from-white via-plum-50 to-lime-50 dark:from-surface dark:via-plum-900/30 dark:to-surface">
-      <div class="relative z-[1] grid lg:grid-cols-[minmax(0,1fr)_auto] gap-8 items-center p-6 sm:p-8 lg:px-10 lg:py-8">
+      <div class="relative z-[1] grid lg:grid-cols-[minmax(0,1fr)_auto] gap-8 items-center p-5 sm:p-8 lg:px-10 lg:py-8">
         <div class="min-w-0 stagger">
           <p class="kicker">
-            <Sparkles size={13} /> {greeting()} · {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
+            <Sparkles size={13} /> {greeting()}
+            <span class="hidden sm:inline"> · {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</span>
           </p>
-          <h1 class="mt-3 text-[32px] sm:text-[42px] leading-[1.05] font-semibold tracking-[-0.035em]">
+          <h1 class="mt-2 sm:mt-3 text-[28px] sm:text-[42px] leading-[1.08] font-semibold tracking-[-0.035em]">
             Welcome back, <span class="text-plum-700 dark:text-lime-300">{props.firstName}.</span>
           </h1>
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="mt-3 sm:mt-4 flex flex-wrap gap-2">
             <Show when={props.me.department}>
               <span class="badge badge-outline px-3 py-1.5 text-[13px]">
                 <DeptIcon id={props.me.department.id} size={13} class="text-plum-600 dark:text-lime-300" /> {props.me.department.name}
@@ -297,17 +296,27 @@ function Hero(props) {
             <span class="badge badge-outline px-3 py-1.5 text-[13px]">
               <UserRound size={13} class="text-plum-600 dark:text-lime-300" /> {props.me.designation?.title ?? "No designation"}
             </span>
-            <span class="badge badge-outline !text-muted px-3 py-1.5 text-[13px]" title="Set by your organisation">
+            <span class="hidden sm:inline-flex badge badge-outline !text-muted px-3 py-1.5 text-[13px]" title="Set by your organisation">
               <Lock size={12} /> Assigned by HR
             </span>
           </div>
-          <p class="mt-4 max-w-[560px] text-[16px] leading-relaxed text-ink-2">{message()}</p>
-          <div class="mt-5 flex flex-wrap items-center gap-3">
-            <button class="btn btn-primary btn-lg !shadow-none" onClick={() => navigate(cta().href.split("#")[0])}>
+          <p class="mt-3 sm:mt-4 max-w-[560px] text-[15px] sm:text-[16px] leading-relaxed text-ink-2">{message()}</p>
+          {/* Phones: module progress inline (the ring is desktop-only). */}
+          <Show when={mod().department && mod().stage !== "done"}>
+            <div class="sm:hidden mt-4">
+              <div class="flex justify-between text-[13px] text-muted mb-1.5">
+                <span>Training progress</span>
+                <span class="tabular font-semibold text-ink">{props.readPct}%</span>
+              </div>
+              <ProgressBar value={props.readPct} tone="plum" />
+            </div>
+          </Show>
+          <div class="mt-5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+            <button class="btn btn-primary btn-lg w-full sm:w-auto !shadow-none" onClick={() => navigate(cta().href)}>
               {cta().label} <ArrowRight size={17} />
             </button>
             <Show when={mod().department && mod().stage !== "done"}>
-              <span class={cx("inline-flex items-center gap-2 text-[14px]", due() <= 3 ? "text-crimson-600 dark:text-crimson-300" : "text-muted")}>
+              <span class={cx("inline-flex items-center justify-center sm:justify-start gap-2 text-[14px]", due() <= 3 ? "text-crimson-600 dark:text-crimson-300" : "text-muted")}>
                 <CalendarClock size={16} />
                 {due() >= 0 ? `Due ${fmtDate(mod().dueAt)} · ${plural(due(), "day")} left` : `Overdue since ${fmtDate(mod().dueAt)}`}
               </span>
@@ -342,7 +351,7 @@ function Hero(props) {
   );
 }
 
-// Login → Dashboard → Training → Assessment → Scoreboard, as a progress strip.
+// Training → Test → Result → Certified, as a progress strip (a list on phones).
 function Journey(props) {
   const mod = () => props.mod;
   const steps = () => {
@@ -350,32 +359,33 @@ function Journey(props) {
     const read = mod().completedRequired === mod().requiredCount;
     const attempted = !!mod().lastAttempt;
     return [
-      { label: "Read materials", sub: `${mod().completedRequired}/${mod().requiredCount} required`, state: read ? "done" : "current", href: "/training" },
+      { label: "Finish your training", sub: `${mod().completedRequired} of ${mod().requiredCount} required done`, state: read ? "done" : "current", href: "/training" },
       {
-        label: "Take assessment",
+        label: "Take your test",
         sub: mod().assessment.attemptsUsed ? `${mod().assessment.attemptsUsed} attempt${mod().assessment.attemptsUsed > 1 ? "s" : ""} used` : `${mod().assessment.durationMinutes} min · ${mod().assessment.questionCount} Qs`,
         state: stage === "done" ? "done" : read ? "current" : "locked",
-        href: "/training",
+        href: "/test",
       },
       {
-        label: "Review scoreboard",
-        sub: attempted ? `Last: ${Math.round(mod().lastAttempt.percentage)}%` : "After you submit",
+        label: "See your result",
+        sub: attempted ? `Last score ${Math.round(mod().lastAttempt.percentage)}%` : "Right after you submit",
         state: attempted ? "done" : "locked",
         href: "/scoreboard",
       },
-      { label: "Get certified", sub: `Pass mark ${mod().assessment.passPercent}%`, state: stage === "done" ? "done" : "locked", href: "/scoreboard" },
+      { label: "Get certified", sub: `Score ${mod().assessment.passPercent}% or more`, state: stage === "done" ? "done" : "locked", href: "/scoreboard" },
     ];
   };
   return (
     <section class="card p-2 sm:p-2.5">
-      <ol class="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
+      <p class="sm:hidden px-3 pt-2.5 pb-1 text-[13px] font-semibold text-ink-2">Your steps</p>
+      <ol class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1 sm:gap-1.5">
         <For each={steps()}>
           {(s, i) => (
             <li>
               <Link
                 href={s.href}
                 class={cx(
-                  "flex items-center gap-3 h-full p-3 sm:p-3.5 rounded-[14px] transition",
+                  "flex items-center gap-3 h-full px-3 py-2.5 sm:p-3.5 rounded-[14px] transition",
                   s.state === "current" ? "bg-plum-50 dark:bg-lime-400/10" : "hover:bg-sunken/60",
                 )}
               >
@@ -397,8 +407,8 @@ function Journey(props) {
                   </Switch>
                 </span>
                 <span class="min-w-0">
-                  <span class={cx("block text-[14px] font-semibold truncate", s.state === "locked" && "text-muted")}>{s.label}</span>
-                  <span class="block text-[12.5px] text-muted truncate">{s.sub}</span>
+                  <span class={cx("block text-[14.5px] font-semibold sm:truncate", s.state === "locked" && "text-muted")}>{s.label}</span>
+                  <span class="block text-[13px] text-muted sm:truncate">{s.sub}</span>
                 </span>
               </Link>
             </li>

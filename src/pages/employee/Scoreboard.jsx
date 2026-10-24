@@ -58,7 +58,7 @@ export default function Scoreboard(props) {
                   </Link>
                 }
               >
-                Complete your required materials and take the assessment. Your score and a full answer review will appear here.
+                Finish your training and take your test. Your score and a full answer review will appear here.
               </EmptyState>
             </div>
           }
@@ -122,7 +122,7 @@ function ResultHero(props) {
         <Confetti />
       </Show>
 
-      <div class="relative grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] gap-8 lg:gap-14 items-center p-6 sm:p-10">
+      <div class="relative grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] gap-6 sm:gap-8 lg:gap-14 items-center p-5 sm:p-10">
         <div class="min-w-0 stagger order-2">
           <span class={cx("badge px-3 py-1.5 text-[13px]", r().passed ? "bg-lime-400 text-plum-950" : "badge-danger")}>
             <Show when={r().passed} fallback={<CircleX size={14} />}>
@@ -139,21 +139,21 @@ function ResultHero(props) {
             {r().passed ? "!" : "."}
           </h1>
           <p class="mt-3 text-[15.5px] text-muted">
-            {r().departmentName} assessment · {fmtDateTime(r().submittedAt)}
+            {r().departmentName} test · {fmtDateTime(r().submittedAt)}
             <Show when={r().autoSubmitted}> · submitted automatically when time ran out</Show>
           </p>
           <p class="mt-4 text-[16px] font-medium text-ink-2">
             Pass mark {r().passPercent}% — {r().passed ? "you cleared it." : `you needed ${gap()}% more.`}
           </p>
 
-          <div class="mt-7 flex flex-wrap gap-3">
+          <div class="mt-6 sm:mt-7 grid sm:flex sm:flex-wrap gap-2.5 sm:gap-3">
             <Show when={canRetake()}>
-              <button class="btn btn-lime" onClick={() => navigate("/training")}>
-                <RotateCcw size={16} /> Retake ({props.mod.assessment.attemptsLeft} left)
+              <button class="btn btn-primary w-full sm:w-auto" onClick={() => navigate("/test")}>
+                <RotateCcw size={16} /> Retake test ({props.mod.assessment.attemptsLeft} left)
               </button>
             </Show>
-            <button class="btn btn-secondary" onClick={() => navigate("/dashboard")}>
-              <LayoutDashboard size={16} /> Dashboard
+            <button class="btn btn-secondary w-full sm:w-auto" onClick={() => navigate("/dashboard")}>
+              <LayoutDashboard size={16} /> Back to home
             </button>
           </div>
         </div>
@@ -270,7 +270,7 @@ function Review(props) {
           </p>
         </div>
         <Show when={r().review}>
-          <button class="btn btn-secondary" onClick={() => setOpen(!open())} aria-expanded={open()}>
+          <button class="btn btn-secondary w-full sm:w-auto" onClick={() => setOpen(!open())} aria-expanded={open()}>
             <ListChecks size={16} /> {open() ? "Hide answers" : "View answers"}
             <ChevronDown size={16} class={cx("transition-transform duration-300", open() && "rotate-180")} />
           </button>

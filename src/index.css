@@ -58,7 +58,9 @@
   /* A grid with no explicit columns otherwise gets an "auto" column that
      grows to its widest child's content and overflows on phones.
      grid-cols-* utilities (later layer) still override this. */
-  .grid {
+  /* Attribute selector on purpose: a plain .grid rule here would be copied
+     into Tailwind's responsive variants (sm:grid…) and override grid-cols-*. */
+  [class~="grid"] {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -327,7 +329,7 @@
   }
   /* Children fade up one after another. */
   .stagger > * {
-    animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
   .stagger > *:nth-child(1) { animation-delay: 0.02s; }
   .stagger > *:nth-child(2) { animation-delay: 0.07s; }

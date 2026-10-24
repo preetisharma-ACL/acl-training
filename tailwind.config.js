@@ -65,13 +65,17 @@ export default {
           "0%": { boxShadow: "0 0 0 0 rgba(172, 35, 52, 0.35)" },
           "100%": { boxShadow: "0 0 0 16px rgba(172, 35, 52, 0)" },
         },
+        sheet: {
+          from: { transform: "translateY(100%)" },
+          to: { transform: "none" },
+        },
         "toast-in": {
           from: { opacity: "0", transform: "translateY(12px) scale(0.97)" },
           to: { opacity: "1", transform: "none" },
         },
       },
       animation: {
-        "fade-up": "fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "fade-up": "fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards",
         "fade-in": "fade-in 0.3s ease both",
         pop: "pop 0.28s cubic-bezier(0.22, 1, 0.36, 1) both",
         "slide-in-right": "slide-in-right 0.35s cubic-bezier(0.22, 1, 0.36, 1) both",
@@ -79,6 +83,7 @@ export default {
         shimmer: "shimmer 1.8s linear infinite",
         ring: "ring 1.6s ease-out infinite",
         "toast-in": "toast-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both",
+        sheet: "sheet 0.32s cubic-bezier(0.22, 1, 0.36, 1) both",
       },
     },
   },

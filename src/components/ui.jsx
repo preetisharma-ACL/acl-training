@@ -445,7 +445,7 @@ export function Modal(props) {
   return (
     <Portal>
       <div
-        class="fixed inset-0 z-[1100] grid place-items-center p-4 bg-plum-950/50 backdrop-blur-[6px] animate-fade-in"
+        class="fixed inset-0 z-[1100] grid items-end sm:place-items-center sm:p-4 bg-plum-950/50 backdrop-blur-[6px] animate-fade-in"
         onClick={(e) => e.target === e.currentTarget && props.onClose?.()}
       >
         <div
@@ -453,13 +453,17 @@ export function Modal(props) {
           aria-modal="true"
           aria-labelledby={props.labelledBy}
           class={cx(
-            "w-full max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-thin rounded-[22px] bg-surface border border-line shadow-float animate-pop",
+            // Phones: a sheet that slides up from the bottom. Larger screens: a centred dialog.
+            "w-full max-h-[90vh] sm:max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-thin rounded-t-[24px] sm:rounded-[22px] bg-surface border border-line shadow-float animate-sheet sm:animate-pop pb-[env(safe-area-inset-bottom)] sm:pb-0",
             width(),
             props.class,
           )}
         >
+          <div class="sm:hidden flex justify-center pt-2.5" aria-hidden="true">
+            <span class="w-10 h-1.5 rounded-full bg-line-strong" />
+          </div>
           <Show when={props.title}>
-            <div class="flex items-start justify-between gap-4 px-6 pt-6">
+            <div class="flex items-start justify-between gap-4 px-5 sm:px-6 pt-4 sm:pt-6">
               <div>
                 <h2 id={props.labelledBy} class="text-lg font-semibold">{props.title}</h2>
                 <Show when={props.subtitle}>
@@ -473,9 +477,9 @@ export function Modal(props) {
               </Show>
             </div>
           </Show>
-          <div class={cx(props.title ? "px-6 pt-4 pb-6" : "p-7")}>{props.children}</div>
+          <div class={cx(props.title ? "px-5 sm:px-6 pt-4 pb-6" : "px-5 pt-4 pb-6 sm:p-7")}>{props.children}</div>
           <Show when={props.footer}>
-            <div class="flex flex-wrap justify-end gap-2.5 px-6 py-4 border-t border-line bg-sunken/40 rounded-b-[22px]">{props.footer}</div>
+            <div class="flex flex-wrap justify-end gap-2.5 px-5 sm:px-6 py-4 border-t border-line bg-sunken/40 sm:rounded-b-[22px]">{props.footer}</div>
           </Show>
         </div>
       </div>

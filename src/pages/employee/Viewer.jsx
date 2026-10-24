@@ -143,7 +143,7 @@ export default function Viewer(props) {
       >
         <Show when={doc()} fallback={<ViewerSkeleton />}>
           {/* Toolbar */}
-          <header class="card px-4 sm:px-5 py-4 flex flex-wrap items-center gap-x-4 gap-y-3">
+          <header class="card px-3 sm:px-5 py-3 sm:py-4 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-3">
             <Link href={backHref} class="btn btn-ghost btn-icon !w-10 shrink-0" aria-label="Back to module" title="Back">
               <ArrowLeft size={18} />
             </Link>
@@ -162,7 +162,7 @@ export default function Viewer(props) {
               <TypeIcon type={doc().type} size={20} />
             </span>
             <div class="min-w-0 flex-1 basis-[220px]">
-              <div class="flex items-center gap-2 flex-wrap">
+              <div class="hidden sm:flex items-center gap-2 flex-wrap">
                 <span class={cx("badge", MATERIAL_TYPES[doc().type].badge)}>{MATERIAL_TYPES[doc().type].label}</span>
                 <Show when={doc().required}>
                   <span class="badge badge-outline">Required</span>
@@ -171,14 +171,18 @@ export default function Viewer(props) {
                   <span class="badge badge-warn">Admin preview</span>
                 </Show>
               </div>
-              <h1 class="mt-1.5 text-[17px] sm:text-[19px] font-semibold leading-snug tracking-[-0.015em]">{doc().title}</h1>
-              <p class="mt-0.5 text-[13px] text-muted">
+              <h1 class="sm:mt-1.5 text-[17px] sm:text-[19px] font-semibold leading-snug tracking-[-0.015em]">{doc().title}</h1>
+              <p class="sm:hidden mt-0.5 text-[13px] text-muted">
+                {MATERIAL_TYPES[doc().type].short} · {doc().estMinutes} min
+                <Show when={doc().progress.completed && !admin}> · <span class="text-emerald-600 dark:text-emerald-300 font-medium">Done</span></Show>
+              </p>
+              <p class="hidden sm:block mt-0.5 text-[13px] text-muted">
                 v{doc().version} · {doc().author} · Updated {fmtDate(doc().updatedAt)} · <Clock size={11} class="inline -mt-0.5" /> {doc().estMinutes} min
                 <Show when={file()?.pages}> · {file().pages} pages</Show>
                 <Show when={file()?.sizeBytes}> · {fmtBytes(file().sizeBytes)}</Show>
               </p>
             </div>
-            <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
               <Show when={READING.includes(doc().type)}>
                 <div class="flex items-center h-9 rounded-lg border border-line bg-surface" role="group" aria-label="Text size">
                   <button class="grid place-items-center w-9 h-full text-muted hover:text-ink disabled:opacity-40" disabled={fontIdx() === 0} onClick={() => setFontIdx(fontIdx() - 1)} aria-label="Smaller text">
@@ -213,6 +217,7 @@ export default function Viewer(props) {
                 </a>
               </Show>
               <Show when={!admin}>
+                <span class="hidden sm:contents">
                 <Show
                   when={!doc().progress.completed}
                   fallback={
@@ -225,9 +230,19 @@ export default function Viewer(props) {
                     <Check size={14} /> Mark as complete
                   </button>
                 </Show>
+                </span>
               </Show>
             </div>
           </header>
+
+          {/* Phones: the main action, pinned above the tab bar. */}
+          <Show when={!admin && !doc().progress.completed}>
+            <div class="sm:hidden fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-40 px-4 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
+              <button class="btn btn-primary btn-lg w-full" onClick={() => complete(false)}>
+                <Check size={17} /> Mark as complete
+              </button>
+            </div>
+          </Show>
 
           <div id="doc-body">
             <Switch>
@@ -292,6 +307,10 @@ export default function Viewer(props) {
           </Show>
         </Show>
       </Show>
+      {/* Keeps the last lines clear of the pinned button on phones. */}
+      <Show when={!admin && doc() && !doc().progress.completed}>
+        <div class="sm:hidden h-16" aria-hidden="true" />
+      </Show>
     </div>
   );
 }
@@ -300,9 +319,9 @@ function UnlockHint() {
   return (
     <div class="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-lime-100 text-lime-900 dark:bg-lime-400/10 dark:text-lime-200 border border-lime-300/60 dark:border-lime-400/20 animate-fade-up">
       <LockOpen size={18} />
-      <p class="flex-1 text-[14.5px] font-medium">All required materials are complete — your assessment is unlocked.</p>
-      <button class="btn btn-primary btn-sm" onClick={() => navigate("/training")}>
-        Go to assessment <ArrowRight size={14} />
+      <p class="flex-1 text-[14.5px] font-medium">All required modules are done — your test is unlocked.</p>
+      <button class="btn btn-primary btn-sm" onClick={() => navigate("/test")}>
+        Go to test <ArrowRight size={14} />
       </button>
     </div>
   );
