@@ -11,10 +11,10 @@
     <title>ACL Training &amp; Assessment · Aajneeti Connect Ltd</title>
     <script>
       // Apply the saved theme before first paint (no light→dark flash).
-      // "system" (or nothing saved) follows the OS setting.
+      // Light by default (even if the OS is in dark mode); "system" follows the OS.
       try {
         var t = localStorage.getItem("theme");
-        var dark = t === "dark" || ((!t || t === "system") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        var dark = t === "dark" || (t === "system" &&window.matchMedia("(prefers-color-scheme: dark)").matches);
         if (dark) document.documentElement.classList.add("dark");
       } catch (e) {}
     </script>

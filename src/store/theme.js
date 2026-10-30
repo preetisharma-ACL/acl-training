@@ -4,9 +4,9 @@ import { createSignal } from "solid-js";
 const media = window.matchMedia("(prefers-color-scheme: dark)");
 const read = () => {
   try {
-    return localStorage.getItem("theme") || "system";
+    return localStorage.getItem("theme") || "light";
   } catch {
-    return "system";
+    return "light";
   }
 };
 
