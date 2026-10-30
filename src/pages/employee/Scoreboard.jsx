@@ -12,7 +12,7 @@ import {
   ListChecks,
   RotateCcw,
   ArrowRight,
-
+  FileText,
   LayoutDashboard,
   ChevronDown,
   Info,
@@ -106,47 +106,113 @@ function ResultHero(props) {
   const canRetake = () => props.mod?.eligible && !props.mod?.passed;
   const gap = () => Math.max(0, Math.round((r().passPercent - r().percentage) * 10) / 10);
 
+  const counts = () => [
+    { label: "Correct", value: r().correct, class: "text-emerald-600 dark:text-emerald-400" },
+    { label: "Wrong", value: r().incorrect, class: "text-crimson-600 dark:text-crimson-300" },
+    { label: "Total", value: r().totalQuestions, class: "text-ink" },
+  ];
+
   return (
-    <section class="relative isolate overflow-hidden rounded-[28px] border border-line shadow-lift bg-gradient-to-br from-ivory via-surface to-lime-50 dark:from-plum-950 dark:via-surface dark:to-surface">
-      {/* Decorative shapes in plum, lime and ivory */}
+    <section class="relative isolate overflow-hidden rounded-[28px] border border-line shadow-lift bg-gradient-to-r from-surface via-surface to-plum-50 dark:from-surface dark:via-surface dark:to-plum-950">
+      {/* Soft glows and dot grids */}
       <div class="pointer-events-none absolute inset-0 -z-[1]" aria-hidden="true">
-        <div class="absolute -right-24 -top-28 w-[420px] h-[420px] rounded-full bg-plum-100/80 dark:bg-plum-800/30" />
-        <div class="absolute right-[30%] -bottom-16 w-40 h-40 rounded-full bg-lime-200/70 dark:bg-lime-400/10" />
-        <div class="absolute right-[42%] top-8 w-7 h-7 rounded-lg rotate-12 bg-lime-400 shadow-[0_8px_18px_-6px_rgba(173,207,44,0.8)]" />
-        <div class="absolute -left-10 -bottom-12 w-36 h-36 rounded-full border-[14px] border-plum-200/70 dark:border-plum-700/40" />
-        <svg class="absolute right-[36%] bottom-6 w-24 h-8 text-plum-300 dark:text-plum-600" viewBox="0 0 96 32" fill="none">
-          <path d="M2 16c8-12 16-12 24 0s16 12 24 0 16-12 24 0 14 12 20 4" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-        </svg>
+        <div class={cx("absolute -left-24 -bottom-28 w-[340px] h-[340px] rounded-full blur-3xl", r().passed ? "bg-emerald-100/60 dark:bg-emerald-500/10" : "bg-crimson-100/60 dark:bg-crimson-500/10")} />
+        <div class="absolute -right-20 -top-24 w-[380px] h-[380px] rounded-full bg-plum-100/70 dark:bg-plum-800/25" />
+        <DotGrid class="left-6 top-6" />
+        <DotGrid class="right-6 top-6 hidden lg:grid" />
       </div>
       <Show when={props.fresh && r().passed}>
         <Confetti />
       </Show>
 
-      <div class="relative grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] gap-6 sm:gap-8 lg:gap-14 items-center p-5 sm:p-10">
-        <div class="min-w-0 stagger order-2">
-          <span class={cx("badge px-3 py-1.5 text-[13px]", r().passed ? "bg-lime-400 text-plum-950" : "badge-danger")}>
+      <div class="relative grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] lg:grid-cols-[auto_minmax(0,1fr)_240px] gap-5 sm:gap-7 lg:gap-9 items-center p-5 sm:p-6 lg:px-8 lg:py-6">
+        {/* Score ring + counts */}
+        <div class="grid gap-3 justify-items-center w-full md:w-[190px]">
+          <div class="grid place-items-center w-[164px] h-[164px] rounded-full bg-surface shadow-[0_18px_40px_-18px_rgba(15,23,42,0.25)]">
+            <ProgressRing value={r().percentage} size={142} stroke={10} tone={r().passed ? "success" : "danger"} trackClass="stroke-sunken">
+              <span class="text-[38px] leading-none font-bold tracking-[-0.04em] text-ink tabular">
+                <CountUp value={r().percentage} decimals={r().percentage % 1 ? 1 : 0} />
+                <span class="text-[18px]">%</span>
+              </span>
+              <span class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-plum-700 dark:text-lime-400">Your score</span>
+            </ProgressRing>
+          </div>
+          <dl class="grid grid-cols-3 w-full max-w-[220px] py-2.5 rounded-2xl bg-surface border border-line shadow-card">
+            <For each={counts()}>
+              {(c, i) => (
+                <div class={cx("text-center", i() > 0 && "border-l border-line")}>
+                  <dd class={cx("text-[19px] leading-none font-bold tabular", c.class)}>{c.value}</dd>
+                  <dt class="mt-1 text-[12px] text-muted">{c.label}</dt>
+                </div>
+              )}
+            </For>
+          </dl>
+        </div>
+
+        {/* Message, facts and actions */}
+        <div class="min-w-0 stagger">
+          <span
+            class={cx(
+              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-semibold",
+              r().passed
+                ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300"
+                : "bg-crimson-50 border-crimson-200 text-crimson-600 dark:bg-crimson-500/15 dark:border-crimson-500/30 dark:text-crimson-300",
+            )}
+          >
             <Show when={r().passed} fallback={<CircleX size={14} />}>
-              <Trophy size={14} />
+              <CircleCheck size={14} />
             </Show>
-            {r().passed ? "Passed" : "Not passed"}
+            {r().passed ? "Passed" : "Not Passed"}
           </span>
-          <h1 class="mt-4 text-[30px] sm:text-[40px] leading-[1.08] font-semibold tracking-[-0.035em] text-ink">
+          <h1 class="mt-2.5 text-[26px] sm:text-[32px] leading-[1.1] font-bold tracking-[-0.03em] text-navy dark:text-white">
             {r().passed ? "Well done, " : "Keep going, "}
-            <span class="relative inline-block text-plum-700 dark:text-lime-300">
-              <span class="absolute left-0 right-0 bottom-1 h-3 rounded-full bg-lime-300/80 dark:bg-lime-400/20 -z-[1]" />
-              {first}
-            </span>
-            {r().passed ? "!" : "."}
+            <span class="text-plum-700 dark:text-lime-400">{first}</span>!
           </h1>
-          <p class="mt-3 text-[15.5px] text-muted">
-            {r().departmentName} test · {fmtDateTime(r().submittedAt)}
-            <Show when={r().autoSubmitted}> · submitted automatically when time ran out</Show>
-          </p>
-          <p class="mt-4 text-[16px] font-medium text-ink-2">
-            Pass mark {r().passPercent}% — {r().passed ? "you cleared it." : `you needed ${gap()}% more.`}
+          <p class="mt-2 max-w-[520px] text-[14.5px] leading-normal text-ink-2">
+            {r().passed
+              ? "You cleared the passing criteria. Great work. Your result is saved and your training for this module is complete."
+              : "You didn't meet the passing criteria this time, but this is just a step in your learning journey. Keep practicing and you'll do better next time!"}
           </p>
 
-          <div class="mt-6 sm:mt-7 grid sm:flex sm:flex-wrap gap-2.5 sm:gap-3">
+          <div class="grid sm:grid-cols-2 gap-2.5 mt-4 max-w-[600px]">
+            <div class="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-line bg-surface/80">
+              <span class="grid place-items-center shrink-0 w-8 h-8 rounded-xl bg-plum-50 text-plum-700 dark:bg-plum-400/15 dark:text-plum-200">
+                <FileText size={17} />
+              </span>
+              <div class="min-w-0">
+                <p class="text-[14.5px] font-semibold text-ink truncate">Test: {r().departmentName} test</p>
+                <p class="text-[13px] text-muted">
+                  Completed on {fmtDateTime(r().submittedAt)}
+                  <Show when={r().autoSubmitted}> · auto-submitted</Show>
+                </p>
+              </div>
+            </div>
+            <div
+              class={cx(
+                "flex items-center gap-3 px-3 py-2.5 rounded-2xl border",
+                r().passed
+                  ? "bg-emerald-50/70 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20"
+                  : "bg-crimson-50/70 border-crimson-100 dark:bg-crimson-500/10 dark:border-crimson-500/20",
+              )}
+            >
+              <span
+                class={cx(
+                  "grid place-items-center shrink-0 w-8 h-8 rounded-xl",
+                  r().passed ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300" : "bg-crimson-100 text-crimson-600 dark:bg-crimson-500/20 dark:text-crimson-300",
+                )}
+              >
+                <Target size={17} />
+              </span>
+              <div class="min-w-0">
+                <p class={cx("text-[14.5px] font-semibold", r().passed ? "text-emerald-700 dark:text-emerald-300" : "text-crimson-600 dark:text-crimson-300")}>
+                  Pass mark {r().passPercent}%
+                </p>
+                <p class="text-[13px] text-ink-2">{r().passed ? "You cleared it." : `You needed ${gap()}% more to pass.`}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 grid sm:flex sm:flex-wrap gap-2.5 sm:gap-3">
             <Show when={canRetake()}>
               <button class="btn btn-primary w-full sm:w-auto" onClick={() => navigate("/test")}>
                 <RotateCcw size={16} /> Retake test ({props.mod.assessment.attemptsLeft} left)
@@ -158,18 +224,90 @@ function ResultHero(props) {
           </div>
         </div>
 
-        {/* Score: a light disc with the progress ring */}
-        <div class="relative justify-self-center md:justify-self-start order-1 grid place-items-center w-[218px] h-[218px] rounded-full bg-surface border border-line">
-          <ProgressRing value={r().percentage} size={190} stroke={13} tone={r().passed ? "success" : "plum"} trackClass="stroke-sunken">
-            <span class="text-[46px] leading-none font-semibold tracking-[-0.04em] text-ink">
-              <CountUp value={r().percentage} decimals={r().percentage % 1 ? 1 : 0} />
-              <span class="text-[22px] text-muted">%</span>
-            </span>
-            <span class="mt-2 text-[12px] uppercase tracking-[0.16em] text-plum-600 dark:text-lime-300">Your score</span>
-          </ProgressRing>
-        </div>
+        <ResultArt passed={r().passed} />
       </div>
     </section>
+  );
+}
+
+function DotGrid(props) {
+  return (
+    <div class={cx("absolute grid grid-cols-4 gap-2", props.class)}>
+      <For each={Array.from({ length: 12 })}>{() => <span class="w-1 h-1 rounded-full bg-plum-300/70 dark:bg-plum-600/60" />}</For>
+    </div>
+  );
+}
+
+// Result sheet with a graduation cap and a plant. Red cross on a fail, green tick on a pass.
+function ResultArt(props) {
+  const mark = () => (props.passed ? "#16A34A" : "#E5484D");
+  return (
+    <svg viewBox="0 0 300 260" class="hidden lg:block w-full max-w-[240px] justify-self-end" aria-hidden="true">
+      <defs>
+        <linearGradient id="ra-blob" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#DFE8FD" />
+          <stop offset="100%" stop-color="#EFF4FF" />
+        </linearGradient>
+        <filter id="ra-shadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#3463AF" flood-opacity="0.18" />
+        </filter>
+      </defs>
+
+      <ellipse cx="160" cy="140" rx="130" ry="110" fill="url(#ra-blob)" class="dark:opacity-20" />
+      <ellipse cx="150" cy="238" rx="110" ry="10" fill="#C8D8FF" opacity="0.5" />
+
+      {/* Plant */}
+      <g transform="translate(232 150)">
+        <path d="M18 70 C10 40 -8 26 -14 4 C6 14 18 34 20 64Z" fill="#7FA4E6" />
+        <path d="M22 70 C26 36 40 18 54 6 C52 30 40 52 26 70Z" fill="#5583D0" />
+        <path d="M20 70 C14 50 2 44 -10 40 C2 54 10 62 16 72Z" fill="#A9C4F5" />
+        <path d="M22 66 C32 52 44 48 56 46 C46 58 34 66 24 72Z" fill="#A9C4F5" />
+        <rect x="6" y="68" width="30" height="20" rx="6" fill="#FFFFFF" filter="url(#ra-shadow)" />
+      </g>
+
+      {/* Sheet */}
+      <g transform="rotate(-8 150 140)" filter="url(#ra-shadow)">
+        <rect x="88" y="62" width="128" height="164" rx="16" fill="#FFFFFF" />
+      </g>
+      <g transform="rotate(-8 150 140)">
+        <circle cx="150" cy="104" r="18" fill={mark()} />
+        <Show
+          when={props.passed}
+          fallback={<path d="M143 97 L157 111 M157 97 L143 111" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />}
+        >
+          <path d="M142 104 L148 110 L159 98" stroke="#FFFFFF" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+        </Show>
+        <For each={[0, 1, 2]}>
+          {(i) => {
+            const y = 142 + i * 26;
+            const bad = !props.passed && i === 2;
+            return (
+              <>
+                <rect x="106" y={y} width="14" height="14" rx="3.5" fill={bad ? "#E5484D" : "#3463AF"} />
+                <Show
+                  when={bad}
+                  fallback={<path d={`M109 ${y + 7} L112 ${y + 10} L117 ${y + 4}`} stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />}
+                >
+                  <path d={`M110 ${y + 4} L116 ${y + 10} M116 ${y + 4} L110 ${y + 10}`} stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
+                </Show>
+                <rect x="128" y={y + 2} width={i === 1 ? 52 : 66} height="4" rx="2" fill="#C8D8FF" />
+                <rect x="128" y={y + 9} width={i === 1 ? 40 : 50} height="3" rx="1.5" fill="#DFE8FD" />
+              </>
+            );
+          }}
+        </For>
+      </g>
+
+      {/* Graduation cap */}
+      <g transform="translate(176 22) rotate(12)">
+        <path d="M18 40 L18 56 C18 64 66 64 66 56 L66 40Z" fill="#1E3A6B" />
+        <path d="M0 30 L42 10 L84 30 L42 50Z" fill="#2A5195" />
+        <path d="M0 30 L42 50 L84 30 L84 33 L42 53 L0 33Z" fill="#1E3A6B" />
+        <path d="M42 30 L72 40 L72 66" stroke="#F59E0B" stroke-width="2.5" fill="none" stroke-linecap="round" />
+        <rect x="68" y="64" width="8" height="14" rx="3" fill="#F59E0B" />
+        <circle cx="42" cy="30" r="3" fill="#F59E0B" />
+      </g>
+    </svg>
   );
 }
 

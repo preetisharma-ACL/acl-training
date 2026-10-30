@@ -14,23 +14,35 @@ import { toasts, dismiss } from "../store/toast";
 export function Logo(props) {
   // onDark: always use the reversed logo (for plum backgrounds).
   return (
-    <span class={cx("inline-flex items-center gap-3", props.class)}>
+    <span class={cx("inline-flex items-center gap-3.5", props.class)}>
       <Show
         when={props.onDark}
         fallback={
           <>
-            <img src="/logo.webp" alt="Aajneeti" class={cx("block dark:hidden w-auto object-contain", props.size || "h-8")} />
-            <img src="/V2-aajneeti-logo.png" alt="Aajneeti" class={cx("hidden dark:block w-auto object-contain", props.size || "h-8")} />
+            <img src="/logo.webp" alt="Aajneeti" class={cx("block dark:hidden w-auto object-contain", props.size || "h-9")} />
+            <img src="/V2-aajneeti-logo.png" alt="Aajneeti" class={cx("hidden dark:block w-auto object-contain", props.size || "h-9")} />
           </>
         }
       >
-        <img src="/V2-aajneeti-logo.png" alt="Aajneeti" class={cx("block w-auto object-contain", props.size || "h-8")} />
+        <img src="/V2-aajneeti-logo.png" alt="Aajneeti" class={cx("block w-auto object-contain", props.size || "h-9")} />
       </Show>
       <Show when={props.wordmark !== false}>
-        <span class={cx("hidden sm:block h-6 w-px", props.onDark ? "bg-white/20" : "bg-line")} />
-        <span class={cx("hidden sm:flex flex-col leading-none", props.onDark ? "text-white" : "text-ink")}>
-          <span class="text-[14px] font-semibold tracking-[-0.01em] whitespace-nowrap">Aajneeti Connect Ltd</span>
-          <span class={cx("mt-0.5 text-[13px] font-normal whitespace-nowrap", props.onDark ? "text-white/55" : "text-muted")}>
+        <span class={cx("hidden sm:block h-9 w-px", props.onDark ? "bg-white/20" : "bg-line-strong/70")} />
+        <span class="hidden sm:flex flex-col justify-center gap-[5px]">
+          <span
+            class={cx(
+              "text-[16px] leading-none font-bold tracking-[-0.02em] whitespace-nowrap",
+              props.onDark ? "text-white" : "text-navy dark:text-white",
+            )}
+          >
+            Aajneeti Connect Ltd
+          </span>
+          <span
+            class={cx(
+              "text-[10.5px] leading-none font-semibold uppercase tracking-[0.16em] whitespace-nowrap",
+              props.onDark ? "text-white/60" : "text-plum-700 dark:text-lime-400",
+            )}
+          >
             {props.subtitle ?? "Training & Assessment"}
           </span>
         </span>
