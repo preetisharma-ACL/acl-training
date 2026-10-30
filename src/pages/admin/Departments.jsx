@@ -35,7 +35,7 @@ export default function Departments() {
                 <article class={cx("card card-hover flex flex-col overflow-hidden", !d.active && "opacity-70")}>
                   <div class="relative p-5 pb-4">
                     <div class="flex items-start justify-between gap-3">
-                      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-gradient-to-br from-plum-600 to-plum-900 text-lime-300 shadow-[0_10px_20px_-8px_rgba(84,44,95,0.6)]">
+                      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-plum-50 text-plum-700 dark:bg-plum-400/15 dark:text-plum-200">
                         <DeptIcon id={d.id} size={22} />
                       </span>
                       <div class="flex items-center gap-1.5">

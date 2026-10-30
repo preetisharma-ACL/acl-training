@@ -10,7 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter var", "Inter", "system-ui", "sans-serif"],
+        // DM Sans, as on hack2skill.com.
+        sans: ['"DM Sans"', "system-ui", "-apple-system", '"Segoe UI"', "sans-serif"],
       },
       colors: {
         canvas: v("canvas"),
@@ -21,16 +22,23 @@ export default {
         ink: v("ink"),
         "ink-2": v("ink-2"),
         muted: v("muted"),
-        // Brand: plum (primary) + lime (signature accent) on ivory.
+        // Brand blue (#3463AF) and navy (#0F172A), as on hack2skill.com.
+        // The scale keeps the name "plum" so every component picks it up.
         plum: {
-          50: "#F8F3F9", 100: "#F0E5F2", 200: "#E0CAE5", 300: "#C9A3D0", 400: "#A877B2", 500: "#87548F",
-          600: "#6B3B75", 700: "#542C5F", 800: "#422249", 900: "#2F1835", 950: "#1D0E21",
+          50: "#EFF4FF", 100: "#DFE8FD", 200: "#C8D8FF", 300: "#A9C4F5", 400: "#7FA4E6", 500: "#5583D0",
+          600: "#3E6FC0", 700: "#3463AF", 800: "#2A5195", 900: "#1E3A6B", 950: "#0F172A",
         },
+        // Accent: light sky blue (#86B4FF family). Named "lime" for the same reason.
         lime: {
-          50: "#F9FDE9", 100: "#F1FAC9", 200: "#E4F49A", 300: "#D5EE6A", 400: "#C7E848", 500: "#ADCF2C",
-          600: "#87A41E", 700: "#657C19", 800: "#4F6119", 900: "#42521A",
+          50: "#F2F7FF", 100: "#E4EFFF", 200: "#CCE0FF", 300: "#A9CBFF", 400: "#86B4FF", 500: "#5E97F2",
+          600: "#387EF0", 700: "#2563C9", 800: "#1D4E9F", 900: "#173E7D",
         },
-        ivory: "#F5F1E8",
+        ivory: "#F7F9FC",
+        navy: "#0F172A",
+        // Pastel card tints from the hack2skill programme cards.
+        tint: {
+          blue: "#EFF6FF", cream: "#FFF3DB", mint: "#F0FDFA", yellow: "#FEFCE8", lavender: "#EFECFD", sky: "#E6F4F9",
+        },
         // Errors and destructive actions only.
         crimson: {
           50: "#FDF1F3", 100: "#FADFE3", 200: "#F4BBC4", 300: "#EA8C9B", 400: "#DA5A6F", 500: "#C4364B",

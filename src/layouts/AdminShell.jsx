@@ -84,7 +84,7 @@ function Sidebar(props) {
                 class={cx(
                   "flex items-center gap-3 h-11 px-3 rounded-xl text-[15px] transition",
                   on()
-                    ? "bg-plum-50 text-plum-700 font-semibold shadow-[inset_0_0_0_1.5px_rgba(168,119,178,0.55)] dark:bg-lime-400/10 dark:text-lime-300 dark:shadow-[inset_0_0_0_1.5px_rgba(199,232,72,0.35)]"
+                    ? "bg-plum-50 text-plum-700 font-semibold shadow-[inset_3px_0_0_#3463AF] dark:bg-lime-400/10 dark:text-lime-300 dark:shadow-[inset_3px_0_0_#86B4FF]"
                     : "text-ink-2 hover:bg-sunken/70 hover:text-ink",
                 )}
               >

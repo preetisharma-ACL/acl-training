@@ -78,14 +78,14 @@ const rgb = (hex) => {
 };
 
 const C = {
-  ink: "#1F1424",
-  body: "#4A3D50",
-  muted: "#7D7083",
-  midnight: "#542C5F",
-  crimson: "#C7E848",
-  gold: "#6B3B75",
-  goldSoft: "#F5F1E8",
-  line: "#E4DDCF",
+  ink: "#0F172A",
+  body: "#344767",
+  muted: "#627594",
+  midnight: "#0F172A",
+  crimson: "#86B4FF",
+  gold: "#3463AF",
+  goldSoft: "#EFF4FF",
+  line: "#E4E8ED",
 };
 
 export function makePdf({ kicker = "Aajneeti Academy", title, subtitle, meta, blocks }) {
@@ -113,7 +113,7 @@ export function makePdf({ kicker = "Aajneeti Academy", title, subtitle, meta, bl
       }
       if (subtitle) {
         for (const l of wrap(subtitle, 10.5, CONTENT_W, false).slice(0, 2)) {
-          text(l, M, ty + 4, 10.5, "#E0CAE5");
+          text(l, M, ty + 4, 10.5, "#C8D8FF");
           ty -= 15;
         }
       }

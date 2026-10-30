@@ -36,7 +36,7 @@ function Announcements() {
       align="center"
       trigger={(open, toggle) => (
         <button
-          class="relative grid place-items-center w-10 h-10 rounded-xl text-muted hover:text-ink hover:bg-sunken transition"
+          class="relative grid place-items-center w-10 h-10 rounded-lg text-ink-2 hover:text-ink hover:bg-sunken transition"
           aria-label="Announcements"
           onClick={() => {
             toggle();
@@ -45,13 +45,13 @@ function Announcements() {
         >
           <Bell size={19} />
           <Show when={!seen() && news()?.length}>
-            <span class="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-lime-400 ring-2 ring-surface" />
+            <span class="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-crimson-500 ring-2 ring-surface" />
           </Show>
         </button>
       )}
     >
       <div class="w-[320px] max-w-[calc(100vw-2rem)]">
-        <p class="px-3 pt-2 pb-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">Announcements</p>
+        <p class="px-3 pt-2 pb-2 text-[14px] font-semibold text-ink">Announcements</p>
         <For each={news()}>
           {(a) => (
             <div class="flex gap-3 px-3 py-2.5 rounded-xl hover:bg-sunken/60">
@@ -84,7 +84,7 @@ function Account(props) {
       trigger={(open, toggle) => (
         <button
           onClick={toggle}
-          class={cx("flex items-center gap-2.5 h-11 pl-1 pr-1 md:pr-2.5 rounded-xl transition", open() ? "bg-sunken" : "hover:bg-sunken/70")}
+          class={cx("flex items-center gap-2.5 h-11 pl-1 pr-1 md:pr-2.5 rounded-lg transition", open() ? "bg-sunken" : "hover:bg-sunken/70")}
           aria-label="Account menu"
         >
           <Avatar name={user()?.name} size={props.compact ? 34 : 36} />
@@ -127,25 +127,27 @@ function Account(props) {
 
 export default function EmployeeShell(props) {
   return (
-    <div class="min-h-screen flex flex-col">
+    <div class="min-h-screen flex flex-col overflow-x-clip">
       {/* Desktop / tablet bar */}
-      <header class="hidden md:block sticky top-0 z-50 border-b border-line/80 bg-canvas/85 backdrop-blur-xl backdrop-saturate-150">
-        <div class="max-w-[1320px] mx-auto h-[76px] px-6 flex items-center justify-between gap-4">
+      <header class="hidden md:block sticky top-0 z-50 border-b border-line bg-surface">
+        <div class="max-w-[1240px] mx-auto h-[74px] px-6 flex items-center justify-between gap-6">
           <Link href="/dashboard" class="shrink-0" aria-label="Home">
             <Logo />
           </Link>
-          <nav class="flex items-center gap-1 p-1 rounded-2xl bg-surface/70 border border-line">
+          <nav class="flex items-center gap-8 h-full">
             <For each={NAV}>
               {(n) => (
                 <Link
                   href={n.href}
                   class={cx(
-                    "inline-flex items-center gap-2 h-9 px-4 rounded-xl text-[14px] font-semibold transition",
-                    isActive(n.href) ? "bg-plum-700 text-white dark:bg-lime-400 dark:text-plum-950" : "text-muted hover:text-ink",
+                    "relative inline-flex items-center h-full text-[15px] font-medium transition",
+                    "after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:rounded-full",
+                    isActive(n.href)
+                      ? "text-plum-700 after:bg-plum-700 dark:text-lime-400 dark:after:bg-lime-400"
+                      : "text-ink-2 hover:text-plum-700 dark:hover:text-lime-400",
                   )}
                   aria-current={isActive(n.href) ? "page" : undefined}
                 >
-                  <Dynamic component={n.icon} size={15} />
                   {n.label}
                 </Link>
               )}
@@ -160,7 +162,7 @@ export default function EmployeeShell(props) {
       </header>
 
       {/* Phone app bar */}
-      <header class="md:hidden sticky top-0 z-50 bg-canvas/90 backdrop-blur-xl border-b border-line/70 pt-[env(safe-area-inset-top)]">
+      <header class="md:hidden sticky top-0 z-50 bg-surface border-b border-line pt-[env(safe-area-inset-top)]">
         <div class="h-14 px-4 flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
             <img src="/aajneeti-favicon.png" alt="" class="w-8 h-8 rounded-lg object-contain" />
@@ -173,19 +175,46 @@ export default function EmployeeShell(props) {
         </div>
       </header>
 
-      <main class="flex-1 w-full max-w-[1320px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 pb-[calc(92px+env(safe-area-inset-bottom))] md:pb-14">
+      <main class="flex-1 w-full max-w-[1240px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 pb-[calc(92px+env(safe-area-inset-bottom))] md:pb-14">
         {props.children}
       </main>
 
-      <footer class="hidden md:block border-t border-line/70">
-        <div class="max-w-[1320px] mx-auto px-6 py-5 flex items-center justify-between text-[13px] text-muted">
-          <span>© {new Date().getFullYear()} Aajneeti Connect Ltd</span>
-          <span>Need help? Contact your HR or training admin.</span>
+      <footer class="hidden md:block border-t border-line bg-sunken/60">
+        <div class="max-w-[1240px] mx-auto px-6 pt-10 pb-6">
+          <div class="grid grid-cols-[1.4fr_1fr_1fr] gap-10">
+            <div>
+              <Logo />
+              <p class="mt-3 max-w-[340px] text-[14px] text-ink-2">Training and certification for every team at Aajneeti Connect Ltd.</p>
+            </div>
+            <div>
+              <p class="text-[15px] font-semibold text-ink">Learn</p>
+              <ul class="mt-3 grid gap-2 text-[14px] text-ink-2">
+                <For each={NAV}>
+                  {(n) => (
+                    <li>
+                      <Link href={n.href} class="hover:text-plum-700 dark:hover:text-lime-400">{n.label}</Link>
+                    </li>
+                  )}
+                </For>
+              </ul>
+            </div>
+            <div>
+              <p class="text-[15px] font-semibold text-ink">Support</p>
+              <ul class="mt-3 grid gap-2 text-[14px] text-ink-2">
+                <li>Contact your HR team</li>
+                <li>Ask your training admin</li>
+              </ul>
+            </div>
+          </div>
+          <div class="mt-8 pt-5 border-t border-line flex items-center justify-between text-[13px] text-muted">
+            <span>© {new Date().getFullYear()} Aajneeti Connect Ltd. All rights reserved.</span>
+            <span>ACL Training &amp; Assessment</span>
+          </div>
         </div>
       </footer>
 
       {/* Phone tab bar */}
-      <nav class="md:hidden fixed bottom-0 inset-x-0 z-50 bg-surface/95 backdrop-blur-xl border-t border-line pb-[env(safe-area-inset-bottom)]">
+      <nav class="md:hidden fixed bottom-0 inset-x-0 z-50 bg-surface border-t border-line pb-[env(safe-area-inset-bottom)]">
         <div class="grid grid-cols-4 h-[64px]">
           <For each={NAV}>
             {(n) => (
@@ -197,7 +226,7 @@ export default function EmployeeShell(props) {
                   isActive(n.href) ? "text-plum-700 dark:text-lime-300" : "text-muted",
                 )}
               >
-                <span class={cx("grid place-items-center w-14 h-8 rounded-full transition", isActive(n.href) && "bg-plum-100 dark:bg-lime-400/15")}>
+                <span class={cx("grid place-items-center w-14 h-8 rounded-full transition", isActive(n.href) && "bg-plum-50 dark:bg-lime-400/15")}>
                   <Dynamic component={n.icon} size={20} stroke-width={isActive(n.href) ? 2.25 : 1.75} />
                 </span>
                 {n.label}

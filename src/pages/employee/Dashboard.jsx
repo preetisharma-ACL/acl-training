@@ -3,6 +3,7 @@
 // the employee never chooses either.
 
 import { createResource, For, Show, Switch, Match } from "solid-js";
+import { Dynamic } from "solid-js/web";
 import {
   ArrowRight,
   BookOpen,
@@ -21,6 +22,7 @@ import {
   Play,
   Check,
   TriangleAlert,
+  ArrowUpRight,
 } from "lucide-solid";
 import { Link, navigate } from "../../lib/router";
 import { cx, greeting, fmtDate, fmtRelative, daysUntil, plural } from "../../lib/format";
@@ -67,14 +69,14 @@ export default function Dashboard() {
                     <li>
                       <Link
                         href={`/training/${m.id}`}
-                        class="group flex items-center gap-3 sm:gap-4 p-3 sm:p-3.5 rounded-2xl border border-line bg-surface hover:border-line-strong hover:shadow-card transition active:bg-sunken/50"
+                        class="group flex items-center gap-3 sm:gap-4 p-3 sm:p-3.5 rounded-2xl border border-line bg-surface hover:border-plum-200 hover:bg-plum-50/40 dark:hover:bg-white/[0.03] transition active:bg-sunken/50"
                       >
                         <span
                           class={cx(
-                            "grid place-items-center shrink-0 w-11 h-11 rounded-xl transition",
+                            "grid place-items-center shrink-0 w-11 h-11 rounded-full transition",
                             m.progress.completed
                               ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300"
-                              : "bg-plum-50 text-plum-700 dark:bg-plum-400/15 dark:text-plum-200 group-hover:bg-plum-700 group-hover:text-white dark:group-hover:bg-lime-400 dark:group-hover:text-plum-950",
+                              : "bg-plum-50 text-plum-700 dark:bg-plum-400/15 dark:text-plum-200",
                           )}
                         >
                           <Show when={m.progress.completed} fallback={<TypeIcon type={m.type} size={19} />}>
@@ -164,28 +166,16 @@ export default function Dashboard() {
         </div>
 
         <aside class="grid gap-4 sm:gap-6">
-          <div class="hidden sm:grid grid-cols-2 gap-3">
-            <MiniStat icon={<BookOpen size={17} />} tone="plum" label="Materials done" value={mod() ? `${mod().completedTotal}/${mod().materials.length}` : "—"} />
-            <MiniStat
-              icon={<Trophy size={17} />}
-              tone="lime"
-              label="Best score"
-              value={mod()?.best ? <CountUp value={mod().best.percentage} suffix="%" /> : "—"}
-            />
-            <MiniStat icon={<Target size={17} />} tone="plum" label="Attempts left" value={mod()?.assessment ? `${mod().assessment.attemptsLeft}/${mod().assessment.maxAttempts}` : "—"} />
-            <MiniStat icon={<Clock size={17} />} tone="lime" label="Reading left" value={mod() ? `${mod().readingMinutesLeft}m` : "—"} />
-          </div>
-
           <Show when={mod()?.department}>
             <section class="card overflow-hidden">
-              <div class="relative px-5 py-5 hero-aurora-soft grain text-white">
-                <div class="relative z-[1] flex items-center gap-3.5">
-                  <span class="grid place-items-center w-12 h-12 rounded-2xl glass">
-                    <DeptIcon id={mod().department.id} size={22} class="text-lime-300" />
+              <div class="px-5 py-5 bg-tint-blue dark:bg-plum-900/40 border-b border-line">
+                <div class="flex items-center gap-3.5">
+                  <span class="grid place-items-center w-12 h-12 rounded-full bg-white dark:bg-surface text-plum-700 dark:text-lime-400">
+                    <DeptIcon id={mod().department.id} size={22} />
                   </span>
                   <div class="min-w-0">
-                    <p class="text-[12px] uppercase tracking-[0.16em] text-white/55 font-semibold">Your department</p>
-                    <p class="text-[16px] font-semibold truncate">{mod().department.name}</p>
+                    <p class="text-[13px] font-medium text-ink-2">Your department</p>
+                    <p class="text-[17px] font-semibold truncate">{mod().department.name}</p>
                   </div>
                 </div>
               </div>
@@ -204,13 +194,12 @@ export default function Dashboard() {
             <div class="mt-4 grid gap-3">
               <For each={news()} fallback={<Skeleton class="h-20" />}>
                 {(a) => (
-                  <article class="relative p-4 rounded-2xl bg-sunken/60 border border-line/70">
-                    <span class={cx("absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full", a.tone === "lime" ? "bg-lime-400" : "bg-plum-500")} />
+                  <article class={cx("p-4 rounded-2xl", a.tone === "lime" ? "bg-tint-cream dark:bg-amber-500/10" : "bg-tint-blue dark:bg-plum-900/40")}>
                     <p class="flex items-center gap-2 text-[14.5px] font-semibold">
-                      <Megaphone size={14} class="text-plum-500 dark:text-lime-300 shrink-0" />
+                      <Megaphone size={14} class="text-plum-700 dark:text-lime-400 shrink-0" />
                       {a.title}
                     </p>
-                    <p class="mt-1.5 text-[13.5px] text-muted leading-relaxed">{a.body}</p>
+                    <p class="mt-1.5 text-[13.5px] text-ink-2 leading-relaxed">{a.body}</p>
                     <p class="mt-2 text-[12px] text-muted/80">
                       {a.author} · {fmtRelative(a.createdAt)}
                     </p>
@@ -237,18 +226,6 @@ function Row(props) {
   );
 }
 
-function MiniStat(props) {
-  return (
-    <div class="card p-4">
-      <IconTile tone={props.tone} size="sm">
-        {props.icon}
-      </IconTile>
-      <p class="mt-3 text-[22px] leading-none font-semibold tracking-[-0.02em] tabular">{props.value}</p>
-      <p class="mt-1.5 text-[12.5px] font-medium text-muted">{props.label}</p>
-    </div>
-  );
-}
-
 function Hero(props) {
   const mod = () => props.mod;
   const due = () => daysUntil(mod().dueAt);
@@ -268,6 +245,8 @@ function Hero(props) {
         return { label: "Browse company materials", href: "/training", icon: BookOpen };
     }
   };
+  const headline = () =>
+    ({ learn: "Keep going.", assess: mod().eligible ? "You're ready." : "Training complete.", done: "Well done.", unassigned: "Welcome." })[mod().stage];
   const message = () =>
     ({
       learn: `${mod().completedRequired} of ${mod().requiredCount} required modules done. Finish them to unlock your test.`,
@@ -277,77 +256,85 @@ function Hero(props) {
     })[mod().stage];
 
   return (
-    <section class="relative overflow-hidden rounded-[28px] border border-line bg-gradient-to-br from-white via-plum-50 to-lime-50 dark:from-surface dark:via-plum-900/30 dark:to-surface">
-      <div class="relative z-[1] grid lg:grid-cols-[minmax(0,1fr)_auto] gap-8 items-center p-5 sm:p-8 lg:px-10 lg:py-8">
-        <div class="min-w-0 stagger">
-          <p class="kicker">
-            <Sparkles size={13} /> {greeting()}
-            <span class="hidden sm:inline"> · {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</span>
-          </p>
-          <h1 class="mt-2 sm:mt-3 text-[28px] sm:text-[42px] leading-[1.08] font-semibold tracking-[-0.035em]">
-            Welcome back, <span class="text-plum-700 dark:text-lime-300">{props.firstName}.</span>
-          </h1>
-          <div class="mt-3 sm:mt-4 flex flex-wrap gap-2">
-            <Show when={props.me.department}>
-              <span class="badge badge-outline px-3 py-1.5 text-[13px]">
-                <DeptIcon id={props.me.department.id} size={13} class="text-plum-600 dark:text-lime-300" /> {props.me.department.name}
-              </span>
-            </Show>
+    <section class="hero-wash -mt-4 sm:-mt-8 mx-[calc(50%-50vw)] px-4 sm:px-6 pt-12 pb-16 sm:pt-28 sm:pb-24 text-center">
+      {/* Full-bleed: breaks out of the page container to the window edges. */}
+      <div class="hero-ellipses" aria-hidden="true"><span /><span /><span /></div>
+      <div class="mx-auto max-w-[900px] stagger">
+        <p class="inline-flex items-center gap-2 h-8 px-3.5 rounded-full border border-plum-200 bg-white/70 dark:bg-surface dark:border-line text-[13px] font-medium text-plum-700 dark:text-lime-400">
+          <Sparkles size={13} /> {greeting()}
+          <span class="hidden sm:inline text-ink-2"> · {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</span>
+        </p>
+        <h1 class="mt-5 text-[32px] sm:text-[48px] leading-[1.2] font-bold tracking-[-0.02em]">Welcome back, {props.firstName}</h1>
+        <p class="mt-4 mx-auto max-w-[720px] text-[16px] sm:text-[18px] leading-relaxed text-ink-2">
+          <span class="font-semibold text-plum-700 dark:text-lime-400">{headline()}</span> {message()}
+        </p>
+        <div class="mt-5 flex flex-wrap justify-center gap-2">
+          <Show when={props.me.department}>
             <span class="badge badge-outline px-3 py-1.5 text-[13px]">
-              <UserRound size={13} class="text-plum-600 dark:text-lime-300" /> {props.me.designation?.title ?? "No designation"}
+              <DeptIcon id={props.me.department.id} size={13} class="text-plum-700 dark:text-lime-400" /> {props.me.department.name}
             </span>
-            <span class="hidden sm:inline-flex badge badge-outline !text-muted px-3 py-1.5 text-[13px]" title="Set by your organisation">
-              <Lock size={12} /> Assigned by HR
-            </span>
-          </div>
-          <p class="mt-3 sm:mt-4 max-w-[560px] text-[15px] sm:text-[16px] leading-relaxed text-ink-2">{message()}</p>
-          {/* Phones: module progress inline (the ring is desktop-only). */}
-          <Show when={mod().department && mod().stage !== "done"}>
-            <div class="sm:hidden mt-4">
-              <div class="flex justify-between text-[13px] text-muted mb-1.5">
-                <span>Training progress</span>
-                <span class="tabular font-semibold text-ink">{props.readPct}%</span>
-              </div>
-              <ProgressBar value={props.readPct} tone="plum" />
-            </div>
           </Show>
-          <div class="mt-5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
-            <button class="btn btn-primary btn-lg w-full sm:w-auto !shadow-none" onClick={() => navigate(cta().href)}>
-              {cta().label} <ArrowRight size={17} />
-            </button>
-            <Show when={mod().department && mod().stage !== "done"}>
-              <span class={cx("inline-flex items-center justify-center sm:justify-start gap-2 text-[14px]", due() <= 3 ? "text-crimson-600 dark:text-crimson-300" : "text-muted")}>
-                <CalendarClock size={16} />
-                {due() >= 0 ? `Due ${fmtDate(mod().dueAt)} · ${plural(due(), "day")} left` : `Overdue since ${fmtDate(mod().dueAt)}`}
-              </span>
-            </Show>
-          </div>
+          <span class="badge badge-outline px-3 py-1.5 text-[13px]">
+            <UserRound size={13} class="text-plum-700 dark:text-lime-400" /> {props.me.designation?.title ?? "No designation"}
+          </span>
+          <span class="hidden sm:inline-flex badge badge-outline !text-muted px-3 py-1.5 text-[13px]" title="Set by your organisation">
+            <Lock size={12} /> Assigned by HR
+          </span>
         </div>
-
-        <Show when={mod().department}>
-          <div class="hidden sm:flex items-center gap-6 lg:flex-col lg:gap-4 p-5 rounded-3xl bg-surface/80 border border-line">
-            <ProgressRing value={mod().stage === "done" ? 100 : props.readPct} size={140} stroke={11} trackClass="stroke-sunken">
-              <span class="text-[32px] leading-none font-semibold tracking-[-0.03em]">
-                <CountUp value={mod().stage === "done" ? 100 : props.readPct} suffix="%" />
-              </span>
-              <span class="mt-1.5 text-[12px] uppercase tracking-[0.14em] text-muted">{mod().stage === "done" ? "Certified" : "Module read"}</span>
-            </ProgressRing>
-            <div class="grid grid-cols-2 gap-2 lg:w-full text-center">
-              <div class="px-3 py-2.5 rounded-2xl bg-sunken/70">
-                <p class="text-[18px] font-semibold tabular">
-                  {mod().completedRequired}/{mod().requiredCount}
-                </p>
-                <p class="text-[11.5px] uppercase tracking-[0.1em] text-muted">Required</p>
-              </div>
-              <div class="px-3 py-2.5 rounded-2xl bg-sunken/70">
-                <p class="text-[18px] font-semibold tabular">{mod().best ? `${Math.round(mod().best.percentage)}%` : "—"}</p>
-                <p class="text-[11.5px] uppercase tracking-[0.1em] text-muted">Best</p>
-              </div>
+        <Show when={mod().department && mod().stage !== "done"}>
+          <div class="sm:hidden mt-5 text-left">
+            <div class="flex justify-between text-[13px] text-ink-2 mb-1.5">
+              <span>Training progress</span>
+              <span class="tabular font-semibold text-ink">{props.readPct}%</span>
             </div>
+            <ProgressBar value={props.readPct} tone="plum" />
           </div>
         </Show>
+        <div class="mt-7 flex flex-col items-center gap-3">
+          <button class="btn-pill w-full sm:w-auto justify-between" onClick={() => navigate(cta().href)}>
+            {cta().label}
+            <span class="btn-pill-arrow">
+              <ArrowUpRight size={18} />
+            </span>
+          </button>
+          <Show when={mod().department && mod().stage !== "done"}>
+            <span class={cx("inline-flex items-center gap-2 text-[14px]", due() <= 3 ? "text-crimson-600 dark:text-crimson-300" : "text-ink-2")}>
+              <CalendarClock size={16} />
+              {due() >= 0 ? `Due ${fmtDate(mod().dueAt)} · ${plural(due(), "day")} left` : `Overdue since ${fmtDate(mod().dueAt)}`}
+            </span>
+          </Show>
+        </div>
       </div>
+      {/* Sits on the fading edge of the glow, like the hack2skill logo strip. */}
+      <Show when={mod().department}>
+        <StatsBand mod={mod()} readPct={props.readPct} />
+      </Show>
     </section>
+  );
+}
+
+// Numbers strip at the foot of the hero.
+function StatsBand(props) {
+  const mod = () => props.mod;
+  const items = () => [
+    { value: `${mod().stage === "done" ? 100 : props.readPct}%`, label: "Training complete" },
+    { value: `${mod().completedTotal}/${mod().materials.length}`, label: "Materials done" },
+    { value: mod().best ? `${Math.round(mod().best.percentage)}%` : "—", label: "Best score" },
+    { value: mod().assessment ? `${mod().assessment.attemptsLeft}/${mod().assessment.maxAttempts}` : "—", label: "Attempts left" },
+  ];
+  return (
+    <div class="band-blue mt-12 sm:mt-20 mx-auto max-w-[1192px] rounded-[20px] px-4 py-6 sm:px-8 sm:py-8">
+      <dl class="grid grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 text-center">
+        <For each={items()}>
+          {(it) => (
+            <div class="flex flex-col-reverse">
+              <dt class="mt-2 text-[14px] sm:text-[15px] font-medium text-ink">{it.label}</dt>
+              <dd class="text-[30px] sm:text-[40px] leading-none font-bold tracking-[-0.02em] text-plum-700 dark:text-lime-400 tabular">{it.value}</dd>
+            </div>
+          )}
+        </For>
+      </dl>
+    </div>
   );
 }
 
@@ -375,40 +362,55 @@ function Journey(props) {
       { label: "Get certified", sub: `Score ${mod().assessment.passPercent}% or more`, state: stage === "done" ? "done" : "locked", href: "/scoreboard" },
     ];
   };
+  const TINTS = [
+    { bg: "bg-tint-blue", icon: "text-[#3463AF]", Icon: BookOpen },
+    { bg: "bg-tint-cream", icon: "text-[#D97706]", Icon: ListChecks },
+    { bg: "bg-tint-mint", icon: "text-[#0F766E]", Icon: Target },
+    { bg: "bg-tint-lavender", icon: "text-[#6D28D9]", Icon: Trophy },
+  ];
   return (
-    <section class="card p-2 sm:p-2.5">
-      <p class="sm:hidden px-3 pt-2.5 pb-1 text-[13px] font-semibold text-ink-2">Your steps</p>
-      <ol class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1 sm:gap-1.5">
+    <section>
+      <h2 class="text-[22px] sm:text-[28px] font-bold leading-tight">Your path to certification</h2>
+      <p class="mt-1 text-[15px] text-ink-2">Four steps, in order. Each one unlocks the next.</p>
+      <ol class="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <For each={steps()}>
           {(s, i) => (
             <li>
               <Link
                 href={s.href}
                 class={cx(
-                  "flex items-center gap-3 h-full px-3 py-2.5 sm:p-3.5 rounded-[14px] transition",
-                  s.state === "current" ? "bg-plum-50 dark:bg-lime-400/10" : "hover:bg-sunken/60",
+                  "flex sm:flex-col gap-4 h-full p-5 sm:p-6 rounded-[20px] transition dark:!bg-surface dark:border dark:border-line",
+                  TINTS[i()].bg,
+                  s.state === "current" ? "ring-2 ring-plum-700 dark:ring-lime-400" : "hover:ring-1 hover:ring-line-strong",
                 )}
               >
-                <span
-                  class={cx(
-                    "grid place-items-center shrink-0 w-9 h-9 rounded-full text-[14px] font-semibold",
-                    s.state === "done" && "bg-lime-400 text-plum-950",
-                    s.state === "current" && "bg-plum-700 text-white dark:bg-lime-400 dark:text-plum-950 shadow-[0_0_0_4px_rgba(84,44,95,0.12)]",
-                    s.state === "locked" && "bg-sunken text-muted",
-                  )}
-                >
-                  <Switch fallback={i() + 1}>
-                    <Match when={s.state === "done"}>
-                      <Check size={16} stroke-width={3} />
-                    </Match>
-                    <Match when={s.state === "locked"}>
-                      <Lock size={14} />
-                    </Match>
-                  </Switch>
+                <span class={cx("grid place-items-center shrink-0 w-12 h-12 rounded-full bg-white dark:bg-sunken", TINTS[i()].icon)}>
+                  <Dynamic component={TINTS[i()].Icon} size={22} />
                 </span>
-                <span class="min-w-0">
-                  <span class={cx("block text-[14.5px] font-semibold sm:truncate", s.state === "locked" && "text-muted")}>{s.label}</span>
-                  <span class="block text-[13px] text-muted sm:truncate">{s.sub}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-[13px] font-medium text-ink-2">Step {i() + 1}</span>
+                  <span class={cx("block mt-0.5 text-[17px] font-semibold leading-snug", s.state === "locked" && "text-ink-2")}>{s.label}</span>
+                  <span class="block mt-1 text-[14px] text-ink-2">{s.sub}</span>
+                  <span
+                    class={cx(
+                      "inline-flex items-center gap-1.5 mt-3 text-[13px] font-semibold",
+                      s.state === "done" && "text-emerald-700 dark:text-emerald-300",
+                      s.state === "current" && "text-plum-700 dark:text-lime-400",
+                      s.state === "locked" && "text-muted",
+                    )}
+                  >
+                    <Switch>
+                      <Match when={s.state === "done"}>
+                        <CircleCheck size={15} /> Done
+                      </Match>
+                      <Match when={s.state === "current"}>
+                        <ArrowRight size={15} /> Up next
+                      </Match>
+                      <Match when={s.state === "locked"}>
+                        <Lock size={13} /> Locked
+                      </Match>
+                    </Switch>
+                  </span>
                 </span>
               </Link>
             </li>
@@ -416,8 +418,8 @@ function Journey(props) {
         </For>
       </ol>
       <Show when={!mod().eligible && mod().stage === "assess"}>
-        <p class="flex items-center gap-2 mx-2 mb-1.5 mt-1 px-3 py-2 rounded-xl text-[13.5px] font-medium badge-warn">
-          <TriangleAlert size={14} /> No attempts left — ask your training admin to reset your attempts.
+        <p class="flex items-center gap-2 mt-3 px-4 py-3 rounded-xl text-[14px] font-medium badge-warn">
+          <TriangleAlert size={15} /> No attempts left. Ask your training admin to reset your attempts.
         </p>
       </Show>
     </section>

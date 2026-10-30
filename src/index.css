@@ -3,88 +3,87 @@
 @tailwind utilities;
 
 /* ── Design tokens ──────────────────────────────────────────────────────────
-   Plum #542C5F (primary, dark surfaces), lime #C7E848 (signature accent),
-   ivory #F5F1E8 (canvas). Surface colours are RGB triplets so Tailwind can
-   apply opacity (bg-surface/80); brand scales live in tailwind.config.js.
-   Crimson is reserved for errors and destructive actions. */
+   Modelled on hack2skill.com: white pages, navy headings (#0F172A), slate
+   body text (#344767 / #627594), one brand blue (#3463AF), soft blue tints
+   and pastel cards. DM Sans throughout. Surface colours are RGB triplets so
+   Tailwind can apply opacity (bg-surface/80); brand scales (plum = blue,
+   lime = sky accent) live in tailwind.config.js. Crimson = errors only. */
 @layer base {
   :root {
-    --canvas: 255 255 255; /* plain white page */
+    --canvas: 255 255 255;
     --surface: 255 255 255;
-    --sunken: 238 233 222;
-    --line: 228 221 207;
-    --line-strong: 210 200 182;
-    --ink: 31 20 36;
-    --ink-2: 52 42 58;
-    --muted: 98 86 104;
+    --sunken: 245 247 251;
+    --line: 228 232 237;
+    --line-strong: 206 213 223;
+    --ink: 15 23 42;
+    --ink-2: 52 71 103;
+    --muted: 98 117 148;
 
-    --shadow-card: 0 1px 2px rgba(47, 24, 53, 0.04), 0 6px 18px -6px rgba(47, 24, 53, 0.08);
-    --shadow-lift: 0 2px 4px rgba(47, 24, 53, 0.04), 0 20px 44px -14px rgba(47, 24, 53, 0.22);
-    --shadow-float: 0 30px 70px -20px rgba(29, 14, 33, 0.5), 0 10px 24px -10px rgba(29, 14, 33, 0.28);
+    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-lift: 0 2px 4px rgba(15, 23, 42, 0.04), 0 12px 28px -12px rgba(15, 23, 42, 0.14);
+    --shadow-float: 0 20px 48px -16px rgba(15, 23, 42, 0.28), 0 6px 16px -8px rgba(15, 23, 42, 0.12);
     color-scheme: light;
   }
 
   .dark {
-    --canvas: 18 11 21;
-    --surface: 27 18 32;
-    --sunken: 36 25 42;
-    --line: 53 39 63;
-    --line-strong: 74 56 87;
-    --ink: 245 241 232;
-    --ink-2: 220 211 223;
-    --muted: 163 149 168;
+    --canvas: 10 15 28;
+    --surface: 17 24 41;
+    --sunken: 24 33 54;
+    --line: 36 48 74;
+    --line-strong: 52 66 98;
+    --ink: 236 241 248;
+    --ink-2: 199 210 226;
+    --muted: 145 160 186;
 
-    --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px -10px rgba(0, 0, 0, 0.6);
-    --shadow-lift: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 22px 48px -14px rgba(0, 0, 0, 0.75);
-    --shadow-float: 0 30px 80px -20px rgba(0, 0, 0, 0.85);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-lift: 0 12px 28px -12px rgba(0, 0, 0, 0.6);
+    --shadow-float: 0 20px 50px -16px rgba(0, 0, 0, 0.75);
     color-scheme: dark;
   }
 
   body {
     @apply bg-canvas text-ink font-sans antialiased text-[15px] leading-relaxed;
-    font-feature-settings: "cv11", "ss01", "ss03";
     text-rendering: optimizeLegibility;
   }
 
   ::selection {
-    background: rgba(199, 232, 72, 0.45);
-    color: #1d0e21;
+    background: rgba(52, 99, 175, 0.18);
   }
 
   h1, h2, h3, h4 {
-    @apply tracking-[-0.015em];
+    @apply text-ink tracking-[-0.01em];
   }
 
   /* A grid with no explicit columns otherwise gets an "auto" column that
      grows to its widest child's content and overflows on phones.
-     grid-cols-* utilities (later layer) still override this. */
-  /* Attribute selector on purpose: a plain .grid rule here would be copied
+     Attribute selector on purpose: a plain .grid rule here would be copied
      into Tailwind's responsive variants (sm:grid…) and override grid-cols-*. */
   [class~="grid"] {
     grid-template-columns: minmax(0, 1fr);
   }
 
   :focus-visible {
-    outline: 2px solid #a877b2;
+    outline: 2px solid #3463af;
     outline-offset: 2px;
   }
   .dark :focus-visible {
-    outline-color: #c7e848;
+    outline-color: #86b4ff;
   }
 }
 
 /* ── Components ─────────────────────────────────────────────────────────── */
 @layer components {
+  /* Cards: white, hairline border, 20px corners, no heavy shadow. */
   .card {
-    @apply bg-surface border border-line rounded-2xl shadow-card;
+    @apply bg-surface border border-line rounded-[20px] shadow-card;
   }
   .card-hover {
-    @apply transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lift hover:border-line-strong;
+    @apply transition duration-200 ease-out hover:border-line-strong hover:shadow-lift;
   }
 
   .btn {
-    @apply relative inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl text-sm font-semibold whitespace-nowrap select-none
-      transition duration-200 ease-out active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0;
+    @apply relative inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg text-[15px] font-medium whitespace-nowrap select-none
+      transition duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-sm {
     @apply h-9 px-3.5 text-[14px] rounded-lg gap-1.5;
@@ -93,49 +92,29 @@
     @apply h-12 px-6 text-[16px];
   }
   .btn-icon {
-    @apply w-10 h-10 px-0 rounded-xl;
+    @apply w-10 h-10 px-0 rounded-lg;
   }
 
-  /* Primary: plum lacquer in light mode, lime in dark mode. */
+  /* Primary: brand blue. */
   .btn-primary {
-    @apply text-white;
-    background: linear-gradient(180deg, #6b3b75 0%, #47244f 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.16),
-      0 1px 2px rgba(47, 24, 53, 0.3),
-      0 10px 22px -10px rgba(84, 44, 95, 0.7);
+    @apply text-white bg-plum-700 hover:bg-plum-800;
   }
-  .btn-primary:not(:disabled):hover {
-    background: linear-gradient(180deg, #7a4785 0%, #542c5f 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      0 1px 2px rgba(47, 24, 53, 0.3),
-      0 14px 28px -10px rgba(84, 44, 95, 0.8);
+  .dark .btn-primary {
+    @apply text-navy bg-lime-400 hover:bg-lime-300;
   }
-  .dark .btn-primary,
+  /* Navy, as hack2skill's "Contact Us". */
+  .btn-dark {
+    @apply text-white bg-navy hover:bg-[#1E293B] dark:bg-white dark:text-navy dark:hover:bg-white/90;
+  }
+  /* On blue / dark panels: white with blue text. */
   .btn-lime {
-    color: #1d0e21;
-    background: linear-gradient(180deg, #d7f070 0%, #bfe03a 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      0 10px 24px -10px rgba(199, 232, 72, 0.6);
+    @apply text-plum-700 bg-white hover:bg-plum-50;
   }
-  .dark .btn-primary:not(:disabled):hover,
-  .btn-lime:not(:disabled):hover {
-    background: linear-gradient(180deg, #e0f585 0%, #c7e848 100%);
-  }
-
   .btn-danger-solid {
-    @apply text-white;
-    background: linear-gradient(180deg, #c4364b 0%, #95202f 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      0 10px 22px -10px rgba(172, 35, 52, 0.7);
+    @apply text-white bg-crimson-600 hover:bg-crimson-700;
   }
-
   .btn-secondary {
-    @apply bg-surface text-ink-2 border border-line shadow-[0_1px_2px_rgba(47,24,53,0.05)]
-      hover:border-line-strong hover:text-ink hover:bg-sunken/50;
+    @apply bg-surface text-ink border border-line-strong hover:bg-sunken hover:border-muted/40;
   }
   .btn-ghost {
     @apply text-ink-2 hover:bg-sunken hover:text-ink;
@@ -143,16 +122,31 @@
   .btn-danger {
     @apply text-crimson-600 dark:text-crimson-300 bg-crimson-50 dark:bg-crimson-500/10 hover:bg-crimson-100 dark:hover:bg-crimson-500/20;
   }
-  /* For dark (plum) backgrounds. */
   .btn-glass {
-    @apply text-white bg-white/10 border border-white/15 hover:bg-white/15 backdrop-blur;
+    @apply text-white border border-white/60 hover:bg-white/10;
+  }
+
+  /* hack2skill's pill call-to-action with a white arrow circle on the right:
+     <button class="btn-pill">Label <span class="btn-pill-arrow"><ArrowUpRight/></span></button> */
+  .btn-pill {
+    @apply inline-flex items-center gap-3 h-12 pl-5 pr-1 rounded-full text-[16px] font-medium text-white bg-plum-700 hover:bg-plum-800
+      transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
+  }
+  .btn-pill.btn-pill-dark {
+    @apply bg-navy hover:bg-[#1E293B];
+  }
+  .btn-pill-arrow {
+    @apply grid place-items-center w-10 h-10 rounded-full bg-white text-plum-700;
+  }
+  .btn-pill-dark .btn-pill-arrow {
+    @apply text-navy;
   }
 
   .input {
-    @apply w-full h-11 px-3.5 rounded-xl border border-line bg-surface text-ink text-sm font-medium outline-none transition
-      placeholder:text-muted/70 placeholder:font-normal
-      hover:border-line-strong focus:border-plum-400 focus:ring-4 focus:ring-plum-400/15
-      dark:focus:border-lime-400/70 dark:focus:ring-lime-400/10
+    @apply w-full h-11 px-3.5 rounded-lg border border-line bg-surface text-ink text-[15px] outline-none transition
+      placeholder:text-muted/80
+      hover:border-line-strong focus:border-plum-700 focus:ring-2 focus:ring-plum-700/15
+      dark:focus:border-lime-400 dark:focus:ring-lime-400/15
       disabled:bg-sunken disabled:text-muted disabled:cursor-not-allowed;
   }
   textarea.input {
@@ -160,33 +154,66 @@
   }
   select.input {
     @apply pr-9 appearance-none cursor-pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237D7083' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23627594' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
   }
+  /* Underline-only field (login). */
+  .input-line {
+    @apply w-full h-12 px-0 bg-transparent border-0 border-b border-line-strong rounded-none text-ink text-[15.5px] outline-none transition-colors
+      placeholder:text-muted/70 hover:border-muted/60 focus:border-plum-700 dark:focus:border-lime-400;
+    box-shadow: none;
+  }
+  .input-line:focus {
+    box-shadow: 0 1px 0 0 #3463af;
+  }
+  .dark .input-line:focus {
+    box-shadow: 0 1px 0 0 #86b4ff;
+  }
+  .input-line:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 40px transparent inset;
+    transition: background-color 9999s;
+  }
+
+  /* Frosted card over the blue glow. */
+  .glass-card {
+    @apply rounded-[24px] border border-white/70 dark:border-white/10;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.12) 100%);
+    backdrop-filter: blur(18px) saturate(170%);
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 1px 0 0 rgba(255, 255, 255, 0.45),
+      0 24px 50px -24px rgba(15, 23, 42, 0.25);
+  }
+  .dark .glass-card {
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 30px 60px -28px rgba(0, 0, 0, 0.7);
+  }
+
   .input-invalid {
     @apply border-crimson-400 focus:border-crimson-500 focus:ring-crimson-500/15;
   }
   .label {
-    @apply block mb-1.5 text-[13.5px] font-semibold text-ink-2;
+    @apply block mb-1.5 text-[14px] font-semibold text-ink;
   }
   .hint {
     @apply mt-1.5 text-[13px] text-muted;
   }
   .error-text {
-    @apply mt-1.5 text-[13.5px] font-medium text-crimson-600 dark:text-crimson-300;
+    @apply mt-1.5 text-[13px] font-medium text-crimson-600 dark:text-crimson-300;
   }
 
+  /* Small label above a heading, e.g. "Step 1 of 3". */
   .kicker {
-    @apply inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-plum-600 dark:text-lime-300;
+    @apply inline-flex items-center gap-1.5 text-[13px] font-semibold text-plum-700 dark:text-lime-400;
   }
-  /* Kicker on plum backgrounds. */
   .eyebrow-lime {
-    @apply inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.18em] text-lime-300;
+    @apply inline-flex items-center gap-1.5 text-[13px] font-semibold text-lime-300;
   }
 
   .badge {
-    @apply inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[12.5px] font-semibold whitespace-nowrap leading-none;
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12.5px] font-medium whitespace-nowrap leading-none;
   }
   .badge-neutral { @apply bg-sunken text-ink-2; }
   .badge-success { @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300; }
@@ -196,77 +223,88 @@
   .badge-lime { @apply bg-lime-100 text-lime-800 dark:bg-lime-400/15 dark:text-lime-300; }
   .badge-outline { @apply border border-line text-ink-2 bg-surface; }
 
-  /* Hero: deep plum with a lime glow and soft violet light. */
-  .hero-aurora {
+  /* The soft blue glow behind hack2skill's hero. */
+  .hero-glow {
     background:
-      radial-gradient(55% 110% at 92% -15%, rgba(199, 232, 72, 0.28) 0%, transparent 58%),
-      radial-gradient(50% 90% at 4% 0%, rgba(168, 119, 178, 0.4) 0%, transparent 62%),
-      radial-gradient(70% 110% at 45% 135%, rgba(135, 84, 143, 0.5) 0%, transparent 60%),
-      linear-gradient(160deg, #5f3369 0%, #3d1f45 55%, #24122a 100%);
+      radial-gradient(70% 90% at 50% 18%, rgba(134, 180, 255, 0.55) 0%, rgba(200, 216, 255, 0.35) 38%, transparent 72%),
+      linear-gradient(180deg, #ffffff 0%, #f5f8ff 55%, #ffffff 100%);
   }
-  /* Dashboard hero: darker than .hero-aurora, lighter than .hero-deep. */
-  .hero-mid {
+  .dark .hero-glow {
     background:
-      radial-gradient(55% 110% at 92% -15%, rgba(199, 232, 72, 0.18) 0%, transparent 58%),
-      radial-gradient(50% 90% at 4% 0%, rgba(168, 119, 178, 0.3) 0%, transparent 62%),
-      radial-gradient(70% 110% at 45% 135%, rgba(107, 59, 117, 0.45) 0%, transparent 60%),
-      linear-gradient(160deg, #432249 0%, #2c1633 55%, #1b0d20 100%);
+      radial-gradient(70% 90% at 50% 15%, rgba(52, 99, 175, 0.35) 0%, transparent 70%),
+      rgb(var(--canvas));
   }
-  /* Login panel: the same light, on a much darker plum. */
-  .hero-deep {
-    background:
-      radial-gradient(55% 110% at 92% -15%, rgba(199, 232, 72, 0.14) 0%, transparent 58%),
-      radial-gradient(50% 90% at 4% 0%, rgba(135, 84, 143, 0.28) 0%, transparent 62%),
-      radial-gradient(70% 110% at 45% 135%, rgba(84, 44, 95, 0.45) 0%, transparent 60%),
-      linear-gradient(160deg, #2a1531 0%, #1a0c1f 55%, #0f0613 100%);
+  /* Full-width hero wash: blue glows at both sides and below the centre. */
+  /* Hero background, built the way hack2skill.com builds theirs: three
+     stacked ellipses (#387EF0, #86B4FF, white) at 32% opacity, blurred 91px.
+     Markup: <section class="hero-wash"><div class="hero-ellipses"><span/><span/><span/></div>…</section> */
+  .hero-wash {
+    @apply relative overflow-hidden bg-canvas;
   }
-  .hero-aurora-soft {
-    background:
-      radial-gradient(50% 80% at 100% 0%, rgba(199, 232, 72, 0.18) 0%, transparent 62%),
-      radial-gradient(60% 90% at 0% 100%, rgba(168, 119, 178, 0.32) 0%, transparent 62%),
-      linear-gradient(160deg, #542c5f 0%, #2f1835 100%);
+  .hero-wash > :not(.hero-ellipses) {
+    @apply relative;
   }
-
-  /* Fine film grain over dark heroes — breaks up gradient banding. */
-  .grain::after {
-    content: "";
+  .hero-ellipses {
     position: absolute;
-    inset: 0;
+    top: -107px;
+    left: 50%;
+    width: 1750px;
+    height: 628px;
+    transform: translateX(-50%);
+    opacity: 0.32;
+    filter: blur(91px);
     pointer-events: none;
-    opacity: 0.08;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .hero-ellipses > span {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+  }
+  .hero-ellipses > span:nth-child(1) { width: 1750px; height: 628px; background: #387ef0; }
+  .hero-ellipses > span:nth-child(2) { width: 1217px; height: 437px; background: #86b4ff; }
+  .hero-ellipses > span:nth-child(3) { width: 658px; height: 237px; background: #ffffff; }
+  .dark .hero-ellipses { opacity: 0.22; }
+  .dark .hero-ellipses > span:nth-child(3) { background: rgb(var(--canvas)); }
+  /* Light-blue band (hack2skill's stats strip). */
+  .band-blue {
+    @apply bg-plum-200 dark:bg-plum-900/50;
   }
 
-  /* Subtle grid lines behind a hero. */
+  /* Dark panels (kept for a few admin/test headers): flat navy. */
+  .hero-aurora,
+  .hero-aurora-soft,
+  .hero-mid {
+    background: linear-gradient(135deg, #1e3a6b 0%, #0f172a 100%);
+  }
+  .hero-deep {
+    background: #0f172a;
+  }
+
+  /* Retired effects, kept as no-ops so existing markup stays harmless. */
+  .grain::after {
+    content: none;
+  }
   .grid-lines {
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(ellipse at 70% 0%, #000 0%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse at 70% 0%, #000 0%, transparent 70%);
+    display: none;
   }
 
   .glass {
-    @apply bg-white/[0.08] border border-white/[0.14] backdrop-blur-md;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    @apply bg-white/[0.08] border border-white/[0.16];
   }
 
   .text-lime-gradient {
-    background: linear-gradient(100deg, #e9f8a8 0%, #c7e848 50%, #e4f49a 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    @apply text-plum-700 dark:text-lime-400;
   }
 
   .hairline {
-    background: linear-gradient(90deg, #c7e848 0%, #a877b2 50%, transparent 100%);
+    background: linear-gradient(90deg, #3463af 0%, #86b4ff 60%, transparent 100%);
   }
 
   .skeleton {
     @apply rounded-xl bg-sunken;
-    background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.55) 50%, transparent 100%);
+    background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
     background-size: 200% 100%;
     animation: shimmer 1.8s linear infinite;
   }
@@ -279,16 +317,16 @@
     @apply w-full border-collapse text-[14px];
   }
   .table thead th {
-    @apply px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.08em] text-muted bg-sunken/60 border-b border-line whitespace-nowrap;
+    @apply px-4 py-3 text-left text-[12.5px] font-semibold text-muted bg-sunken border-b border-line whitespace-nowrap;
   }
   .table tbody td {
-    @apply px-4 py-3 border-b border-line/70 align-middle;
+    @apply px-4 py-3 border-b border-line align-middle;
   }
   .table tbody tr {
     @apply transition-colors;
   }
   .table tbody tr:hover {
-    @apply bg-sunken/40;
+    @apply bg-plum-50/50 dark:bg-white/[0.03];
   }
   .table tbody tr:last-child td {
     @apply border-b-0;
@@ -296,16 +334,16 @@
 
   /* Long-form reading (manuals, structured guides). */
   .prose-doc p {
-    @apply mb-4 leading-[1.8] text-ink-2;
+    @apply mb-4 leading-[1.75] text-ink-2;
   }
   .prose-doc h3 {
     @apply mt-7 mb-3 text-[1.1em] font-semibold text-ink;
   }
   .prose-doc ul {
-    @apply mb-4 pl-5 grid gap-2 list-disc marker:text-plum-400 text-ink-2 leading-[1.75];
+    @apply mb-4 pl-5 grid gap-2 list-disc marker:text-plum-700 text-ink-2 leading-[1.7];
   }
   .prose-doc ol {
-    @apply mb-4 pl-5 grid gap-2 list-decimal marker:text-plum-500 marker:font-semibold text-ink-2 leading-[1.75];
+    @apply mb-4 pl-5 grid gap-2 list-decimal marker:text-plum-700 marker:font-semibold text-ink-2 leading-[1.7];
   }
   .dark .prose-doc ul,
   .dark .prose-doc ol {
@@ -327,24 +365,21 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  /* Children fade up one after another. */
+  /* One quiet fade for groups of cards. */
   .stagger > * {
-    animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation: fade-up 0.35s ease-out backwards;
   }
-  .stagger > *:nth-child(1) { animation-delay: 0.02s; }
-  .stagger > *:nth-child(2) { animation-delay: 0.07s; }
-  .stagger > *:nth-child(3) { animation-delay: 0.12s; }
-  .stagger > *:nth-child(4) { animation-delay: 0.17s; }
-  .stagger > *:nth-child(5) { animation-delay: 0.22s; }
-  .stagger > *:nth-child(6) { animation-delay: 0.27s; }
-  .stagger > *:nth-child(7) { animation-delay: 0.32s; }
-  .stagger > *:nth-child(n + 8) { animation-delay: 0.36s; }
+}
+
+/* No floating motion. */
+.animate-float {
+  animation: none !important;
 }
 
 /* Declared here as well as in tailwind.config.js: plain CSS above uses them,
    and Tailwind only emits keyframes for animate-* classes it finds. */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
 @keyframes shimmer {

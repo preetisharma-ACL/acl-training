@@ -181,8 +181,8 @@ export function LineChart(props) {
       <svg viewBox={`0 0 ${W} ${H}`} class="w-full h-auto overflow-visible" role="img" aria-label={props.ariaLabel} onMouseMove={onMove}>
         <defs>
           <linearGradient id="line-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" class="[stop-color:#87548F] dark:[stop-color:#C7E848]" stop-opacity="0.22" />
-            <stop offset="100%" class="[stop-color:#87548F] dark:[stop-color:#C7E848]" stop-opacity="0" />
+            <stop offset="0%" class="[stop-color:#3463AF] dark:[stop-color:#86B4FF]" stop-opacity="0.22" />
+            <stop offset="100%" class="[stop-color:#3463AF] dark:[stop-color:#86B4FF]" stop-opacity="0" />
           </linearGradient>
         </defs>
         <For each={ticks}>

@@ -60,11 +60,11 @@ export function ThemeToggle(props) {
 // ── Avatar ──────────────────────────────────────────────────────────────────
 
 const AVATAR_TONES = [
-  "from-plum-500 to-plum-800 text-white",
-  "from-plum-400 to-plum-700 text-white",
-  "from-lime-300 to-lime-500 text-plum-950",
-  "from-plum-600 to-plum-950 text-lime-300",
-  "from-[#9A6AA3] to-[#542C5F] text-white",
+  "from-[#3463AF] to-[#3463AF] text-white",
+  "from-[#0F766E] to-[#0F766E] text-white",
+  "from-[#7C3AED] to-[#7C3AED] text-white",
+  "from-[#C2410C] to-[#C2410C] text-white",
+  "from-[#0F172A] to-[#0F172A] text-white",
 ];
 const hash = (s = "") => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
@@ -145,7 +145,7 @@ export function ProgressRing(props) {
                   fallback={
                     <>
                       <stop offset="0%" stop-color="#FFFFFF" />
-                      <stop offset="100%" stop-color="#E0CAE5" />
+                      <stop offset="100%" stop-color="#C8D8FF" />
                     </>
                   }
                 >
@@ -153,19 +153,19 @@ export function ProgressRing(props) {
                   when={tone() === "plum"}
                   fallback={
                     <>
-                      <stop offset="0%" stop-color={tone() === "danger" ? "#DA5A6F" : "#34D399"} />
-                      <stop offset="100%" stop-color={tone() === "danger" ? "#AC2334" : "#059669"} />
+                      <stop offset="0%" stop-color={tone() === "danger" ? "#C4364B" : "#16A34A"} />
+                      <stop offset="100%" stop-color={tone() === "danger" ? "#AC2334" : "#16A34A"} />
                     </>
                   }
                 >
-                  <stop offset="0%" stop-color="#A877B2" />
-                  <stop offset="100%" stop-color="#542C5F" />
+                  <stop offset="0%" stop-color="#3463AF" />
+                  <stop offset="100%" stop-color="#3463AF" />
                 </Show>
                 </Show>
               }
             >
-              <stop offset="0%" stop-color="#E4F49A" />
-              <stop offset="100%" stop-color="#ADCF2C" />
+              <stop offset="0%" stop-color="#86B4FF" />
+              <stop offset="100%" stop-color="#86B4FF" />
             </Show>
           </linearGradient>
         </defs>

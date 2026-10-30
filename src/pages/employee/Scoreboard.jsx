@@ -88,7 +88,7 @@ function Confetti() {
             class="absolute top-[-12px] w-2 h-3 rounded-[2px]"
             style={{
               left: `${(i * 37) % 100}%`,
-              background: ["#C7E848", "#ADCF2C", "#A877B2", "#542C5F"][i % 4],
+              background: ["#3463AF", "#86B4FF", "#F59E0B", "#10B981"][i % 4],
               animation: `confetti ${2.2 + (i % 5) * 0.35}s cubic-bezier(.3,.7,.4,1) ${(i % 9) * 0.08}s both`,
               transform: `rotate(${i * 29}deg)`,
             }}
