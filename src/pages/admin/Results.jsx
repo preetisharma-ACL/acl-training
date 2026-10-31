@@ -2,18 +2,23 @@
 // detail drawer showing the full answer review where one was recorded.
 
 import { createResource, createSignal, createMemo, For, Show } from "solid-js";
-import { Download, TriangleAlert, ArrowUpDown, ArrowDown, ArrowUp, ChartColumn, Clock, Target, BadgeCheck, X, Info, CircleCheck, CircleX } from "lucide-solid";
+import { Download, TriangleAlert, ArrowUpDown, ArrowDown, ArrowUp, ChartColumn, Clock, Target, BadgeCheck, X, Info, CircleCheck, CircleX, Trash2 } from "lucide-solid";
 import { query, navigate } from "../../lib/router";
 import { cx, fmtDateTime, fmtDate, fmtDuration } from "../../lib/format";
 import { exportCsv } from "../../lib/csv";
-import { listResults, getResult, listDepartments } from "../../services/admin";
-import { PageHeader, SearchInput, Tabs, Skeleton, Avatar, Drawer, EmptyState, ProgressRing, Toggle } from "../../components/ui";
+import { listResults, getResult, listDepartments, deleteResult } from "../../services/admin";
+import { toast } from "../../store/toast";
+import { PageHeader, SearchInput, Tabs, Skeleton, Avatar, Drawer, EmptyState, ProgressRing, Toggle, ConfirmDialog } from "../../components/ui";
 
 const LETTERS = ["A", "B", "C", "D"];
 const RANGES = { 7: "7 days", 30: "30 days", 90: "90 days", all: "All time" };
 
+// An attempt is "flagged" at this many focus warnings (times the employee
+// left the test page). Same threshold as the server's dashboard KPI.
+const FOCUS_FLAG_AT = 2;
+
 export default function Results() {
-  const [results] = createResource(listResults);
+  const [results, { refetch }] = createResource(listResults);
   const [departments] = createResource(listDepartments);
   const [q, setQ] = createSignal("");
   const [dept, setDept] = createSignal("");
@@ -22,6 +27,7 @@ export default function Results() {
   const [flagged, setFlagged] = createSignal(false);
   const [sort, setSort] = createSignal({ key: "submittedAt", dir: -1 });
   const [open, setOpen] = createSignal(null);
+  const [removing, setRemoving] = createSignal(null);
   const userFilter = () => query().get("user");
 
   const filtered = createMemo(() => {
@@ -34,7 +40,7 @@ export default function Results() {
           (!userFilter() || r.userId === userFilter()) &&
           (!dept() || r.departmentId === dept()) &&
           (outcome() === "all" || (outcome() === "passed" ? r.passed : !r.passed)) &&
-          (!flagged() || r.focusViolations >= 2) &&
+          (!flagged() || r.focusViolations >= FOCUS_FLAG_AT) &&
           new Date(r.submittedAt).getTime() >= since &&
           (!t || r.userName.toLowerCase().includes(t) || r.userEmail.toLowerCase().includes(t) || r.userCode.toLowerCase().includes(t)),
       )
@@ -49,7 +55,8 @@ export default function Results() {
       passRate: Math.round((r.filter((x) => x.passed).length / n) * 100),
       avg: Math.round(r.reduce((t, x) => t + x.percentage, 0) / n),
       time: Math.round(r.reduce((t, x) => t + x.timeTakenSeconds, 0) / n),
-      flags: r.filter((x) => x.focusViolations >= 2).length,
+      flags: r.filter((x) => x.focusViolations >= FOCUS_FLAG_AT).length,
+      warned: r.filter((x) => x.focusViolations > 0).length,
     };
   };
 
@@ -107,7 +114,7 @@ export default function Results() {
             [BadgeCheck, "Pass rate", `${summary().passRate}%`],
             [Target, "Average score", `${summary().avg}%`],
             [Clock, "Average time", fmtDuration(summary().time)],
-            [TriangleAlert, "Focus flags", summary().flags],
+            [TriangleAlert, `Flagged (${FOCUS_FLAG_AT}+ warnings)`, summary().flags],
           ]}
         >
           {([Icon, label, value], i) => (
@@ -141,7 +148,7 @@ export default function Results() {
             ]}
           />
           <label class="flex items-center gap-2 text-[13.5px] font-medium text-ink-2">
-            <Toggle checked={flagged()} onChange={setFlagged} label="Focus flagged only" /> Flagged only
+            <Toggle checked={flagged()} onChange={setFlagged} label={`Only attempts with ${FOCUS_FLAG_AT} or more focus warnings`} /> Flagged only ({FOCUS_FLAG_AT}+)
           </label>
         </div>
         <Show when={userFilter()}>
@@ -182,6 +189,7 @@ export default function Results() {
                     </th>
                     <th>Focus</th>
                     <th>Result</th>
+                    <th class="w-12" />
                   </tr>
                 </thead>
                 <tbody>
@@ -219,13 +227,28 @@ export default function Results() {
                         </td>
                         <td>
                           <Show when={r.focusViolations} fallback={<span class="text-muted">—</span>}>
-                            <span class={cx("badge", r.focusViolations >= 2 ? "badge-danger" : "badge-warn")}>
+                            <span
+                              class={cx("badge", r.focusViolations >= FOCUS_FLAG_AT ? "badge-danger" : "badge-warn")}
+                              title={`${r.focusViolations} focus warning${r.focusViolations === 1 ? "" : "s"}${r.focusViolations >= FOCUS_FLAG_AT ? " — flagged" : ""}`}
+                            >
                               <TriangleAlert size={11} /> {r.focusViolations}
                             </span>
                           </Show>
                         </td>
                         <td>
                           <span class={cx("badge", r.passed ? "badge-success" : "badge-danger")}>{r.passed ? "Passed" : "Failed"}</span>
+                        </td>
+                        <td>
+                          <button
+                            class="btn btn-ghost btn-icon !w-8 !h-8 hover:!text-crimson-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRemoving(r);
+                            }}
+                            aria-label={`Delete ${r.userName}'s result`}
+                          >
+                            <Trash2 size={15} />
+                          </button>
                         </td>
                       </tr>
                     )}
@@ -242,6 +265,24 @@ export default function Results() {
 
       <Show when={open()}>
         <ResultDrawer id={open()} onClose={() => setOpen(null)} />
+      </Show>
+      <Show when={removing()}>
+        <ConfirmDialog
+          title={`Delete this result for ${removing().userName}?`}
+          message={`The ${removing().percentage}% attempt from ${fmtDateTime(removing().submittedAt)} and its answers are deleted permanently. It no longer counts towards their best score, standing or attempts used.`}
+          confirmLabel="Delete result"
+          tone="danger"
+          onClose={() => setRemoving(null)}
+          onConfirm={async () => {
+            try {
+              await deleteResult(removing().id);
+              toast("Result deleted.");
+              refetch();
+            } catch (e) {
+              toast(e.message, { tone: "error" });
+            }
+          }}
+        />
       </Show>
     </div>
   );

@@ -397,3 +397,49 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Print ──────────────────────────────────────────────────────────────────
+   Printing a manual or guide (Viewer → Print) prints the document only:
+   the app chrome (top bars, side menu, bottom tab bar, toolbar, contents
+   rail, next/previous links, toasts) is hidden, the page uses the full
+   width, and the light palette is used even in dark mode. */
+@media print {
+  .dark {
+    --canvas: 255 255 255;
+    --surface: 255 255 255;
+    --sunken: 245 247 251;
+    --line: 228 232 237;
+    --line-strong: 206 213 223;
+    --ink: 15 23 42;
+    --ink-2: 52 71 103;
+    --muted: 98 117 148;
+    color-scheme: light;
+  }
+  header,
+  footer,
+  nav,
+  aside,
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  main,
+  .lg\:pl-\[272px\] {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .print-flat {
+    display: block !important;
+  }
+  .card {
+    box-shadow: none !important;
+    break-inside: auto;
+  }
+  section[data-section] {
+    break-inside: avoid-page;
+  }
+}

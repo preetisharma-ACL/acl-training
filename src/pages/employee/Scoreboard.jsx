@@ -16,12 +16,16 @@ import {
   LayoutDashboard,
   ChevronDown,
   Info,
+  Award,
+  Medal,
+  Users,
+  BarChart3,
 } from "lucide-solid";
 import { Dynamic } from "solid-js/web";
 import { Link, navigate, query } from "../../lib/router";
 import { cx, fmtDate, fmtDateTime, fmtDuration } from "../../lib/format";
 import { user } from "../../store/auth";
-import { listMyAttempts, getAttempt, getMyModule } from "../../services/training";
+import { listMyAttempts, getAttempt, getMyModule, certificateUrl } from "../../services/training";
 import { ProgressRing, Skeleton, EmptyState, Tabs, CountUp, SectionTitle } from "../../components/ui";
 
 const LETTERS = ["A", "B", "C", "D"];
@@ -66,6 +70,9 @@ export default function Scoreboard(props) {
           <Show when={result()} fallback={<Skeleton class="h-[300px] !rounded-[28px]" />}>
             <ResultHero r={result()} me={me} fresh={fresh} mod={mod()} />
             <StatsGrid r={result()} />
+            <Show when={result().standing?.of}>
+              <Standing s={result().standing} department={result().departmentName} />
+            </Show>
             <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
               <Review r={result()} />
               <History history={history()} selected={selectedId()} />
@@ -218,6 +225,11 @@ function ResultHero(props) {
                 <RotateCcw size={16} /> Retake test ({props.mod.assessment.attemptsLeft} left)
               </button>
             </Show>
+            <Show when={certificateUrl?.(r())}>
+              <a class="btn btn-primary w-full sm:w-auto" href={certificateUrl(r())} download>
+                <Award size={16} /> Download certificate
+              </a>
+            </Show>
             <button class="btn btn-secondary w-full sm:w-auto" onClick={() => navigate("/dashboard")}>
               <LayoutDashboard size={16} /> Back to home
             </button>
@@ -313,6 +325,56 @@ function ResultArt(props) {
 
 // One panel instead of six cards: a segmented bar for how the questions went,
 // then a slim row of facts.
+// Department standing, straight from the API (no names, only numbers):
+// rank by best score among colleagues who have taken the test, the
+// department average of those best scores, and how many have passed.
+function Standing(props) {
+  const s = () => props.s;
+  const ord = (n) => {
+    const v = n % 100;
+    return n + (v >= 11 && v <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th");
+  };
+  const cmp = () => {
+    if (s().best == null || s().departmentAverage == null) return null;
+    const d = Math.round((s().best - s().departmentAverage) * 10) / 10;
+    return d > 0 ? `${d}% above the department average` : d < 0 ? `${Math.abs(d)}% below the department average` : "Level with the department average";
+  };
+  const tiles = () => [
+    { icon: Medal, label: "Your rank", value: s().rank ? ord(s().rank) : "—", sub: `of ${s().of} who took the test` },
+    { icon: BarChart3, label: "Department average", value: s().departmentAverage != null ? `${s().departmentAverage}%` : "—", sub: "of everyone's best score" },
+    { icon: Users, label: "Passed", value: s().passedCount, sub: s().totalEligible ? `of ${s().totalEligible} in the department` : "colleagues" },
+  ];
+  return (
+    <section class="card p-5 sm:p-7">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="text-[16px] font-semibold tracking-[-0.01em]">Department standing</h2>
+        <p class="text-[13.5px] text-muted">{props.department} · ranked by each person's best score</p>
+      </div>
+      <dl class="grid grid-cols-1 sm:grid-cols-3 mt-5 gap-3">
+        <For each={tiles()}>
+          {(t) => (
+            <div class="flex items-center gap-3 p-3.5 rounded-2xl bg-sunken/60">
+              <span class="grid place-items-center shrink-0 w-10 h-10 rounded-xl bg-plum-50 text-plum-700 dark:bg-plum-400/15 dark:text-plum-200">
+                <Dynamic component={t.icon} size={18} />
+              </span>
+              <div class="min-w-0">
+                <dt class="text-[12.5px] text-muted">{t.label}</dt>
+                <dd class="text-[20px] leading-tight font-bold tabular text-ink">{t.value}</dd>
+                <p class="text-[12.5px] text-muted truncate">{t.sub}</p>
+              </div>
+            </div>
+          )}
+        </For>
+      </dl>
+      <Show when={cmp()}>
+        <p class="mt-3 text-[13.5px] text-ink-2">
+          Your best score is <strong class="tabular">{s().best}%</strong> — {cmp()}.
+        </p>
+      </Show>
+    </section>
+  );
+}
+
 function StatsGrid(props) {
   const r = () => props.r;
   const total = () => r().totalQuestions || 1;

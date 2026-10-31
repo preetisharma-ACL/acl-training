@@ -25,6 +25,15 @@ export function remove(key) {
   }
 }
 
+// Removes every localStorage key the test accepts.
+export function removeWhere(test) {
+  try {
+    for (const k of Object.keys(localStorage)) if (test(k)) localStorage.removeItem(k);
+  } catch {
+    /* ignore */
+  }
+}
+
 // Trigger a browser download for a Blob.
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);

@@ -1,9 +1,11 @@
 // ─── Assessment ─────────────────────────────────────────────────────────────
 // Ported from the original Training page; behaviour is unchanged:
 //   • timed multiple-choice quiz, four options per question
-//   • leaving the tab/window pauses the test with a warning and counts it
-//   • answers + time left persist (store/assessment.js); a reload resumes
-//     paused and counts a "left" warning
+//   • leaving the tab/window (hidden, or unfocused for over 2 s) shows a
+//     warning and counts it once per trip away. Against the real
+//     API the server's deadline keeps running meanwhile (mock mode pauses)
+//   • answers persist (autosaved to the server); a reload resumes behind the
+//     warning and counts a "left" warning
 //   • auto-submits at 00:00; manual submit asks for confirmation
 //   • keyboard: A–D / 1–4 to answer, ← → to move
 // While it runs, App.jsx renders nothing else — the training module and the
@@ -13,9 +15,10 @@ import { batch, createSignal, createMemo, createEffect, onMount, onCleanup, Show
 import { GraduationCap, ChevronLeft, ChevronRight, TriangleAlert, Play, Send, Timer, Flag, Lock } from "lucide-solid";
 import { navigate } from "../../lib/router";
 import { cx, fmtClock } from "../../lib/format";
-import { session as s, setSession as setS, endSession } from "../../store/assessment";
+import { session as s, setSession as setS, endSession, secondsLeft } from "../../store/assessment";
 import { submitAttempt } from "../../services/training";
 import { Modal } from "../../components/ui";
+import { createFocusGuard } from "../../lib/focusGuard";
 
 const LETTERS = ["A", "B", "C", "D"];
 
@@ -35,8 +38,10 @@ export default function Assessment() {
   const q = () => questions()[s.current];
   const answeredCount = () => questions().filter((x) => s.answers[x.id] !== undefined).length;
   const unanswered = () => questions().length - answeredCount();
+  // Server deadline: the clock never stops. Mock mode: it pauses while away.
+  const serverClock = () => !!s.deadline;
   // Memo, so the clock effect re-runs only when running flips — not every tick.
-  const running = createMemo(() => !s.paused && !submitting() && s.remaining > 0);
+  const running = createMemo(() => (serverClock() || !s.paused) && !submitting() && s.remaining > 0);
   const lowTime = () => s.remaining <= 60;
   const timePct = () => (s.attempt ? (s.remaining / s.attempt.durationSeconds) * 100 : 0);
 
@@ -73,7 +78,7 @@ export default function Assessment() {
   createEffect(() => {
     if (!running()) return;
     const t = setInterval(() => {
-      const next = s.remaining - 1;
+      const next = serverClock() ? secondsLeft() : s.remaining - 1;
       setS("remaining", Math.max(0, next));
       if (next <= 0) {
         clearInterval(t);
@@ -84,10 +89,20 @@ export default function Assessment() {
     onCleanup(() => clearInterval(t));
   });
 
-  // Focus guard: any way of leaving the window pauses the test.
+  // Focus guard: leaving the test pauses it and counts a warning. A hidden
+  // tab counts at once; a blur only after a short grace period (so devtools,
+  // the browser's side panel or a notification don't), and one trip away
+  // counts once. Rules in lib/focusGuard.js.
   onMount(() => {
-    const onVisibility = () => document.hidden && pause("hidden");
-    const onBlur = () => pause("blur");
+    const guard = createFocusGuard({ onViolation: pause, isAway: () => document.hidden || !document.hasFocus() });
+    const onVisibility = () => (document.hidden ? guard.hidden() : document.hasFocus() && guard.back());
+    const onBlur = () => guard.blur();
+    const onFocus = () => !document.hidden && guard.back();
+    window.addEventListener("focus", onFocus);
+    onCleanup(() => {
+      window.removeEventListener("focus", onFocus);
+      guard.dispose();
+    });
     const onBeforeUnload = (e) => {
       e.preventDefault();
       e.returnValue = "";
@@ -378,11 +393,11 @@ export default function Assessment() {
             <span class="grid place-items-center w-16 h-16 rounded-full bg-crimson-50 text-crimson-600 dark:bg-crimson-500/15 dark:text-crimson-300 animate-ring">
               <TriangleAlert size={26} />
             </span>
-            <h2 id="pause-title" class="text-xl font-semibold">Test paused</h2>
+            <h2 id="pause-title" class="text-xl font-semibold">{serverClock() ? "Come back to your test" : "Test paused"}</h2>
             <p class="font-semibold text-crimson-600 dark:text-crimson-300">{PAUSE_COPY[s.pauseReason] || PAUSE_COPY.left}</p>
             <p class="text-[14.5px] text-muted">
-              The timer has stopped and your answers are saved. Please stay on this window until you finish — every time you leave is recorded on your
-              result.
+              {serverClock() ? "The timer keeps running and your answers are saved." : "The timer has stopped and your answers are saved."} Please stay on this window until you
+              finish — every time you leave is recorded on your result.
             </p>
             <div class="grid grid-cols-3 gap-2.5 w-full">
               <For

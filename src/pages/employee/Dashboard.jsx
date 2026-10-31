@@ -25,9 +25,11 @@ import {
   ArrowUpRight,
 } from "lucide-solid";
 import { Link, navigate } from "../../lib/router";
-import { cx, greeting, fmtDate, fmtRelative, daysUntil, plural } from "../../lib/format";
+import { cx, greeting, fmtDate, fmtRelative, daysUntil, dueLabel, plural } from "../../lib/format";
 import { user } from "../../store/auth";
-import { getMyModule, listMyAttempts, getAnnouncements } from "../../services/training";
+import { getMyModule, listMyAttempts } from "../../services/training";
+import { loadAnnouncements } from "../../store/announcements";
+import { blockedMessage, pct } from "../../lib/progress";
 import { ProgressRing, ProgressBar, Skeleton, EmptyState, SectionTitle, IconTile, CountUp } from "../../components/ui";
 import { DeptIcon, TypeIcon, MATERIAL_TYPES } from "../../components/icons";
 
@@ -35,7 +37,7 @@ export default function Dashboard() {
   const me = user();
   const [mod] = createResource(() => getMyModule(me));
   const [attempts] = createResource(() => listMyAttempts(me));
-  const [news] = createResource(getAnnouncements);
+  const [news] = createResource(() => me.id, loadAnnouncements);
 
   const readPct = () => (mod()?.requiredCount ? Math.round((mod().completedRequired / mod().requiredCount) * 100) : 0);
   const firstName = me.name.split(" ")[0];
@@ -184,7 +186,7 @@ export default function Dashboard() {
                 <Row icon={<MapPin size={15} />} label="Location" value={mod().department.location} />
                 <Row icon={<ListChecks size={15} />} label="Test" value={`${mod().assessment.questionCount} questions`} />
                 <Row icon={<Timer size={15} />} label="Time limit" value={`${mod().assessment.durationMinutes} minutes`} />
-                <Row icon={<Target size={15} />} label="Pass mark" value={`${mod().assessment.passPercent}%`} />
+                <Row icon={<Target size={15} />} label="Pass mark" value={pct(mod().assessment.passPercent)} />
               </dl>
             </section>
           </Show>
@@ -192,7 +194,10 @@ export default function Dashboard() {
           <section class="card p-4 sm:p-5">
             <SectionTitle title="Announcements" />
             <div class="mt-4 grid gap-3">
-              <For each={news()} fallback={<Skeleton class="h-20" />}>
+              <Show when={!news.loading && !news()?.length}>
+                <p class="px-1 text-[14px] text-muted">No announcements right now.</p>
+              </Show>
+              <For each={news()} fallback={<Show when={news.loading}><Skeleton class="h-20" /></Show>}>
                 {(a) => (
                   <article class={cx("p-4 rounded-2xl", a.tone === "lime" ? "bg-tint-cream dark:bg-amber-500/10" : "bg-tint-blue dark:bg-plum-900/40")}>
                     <p class="flex items-center gap-2 text-[14.5px] font-semibold">
@@ -246,11 +251,11 @@ function Hero(props) {
     }
   };
   const headline = () =>
-    ({ learn: "Keep going.", assess: mod().eligible ? "You're ready." : "Training complete.", done: "Well done.", unassigned: "Welcome." })[mod().stage];
+    ({ learn: "Keep going.", assess: mod().eligible ? "You're ready." : mod().requiredCount ? "Training complete." : "Nothing to do yet.", done: "Well done.", unassigned: "Welcome." })[mod().stage];
   const message = () =>
     ({
       learn: `${mod().completedRequired} of ${mod().requiredCount} required modules done. Finish them to unlock your test.`,
-      assess: mod().eligible ? "Training complete. Your test is ready when you are." : "Training complete, but you have no attempts left. Please contact your training admin.",
+      assess: mod().eligible ? "Your test is ready when you are." : blockedMessage(mod()),
       done: `You've passed your ${mod().department?.name} test. Your modules stay here for reference.`,
       unassigned: "There's no training module mapped to your designation yet. Company-wide materials are still available to you.",
     })[mod().stage];
@@ -300,7 +305,7 @@ function Hero(props) {
           <Show when={mod().department && mod().stage !== "done"}>
             <span class={cx("inline-flex items-center gap-2 text-[14px]", due() <= 3 ? "text-crimson-600 dark:text-crimson-300" : "text-ink-2")}>
               <CalendarClock size={16} />
-              {due() >= 0 ? `Due ${fmtDate(mod().dueAt)} · ${plural(due(), "day")} left` : `Overdue since ${fmtDate(mod().dueAt)}`}
+              {dueLabel(mod().dueAt)}
             </span>
           </Show>
         </div>
@@ -359,7 +364,7 @@ function Journey(props) {
         state: attempted ? "done" : "locked",
         href: "/scoreboard",
       },
-      { label: "Get certified", sub: `Score ${mod().assessment.passPercent}% or more`, state: stage === "done" ? "done" : "locked", href: "/scoreboard" },
+      { label: "Get certified", sub: mod().assessment.passPercent == null ? "Once your test is set up" : `Score ${mod().assessment.passPercent}% or more`, state: stage === "done" ? "done" : "locked", href: "/scoreboard" },
     ];
   };
   const TINTS = [
@@ -419,7 +424,7 @@ function Journey(props) {
       </ol>
       <Show when={!mod().eligible && mod().stage === "assess"}>
         <p class="flex items-center gap-2 mt-3 px-4 py-3 rounded-xl text-[14px] font-medium badge-warn">
-          <TriangleAlert size={15} /> No attempts left. Ask your training admin to reset your attempts.
+          <TriangleAlert size={15} /> {blockedMessage(mod())}
         </p>
       </Show>
     </section>

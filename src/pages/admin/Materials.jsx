@@ -1,9 +1,11 @@
 // Admin · Training materials: the library behind every employee's module.
 // PDFs are uploaded, manuals are written here (mini-markdown with a live
-// preview), structured guides come from the department playbooks.
+// preview), structured guides are built section by section. New materials
+// can be saved as a draft, previewed, then published.
 
 import { createResource, createSignal, createMemo, For, Show, onMount } from "solid-js";
-import { Plus, Eye, Pencil, Trash2, Ellipsis, Upload, FileText, ScrollText, Layers, Library, CircleCheck, X, Info, MonitorPlay, Link2 } from "lucide-solid";
+import { createStore } from "solid-js/store";
+import { Plus, Eye, Pencil, Trash2, Ellipsis, Upload, FileText, ScrollText, Layers, Library, CircleCheck, X, Info, MonitorPlay, Link2, Send } from "lucide-solid";
 import { navigate, query } from "../../lib/router";
 import { cx, fmtDate, fmtBytes } from "../../lib/format";
 import { toast } from "../../store/toast";
@@ -14,6 +16,7 @@ import {
   saveMaterial,
   deleteMaterial,
   setMaterialRequired,
+  setMaterialStatus,
   getMaterialForAdmin,
   parseManual,
   manualToText,
@@ -22,6 +25,9 @@ import { PageHeader, Tabs, SearchInput, Skeleton, Toggle, Menu, MenuItem, Drawer
 import { TypeIcon, MATERIAL_TYPES } from "../../components/icons";
 import { parseMedia, PROVIDER_LABEL } from "../../lib/media";
 import { LEVELS } from "../../lib/levels";
+import GuideEditor from "../../components/GuideEditor";
+import { guideToEditable, editableToGuide, guideProblem } from "../../lib/guide";
+import { titleForFile } from "../../lib/progress";
 
 const TYPE_TILE = {
   pdf: "bg-crimson-50 text-crimson-600 dark:bg-crimson-500/15 dark:text-crimson-300",
@@ -115,6 +121,9 @@ export default function Materials() {
                         {m.title}
                       </button>
                       <span class={cx("badge", MATERIAL_TYPES[m.type].badge)}>{MATERIAL_TYPES[m.type].short}</span>
+                      <Show when={m.status === "draft"}>
+                        <span class="badge badge-warn">Draft · not visible to employees</span>
+                      </Show>
                     </div>
                     <p class="mt-1 text-[13px] text-muted truncate">
                       {m.departmentName} · {m.levelsLabel} · v{m.version} · {m.estMinutes} min · updated {fmtDate(m.updatedAt)}
@@ -149,6 +158,22 @@ export default function Materials() {
                       <MenuItem icon={<Pencil size={15} />} onClick={async () => setEditing(await getMaterialForAdmin(m.id))}>
                         Edit
                       </MenuItem>
+                      <Show when={m.status === "draft"}>
+                        <MenuItem
+                          icon={<Send size={15} />}
+                          onClick={async () => {
+                            try {
+                              await setMaterialStatus(m.id, "published");
+                              toast(`“${m.title}” is now live for the selected employees.`, { title: "Published" });
+                              refetch();
+                            } catch (e) {
+                              toast(e.message, { tone: "error" });
+                            }
+                          }}
+                        >
+                          Publish
+                        </MenuItem>
+                      </Show>
                       <MenuItem icon={<Trash2 size={15} />} danger onClick={() => setRemoving(m)}>
                         Delete
                       </MenuItem>
@@ -209,21 +234,28 @@ Start with why this matters. Blank lines separate paragraphs.
 function MaterialDrawer(props) {
   const isNew = !props.m.id;
   const [type, setType] = createSignal(props.m.type ?? "pdf");
+  // New materials start with nothing chosen for audience, levels and
+  // required: the admin picks each one explicitly. "company" = everyone.
   const [f, setF] = createSignal({
     title: props.m.title ?? "",
     description: props.m.description ?? "",
-    departmentId: props.m.departmentId ?? "",
-    required: props.m.required ?? true,
+    departmentId: isNew ? "" : props.m.departmentId ?? "company",
+    required: isNew ? null : props.m.required,
     estMinutes: props.m.estMinutes ?? 5,
   });
+  // The title last filled in from a file name, so picking another file
+  // replaces it, but a title the admin typed is kept.
+  const [autoTitle, setAutoTitle] = createSignal(null);
+  const [guide, setGuide] = createStore(guideToEditable(props.m.type === "structured" ? props.m.content : null));
+  const isDraft = () => isNew || props.m.status === "draft";
   const set = (k) => (v) => setF({ ...f(), [k]: v });
   const [file, setFile] = createSignal(null);
   const [drag, setDrag] = createSignal(false);
   const [text, setText] = createSignal(props.m.type === "manual" && props.m.content ? manualToText(props.m.content) : MANUAL_TEMPLATE);
   const [mode, setMode] = createSignal("write");
   const [mediaUrl, setMediaUrl] = createSignal(props.m.type === "media" ? props.m.content?.url ?? "" : "");
-  // Levels that get this material; all three by default.
-  const [levels, setLevels] = createSignal(props.m.levels?.length ? [...props.m.levels] : LEVELS.map((l) => l.key));
+  // Levels that get this material ([] on an existing one means all three).
+  const [levels, setLevels] = createSignal(isNew ? [] : props.m.levels?.length ? [...props.m.levels] : LEVELS.map((l) => l.key));
   const toggleLevel = (k, on) => setLevels(on ? [...new Set([...levels(), k])] : levels().filter((x) => x !== k));
   const [mediaKind, setMediaKind] = createSignal(props.m.type === "media" ? props.m.content?.kind ?? "video" : "video");
   const media = createMemo(() => parseMedia(mediaUrl()));
@@ -244,7 +276,9 @@ function MaterialDrawer(props) {
     }
     setError(null);
     setFile(fl);
-    if (!f().title) set("title")(fl.name.replace(/\.pdf$/i, "").replace(/[-_]+/g, " "));
+    const next = titleForFile(f().title, autoTitle(), fl.name);
+    set("title")(next.title);
+    setAutoTitle(next.auto);
   };
 
   const errors = () => ({
@@ -253,17 +287,42 @@ function MaterialDrawer(props) {
     manual: type() === "manual" && text().trim().length < 20 ? "Write the manual content." : null,
     media: type() === "media" && media().provider === "invalid" ? "Paste a full link starting with https://" : null,
     levels: levels().length ? null : "Choose at least one level.",
+    scope: f().departmentId ? null : "Choose who gets this material.",
+    required: f().required == null ? "Choose whether it's required." : null,
+    guide: type() === "structured" ? guideProblem(guide) : null,
   });
   const valid = () => !Object.values(errors()).some(Boolean);
 
-  const save = async () => {
+  // status: "draft" (only admins see it; preview it from the list) or
+  // "published". Existing published materials stay published.
+  const save = async (status) => {
     setTouched(true);
     if (!valid()) return;
     setBusy(true);
     setError(null);
     try {
-      await saveMaterial({ id: props.m.id, type: type(), ...f(), file: file(), manualText: type() === "manual" ? text() : null, mediaUrl: type() === "media" ? mediaUrl() : null, mediaKind: mediaKind(), levels: levels(), author: user().name });
-      toast(isNew ? "Material published to the selected employees' modules." : "Material updated — employees see the new version.", { title: isNew ? "Published" : "Saved" });
+      await saveMaterial({
+        id: props.m.id,
+        type: type(),
+        ...f(),
+        departmentId: f().departmentId === "company" ? null : f().departmentId,
+        status,
+        file: file(),
+        manualText: type() === "manual" ? text() : null,
+        guide: type() === "structured" ? editableToGuide(guide) : null,
+        mediaUrl: type() === "media" ? mediaUrl() : null,
+        mediaKind: mediaKind(),
+        levels: levels(),
+        author: user().name,
+      });
+      toast(
+        status === "draft"
+          ? "Saved as a draft. Preview it from the list, then publish when it's ready."
+          : isNew || props.m.status === "draft"
+            ? "Material published to the selected employees' modules."
+            : "Material updated — employees see the new version.",
+        { title: status === "draft" ? "Draft saved" : isNew || props.m.status === "draft" ? "Published" : "Saved" },
+      );
       props.onSaved();
     } catch (e) {
       setError(e.message);
@@ -276,16 +335,34 @@ function MaterialDrawer(props) {
       width="max-w-[640px]"
       kicker={isNew ? "New material" : `Edit · ${MATERIAL_TYPES[type()].label}`}
       title={isNew ? "Add training material" : props.m.title}
-      subtitle={isNew ? "Upload a PDF, write a manual or attach a video / audio link. Employees see it in their module right away." : `Version ${props.m.version} — saving publishes the next version.`}
+      subtitle={
+        isNew
+          ? "Upload a PDF, write a manual, build a structured guide or attach a video / audio link. Save it as a draft to preview it first."
+          : props.m.status === "draft"
+            ? "Draft — only admins can see it until you publish."
+            : `Version ${props.m.version} — saving publishes the next version.`
+      }
       onClose={() => !busy() && props.onClose()}
       footer={
         <>
           <button class="btn btn-secondary" onClick={props.onClose} disabled={busy()}>
             Cancel
           </button>
-          <button class="btn btn-primary" onClick={save} disabled={busy()}>
-            {busy() ? "Publishing…" : isNew ? "Publish material" : "Save new version"}
-          </button>
+          <Show
+            when={isDraft()}
+            fallback={
+              <button class="btn btn-primary" onClick={() => save("published")} disabled={busy()}>
+                {busy() ? "Saving…" : "Save new version"}
+              </button>
+            }
+          >
+            <button class="btn btn-secondary" onClick={() => save("draft")} disabled={busy()}>
+              {busy() ? "Saving…" : "Save as draft"}
+            </button>
+            <button class="btn btn-primary" onClick={() => save("published")} disabled={busy()}>
+              {busy() ? "Publishing…" : "Publish"}
+            </button>
+          </Show>
         </>
       }
     >
@@ -297,11 +374,12 @@ function MaterialDrawer(props) {
         <Show when={isNew}>
           <div>
             <p class="label">Type</p>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <For
                 each={[
                   ["pdf", FileText, "PDF document", "Upload a file"],
                   ["manual", ScrollText, "Written manual", "Write it here"],
+                  ["structured", Layers, "Structured guide", "Sections, key points, tips"],
                   ["media", MonitorPlay, "Video / audio", "Attach a link"],
                 ]}
               >
@@ -439,9 +517,12 @@ function MaterialDrawer(props) {
           <textarea id="m-desc" rows="2" class="input resize-none" value={f().description} onInput={(e) => set("description")(e.currentTarget.value)} />
         </Field>
         <div class="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-4">
-          <Field label="Assigned to" for="m-dept">
-            <select id="m-dept" class="input" value={f().departmentId} onChange={(e) => set("departmentId")(e.currentTarget.value)} disabled={type() === "structured"}>
-              <option value="">All departments (company-wide)</option>
+          <Field label="Assigned to" for="m-dept" error={touched() && errors().scope}>
+            <select id="m-dept" class={cx("input", touched() && errors().scope && "input-invalid")} value={f().departmentId} onChange={(e) => set("departmentId")(e.currentTarget.value)}>
+              <option value="" disabled>
+                Choose who gets it…
+              </option>
+              <option value="company">All departments (company-wide)</option>
               <For each={props.departments}>{(d) => <option value={d.id}>{d.name}</option>}</For>
             </select>
           </Field>
@@ -473,12 +554,36 @@ function MaterialDrawer(props) {
             <p class="error-text">{errors().levels}</p>
           </Show>
         </div>
-        <div class="flex items-center justify-between gap-4 p-4 rounded-2xl border border-line">
-          <div>
-            <p class="text-[14.5px] font-semibold">Required before the assessment</p>
-            <p class="text-[13px] text-muted">Employees must complete it to unlock their test.</p>
+        <div>
+          <div class={cx("flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border", touched() && errors().required ? "border-crimson-400" : "border-line")}>
+            <div>
+              <p class="text-[14.5px] font-semibold">Required before the assessment?</p>
+              <p class="text-[13px] text-muted">Required materials must be completed to unlock the test.</p>
+            </div>
+            <div class="flex rounded-xl border border-line overflow-hidden" role="radiogroup" aria-label="Required before the assessment">
+              <For
+                each={[
+                  [true, "Required"],
+                  [false, "Optional"],
+                ]}
+              >
+                {([v, l]) => (
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={f().required === v}
+                    class={cx("px-3.5 h-9 text-[13.5px] font-semibold transition", f().required === v ? "bg-plum-700 text-white dark:bg-lime-400 dark:text-plum-950" : "text-ink-2 hover:bg-sunken")}
+                    onClick={() => set("required")(v)}
+                  >
+                    {l}
+                  </button>
+                )}
+              </For>
+            </div>
           </div>
-          <Toggle checked={f().required} onChange={set("required")} label="Required" />
+          <Show when={touched() && errors().required}>
+            <p class="error-text">{errors().required}</p>
+          </Show>
         </div>
 
         <Show when={type() === "manual"}>
@@ -543,10 +648,7 @@ function MaterialDrawer(props) {
         </Show>
 
         <Show when={type() === "structured"}>
-          <p class="flex items-start gap-2.5 p-3.5 rounded-2xl bg-sunken/60 text-[13.5px] text-muted">
-            <Info size={15} class="shrink-0 mt-0.5" /> Structured guides come from the department playbook. Their sections are edited by the department head; here you can change the title,
-            description, reading time and whether it's required.
-          </p>
+          <GuideEditor guide={guide} setGuide={setGuide} error={touched() && errors().guide} />
         </Show>
       </div>
     </Drawer>

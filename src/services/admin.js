@@ -1,581 +1,147 @@
 // ─── Admin service ──────────────────────────────────────────────────────────
-// FRONTEND-ONLY MOCK for the admin screens. Each function maps to one REST
-// call (listed in README.md under "Admin API"); every one must be admin-only
-// on the server. Mutations write to mockDb so the employee side reflects them.
+// Backed by /api/v1/admin (every endpoint is admin-only on the server). Same
+// function names and shapes as the mock, so the admin pages are unchanged.
+//
+// Mock mode (VITE_USE_MOCK=true) swaps this file for services/mock/admin.js.
 
-import { db, commit, delay, clone, uid, resetDb } from "./mockDb";
-import { MOCK_EMPLOYEE_PASSWORD } from "../data/org";
-import { LEVELS, levelKey, levelInfo, levelsText } from "../lib/levels";
+import { get, post, patch, del, upload } from "./api";
+import { parseManual, manualToText } from "../lib/manual";
 
-const deptOf = (designationId) => {
-  const s = db();
-  const des = s.designations.find((d) => d.id === designationId);
-  return des?.departmentId ? s.departments.find((d) => d.id === des.departmentId) : null;
-};
+export { parseManual, manualToText };
 
-const levelOfUser = (u) => levelKey(db().designations.find((d) => d.id === u.designationId)?.level);
+const enc = encodeURIComponent;
+const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]));
 
-// Does material m reach user u? (department or company-wide, and level)
-const reaches = (m, u) =>
-  u.role === "employee" &&
-  (!m.departmentId || deptOf(u.designationId)?.id === m.departmentId) &&
-  (!m.levels?.length || m.levels.includes(levelOfUser(u)));
+// ── Overview ──
+export const getOverview = () => get("/admin/overview");
 
-const newAssessment = (departmentId, level) => ({
-  id: `asm-${departmentId}-${level}`,
-  departmentId,
-  level,
-  durationMinutes: 10,
-  passPercent: level === "junior" ? 70 : level === "senior" ? 75 : 80,
-  marksPerQuestion: 1,
-  maxAttempts: 3,
-  questionsPerAttempt: 5,
-  shuffle: true,
-  active: true,
-});
+// ── Users ──
+export const listUsers = (filters) => get("/admin/users", filters);
+export const getUser = (id) => get(`/admin/users/${enc(id)}`);
 
-// Employee row as the admin tables need it (no password).
-function userRow(u) {
-  const s = db();
-  const des = s.designations.find((d) => d.id === u.designationId);
-  const dept = deptOf(u.designationId);
-  const attempts = s.attempts.filter((a) => a.userId === u.id);
-  const best = attempts.reduce((m, a) => Math.max(m, a.percentage), 0);
-  const prog = s.progress[u.id] || {};
-  const required = s.materials.filter((m) => m.required && reaches(m, u));
-  const done = required.filter((m) => prog[m.id]?.completed).length;
-  const { password, ...rest } = u;
-  return {
-    ...rest,
-    designation: des?.title ?? null,
-    departmentId: dept?.id ?? null,
-    departmentName: dept?.name ?? null,
-    attempts: attempts.length,
-    bestScore: attempts.length ? best : null,
-    passed: attempts.some((a) => a.passed),
-    lastAttemptAt: attempts[0]?.submittedAt ?? null,
-    materialsDone: done,
-    materialsRequired: required.length,
-    status: u.status,
-    trainingStatus: !dept
-      ? "unassigned"
-      : attempts.some((a) => a.passed)
-        ? "certified"
-        : attempts.length
-          ? "retake"
-          : done === required.length
-            ? "ready"
-            : done
-              ? "in-progress"
-              : "not-started",
+// → { user, temporaryPassword? }
+export function saveUser(input) {
+  const isAdmin = input.role === "admin" || input.role === "super_admin";
+  const body = {
+    ...pick(input, ["name", "phone", "location", "role", "status", "code", "joinedAt"]),
+    email: input.email?.trim(),
+    designationId: isAdmin ? null : input.designationId || null,
+    ...(isAdmin ? { adminTitle: input.adminTitle } : {}),
+    ...(input.password ? { password: input.password } : {}),
   };
+  if (typeof body.name === "string") body.name = body.name.trim();
+  return input.id ? patch(`/admin/users/${enc(input.id)}`, body) : post("/admin/users", body);
 }
 
-// ── Overview ────────────────────────────────────────────────────────────────
+export const setUserStatus = (id, status) => patch(`/admin/users/${enc(id)}/status`, { status });
 
-export async function getOverview() {
-  await delay(380);
-  const s = db();
-  const employees = s.users.filter((u) => u.role === "employee" && u.status === "active").map(userRow);
-  const assigned = employees.filter((e) => e.departmentId);
-  const attempts = s.attempts;
-  const avg = attempts.length ? attempts.reduce((t, a) => t + a.percentage, 0) / attempts.length : 0;
+// → { email, temporaryPassword } — shown once to the admin.
+export const resetUserPassword = (id) => post(`/admin/users/${enc(id)}/reset-password`);
 
-  const departments = s.departments.map((d) => {
-    const people = assigned.filter((e) => e.departmentId === d.id);
-    const deptAttempts = attempts.filter((a) => a.departmentId === d.id);
-    return {
-      id: d.id,
-      name: d.name,
-      employees: people.length,
-      certified: people.filter((p) => p.passed).length,
-      completion: people.length ? Math.round((people.filter((p) => p.passed).length / people.length) * 100) : 0,
-      avgScore: deptAttempts.length ? Math.round(deptAttempts.reduce((t, a) => t + a.percentage, 0) / deptAttempts.length) : 0,
-      passRate: deptAttempts.length ? Math.round((deptAttempts.filter((a) => a.passed).length / deptAttempts.length) * 100) : 0,
-    };
-  });
+export const resetUserAttempts = (id, assessmentId) => post(`/admin/users/${enc(id)}/reset-attempts`, assessmentId ? { assessmentId } : {});
 
-  // Last 8 weeks: attempts and average score per week.
-  const weeks = [];
-  const now = Date.now();
-  for (let w = 7; w >= 0; w--) {
-    const end = now - w * 7 * 86400000;
-    const start = end - 7 * 86400000;
-    const inWeek = attempts.filter((a) => {
-      const t = new Date(a.submittedAt).getTime();
-      return t > start && t <= end;
-    });
-    weeks.push({
-      label: new Date(end).toLocaleDateString(undefined, { day: "numeric", month: "short" }),
-      attempts: inWeek.length,
-      avgScore: inWeek.length ? Math.round(inWeek.reduce((t, a) => t + a.percentage, 0) / inWeek.length) : null,
-      passed: inWeek.filter((a) => a.passed).length,
-    });
-  }
+export const deleteUser = (id) => del(`/admin/users/${enc(id)}`);
 
-  const name = (id) => s.users.find((u) => u.id === id)?.name ?? "Unknown";
-  return {
-    kpis: {
-      employees: employees.length,
-      assigned: assigned.length,
-      certified: assigned.filter((e) => e.passed).length,
-      completionRate: assigned.length ? Math.round((assigned.filter((e) => e.passed).length / assigned.length) * 100) : 0,
-      avgScore: Math.round(avg),
-      passRate: attempts.length ? Math.round((attempts.filter((a) => a.passed).length / attempts.length) * 100) : 0,
-      attempts: attempts.length,
-      attemptsThisWeek: weeks[7].attempts,
-      materials: s.materials.length,
-      focusFlags: attempts.filter((a) => a.focusViolations >= 2).length,
-    },
-    departments,
-    weeks,
-    statusBreakdown: ["certified", "retake", "ready", "in-progress", "not-started"].map((k) => ({
-      key: k,
-      count: assigned.filter((e) => e.trainingStatus === k).length,
-    })),
-    recent: attempts.slice(0, 7).map((a) => ({ ...clone(a), userName: name(a.userId), review: undefined })),
-    topPerformers: assigned
-      .filter((e) => e.bestScore != null)
-      .sort((a, b) => b.bestScore - a.bestScore)
-      .slice(0, 5),
-    attention: assigned
-      .filter((e) => e.trainingStatus === "not-started" || e.trainingStatus === "retake")
-      .slice(0, 5),
-  };
+// ── Departments ──
+export const listDepartments = () => get("/admin/departments");
+
+export function saveDepartment(input) {
+  const body = pick(input, ["name", "description", "head", "location", "active"]);
+  if (typeof body.name === "string") body.name = body.name.trim();
+  return input.id ? patch(`/admin/departments/${enc(input.id)}`, body) : post("/admin/departments", body);
 }
 
-// ── Users ───────────────────────────────────────────────────────────────────
+export const deleteDepartment = (id) => del(`/admin/departments/${enc(id)}`);
 
-export async function listUsers() {
-  await delay();
-  return db().users.map(userRow);
+// ── Designations ──
+export const listDesignations = () => get("/admin/designations");
+
+export function saveDesignation(input) {
+  const body = { title: input.title?.trim(), level: input.level, departmentId: input.departmentId || undefined };
+  return input.id ? patch(`/admin/designations/${enc(input.id)}`, body) : post("/admin/designations", body);
 }
 
-export async function saveUser(input) {
-  await delay(500);
-  const s = db();
-  const email = input.email.trim().toLowerCase();
-  if (s.users.some((u) => u.email.toLowerCase() === email && u.id !== input.id)) {
-    throw new Error("Another user already has this email address.");
-  }
-  if (input.id) {
-    const u = s.users.find((x) => x.id === input.id);
-    Object.assign(u, {
-      name: input.name.trim(),
-      email,
-      phone: input.phone,
-      location: input.location,
-      designationId: input.role === "admin" ? null : input.designationId,
-      role: input.role,
-      adminTitle: input.role === "admin" ? input.adminTitle || "Admin" : null,
-      status: input.status,
-    });
-    if (input.password) u.password = input.password;
-  } else {
-    s.users.push({
-      id: uid("e"),
-      role: input.role,
-      adminTitle: input.role === "admin" ? input.adminTitle || "Admin" : null,
-      name: input.name.trim(),
-      email,
-      phone: input.phone,
-      designationId: input.role === "admin" ? null : input.designationId,
-      code: `AJN-${1100 + s.users.length}`,
-      location: input.location,
-      joinedAt: new Date().toISOString(),
-      status: input.status || "active",
-      lastActiveAt: null,
-      password: input.password || MOCK_EMPLOYEE_PASSWORD,
-      preferences: { emailReminders: true, resultEmails: true, weeklyDigest: false },
-    });
-  }
-  commit();
+export const deleteDesignation = (id) => del(`/admin/designations/${enc(id)}`);
+
+// ── Locations ── → [{ id, name, users, departments }]
+export const listLocations = () => get("/admin/locations");
+
+export function saveLocation(input) {
+  const body = { name: input.name?.trim() };
+  return input.id ? patch(`/admin/locations/${enc(input.id)}`, body) : post("/admin/locations", body);
 }
 
-export async function setUserStatus(id, status) {
-  await delay(300);
-  const u = db().users.find((x) => x.id === id);
-  if (u) u.status = status;
-  commit();
-}
+export const deleteLocation = (id) => del(`/admin/locations/${enc(id)}`);
 
-export async function resetUserPassword(id) {
-  await delay(500);
-  const u = db().users.find((x) => x.id === id);
-  if (u) u.password = MOCK_EMPLOYEE_PASSWORD;
-  commit();
-  return { email: u?.email };
-}
-
-// Clears an employee's attempts so they can sit the assessment again.
-export async function resetUserAttempts(id) {
-  await delay(400);
-  const s = db();
-  s.attempts = s.attempts.filter((a) => a.userId !== id);
-  commit();
-}
-
-// ── Departments ─────────────────────────────────────────────────────────────
-
-export async function listDepartments() {
-  await delay();
-  const s = db();
-  return s.departments.map((d) => ({
-    ...clone(d),
-    designations: s.designations.filter((x) => x.departmentId === d.id).map((x) => x.title),
-    employees: s.users.filter((u) => u.role === "employee" && deptOf(u.designationId)?.id === d.id).length,
-    materials: s.materials.filter((m) => m.departmentId === d.id).length,
-    questions: s.assessments.filter((a) => a.departmentId === d.id).reduce((t, a) => t + (s.questions[a.id] || []).length, 0),
-  }));
-}
-
-export async function saveDepartment(input) {
-  await delay(450);
-  const s = db();
-  if (input.id && s.departments.some((d) => d.id === input.id)) {
-    Object.assign(s.departments.find((d) => d.id === input.id), {
-      name: input.name.trim(),
-      description: input.description,
-      head: input.head,
-      location: input.location,
-      active: input.active,
-    });
-  } else {
-    const id = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/(^_|_$)/g, "") || uid("dept");
-    if (s.departments.some((d) => d.id === id)) throw new Error("A department with this name already exists.");
-    s.departments.push({
-      id,
-      name: input.name.trim(),
-      description: input.description,
-      head: input.head,
-      location: input.location,
-      durationMinutes: 10,
-      passPercent: 70,
-      marksPerQuestion: 1,
-      maxAttempts: 3,
-      dueDays: 14,
-      shuffle: true,
-      active: input.active ?? true,
-    });
-    for (const lv of LEVELS) {
-      const a = newAssessment(id, lv.key);
-      s.assessments.push(a);
-      s.questions[a.id] = [];
-    }
-  }
-  commit();
-}
-
-export async function deleteDepartment(id) {
-  await delay(350);
-  const s = db();
-  if (s.designations.some((d) => d.departmentId === id)) {
-    throw new Error("Move or delete this department's designations first.");
-  }
-  s.departments = s.departments.filter((d) => d.id !== id);
-  for (const a of s.assessments.filter((x) => x.departmentId === id)) delete s.questions[a.id];
-  s.assessments = s.assessments.filter((a) => a.departmentId !== id);
-  s.materials = s.materials.filter((m) => m.departmentId !== id);
-  commit();
-}
-
-// ── Designations ────────────────────────────────────────────────────────────
-
-export async function listDesignations() {
-  await delay();
-  const s = db();
-  return s.designations.map((d) => ({
-    ...clone(d),
-    departmentName: s.departments.find((x) => x.id === d.departmentId)?.name ?? null,
-    employees: s.users.filter((u) => u.designationId === d.id).length,
-  }));
-}
-
-export async function saveDesignation(input) {
-  await delay(400);
-  const s = db();
-  const title = input.title.trim();
-  if (s.designations.some((d) => d.title.toLowerCase() === title.toLowerCase() && d.id !== input.id)) {
-    throw new Error("This designation already exists.");
-  }
-  if (input.id) Object.assign(s.designations.find((d) => d.id === input.id), { title, departmentId: input.departmentId || null, level: input.level });
-  else s.designations.push({ id: uid("des"), title, departmentId: input.departmentId || null, level: input.level });
-  commit();
-}
-
-export async function deleteDesignation(id) {
-  await delay(300);
-  const s = db();
-  if (s.users.some((u) => u.designationId === id)) throw new Error("Reassign the employees with this designation first.");
-  s.designations = s.designations.filter((d) => d.id !== id);
-  commit();
-}
-
-// ── Materials ───────────────────────────────────────────────────────────────
-
-export async function listMaterials() {
-  await delay();
-  const s = db();
-  return s.materials.map(({ content, ...m }) => {
-    const audience = s.users.filter((u) => reaches(m, u));
-    const completed = audience.filter((u) => s.progress[u.id]?.[m.id]?.completed).length;
-    return {
-      ...clone(m),
-      departmentName: m.departmentId ? s.departments.find((d) => d.id === m.departmentId)?.name ?? "—" : "All departments",
-      levelsLabel: levelsText(m.levels),
-      audience: audience.length,
-      completed,
-      sections: m.type === "structured" ? content.sections.length : m.type === "manual" ? content.chapters.length : null,
-    };
-  });
-}
-
-export async function getMaterialForAdmin(id) {
-  await delay(150);
-  return clone(db().materials.find((m) => m.id === id));
-}
-
-// Mini-markdown for manuals written in the admin editor:
-//   "# Title" starts a chapter, "## Heading" a sub-heading, "- item" / "1. item"
-//   list items, "> text" a callout; blank lines separate paragraphs.
-export function parseManual(text) {
-  const chapters = [];
-  let ch = null;
-  let list = null;
-  const ensure = () => {
-    if (!ch) {
-      ch = { id: `ch-${chapters.length + 1}`, title: "Overview", blocks: [] };
-      chapters.push(ch);
-    }
-  };
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line) {
-      list = null;
-      continue;
-    }
-    if (line.startsWith("# ")) {
-      ch = { id: `ch-${chapters.length + 1}`, title: line.slice(2).trim(), blocks: [] };
-      chapters.push(ch);
-      list = null;
-      continue;
-    }
-    ensure();
-    const ul = line.match(/^[-*]\s+(.*)/);
-    const ol = line.match(/^\d+[.)]\s+(.*)/);
-    if (ul || ol) {
-      const type = ul ? "ul" : "ol";
-      if (!list || list.type !== type) {
-        list = { type, items: [] };
-        ch.blocks.push(list);
-      }
-      list.items.push((ul || ol)[1]);
-      continue;
-    }
-    list = null;
-    if (line.startsWith("## ")) ch.blocks.push({ type: "h", text: line.slice(3) });
-    else if (line.startsWith("> ")) ch.blocks.push({ type: "callout", tone: "info", title: "Note", text: line.slice(2) });
-    else {
-      const last = ch.blocks[ch.blocks.length - 1];
-      // Consecutive lines join into one paragraph.
-      if (last?.type === "p" && !raw.startsWith(" ") && last._open) last.text += " " + line;
-      else ch.blocks.push({ type: "p", text: line, _open: true });
-    }
-  }
-  for (const c of chapters) for (const b of c.blocks) delete b._open;
-  return { chapters };
-}
-
-export function manualToText(content) {
-  return content.chapters
-    .map((c) =>
-      [
-        `# ${c.title}`,
-        ...c.blocks.map((b) => {
-          if (b.type === "p") return b.text;
-          if (b.type === "h") return `## ${b.text}`;
-          if (b.type === "ul") return b.items.map((i) => `- ${i}`).join("\n");
-          if (b.type === "ol") return b.items.map((i, n) => `${n + 1}. ${i}`).join("\n");
-          if (b.type === "callout") return `> ${b.text}`;
-          return "";
-        }),
-      ].join("\n\n"),
-    )
-    .join("\n\n");
-}
-
-const readAsDataUrl = (file) =>
-  new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result);
-    r.onerror = () => rej(new Error("Couldn't read the file."));
-    r.readAsDataURL(file);
-  });
+// ── Materials ──
+export const listMaterials = (filters) => get("/admin/materials", filters);
+export const getMaterialForAdmin = (id) => get(`/admin/materials/${enc(id)}`);
 
 // input: { id?, title, type, departmentId, required, description, estMinutes,
-//          manualText? (manual), file? (pdf: a File from the upload field) }
+//          levels, manualText? (manual), mediaUrl/mediaKind (media),
+//          file? (pdf: a File), requireRecompletion? }
 export async function saveMaterial(input) {
-  await delay(650);
-  const s = db();
-  const base = {
-    title: input.title.trim(),
+  let uploadId;
+  if (input.type === "pdf" && input.file) {
+    const form = new FormData();
+    form.append("file", input.file, input.file.name);
+    uploadId = (await upload("/admin/materials/upload", form)).uploadId;
+  }
+  // departmentId: null = company-wide; levels: the chosen level keys.
+  // The server requires both (and required) explicitly for new materials.
+  const body = {
+    title: input.title?.trim(),
+    description: input.description?.trim() ?? "",
     departmentId: input.departmentId || null,
     required: !!input.required,
-    description: input.description?.trim() || "",
     estMinutes: Number(input.estMinutes) || 5,
-    levels: input.levels?.length && input.levels.length < LEVELS.length ? [...input.levels] : [],
-    updatedAt: new Date().toISOString(),
+    levels: input.levels ?? [],
+    ...(input.status ? { status: input.status } : {}),
+    ...(input.author && !input.id ? { author: input.author } : {}),
+    ...(uploadId ? { uploadId } : {}),
   };
-  let file = {};
-  if (input.type === "pdf" && input.file) {
-    // Mock storage: small files are kept as data URLs so they survive a
-    // reload; bigger ones only live for this browser session.
-    const url = input.file.size <= 1.5 * 1024 * 1024 ? await readAsDataUrl(input.file) : URL.createObjectURL(input.file);
-    file = { fileUrl: url, fileName: input.file.name, sizeBytes: input.file.size };
-  }
+  if (input.type === "manual" && input.manualText != null) body.content = parseManual(input.manualText);
+  if (input.type === "structured" && input.guide) body.content = input.guide;
+  if (input.type === "media" && input.mediaUrl) body.content = { url: input.mediaUrl.trim(), kind: input.mediaKind || "video" };
   if (input.id) {
-    const m = s.materials.find((x) => x.id === input.id);
-    Object.assign(m, base, file);
-    if (m.type === "manual" && input.manualText != null) m.content = parseManual(input.manualText);
-    if (m.type === "media" && input.mediaUrl) m.content = { url: input.mediaUrl.trim(), kind: input.mediaKind || "video" };
-    m.version = bump(m.version);
-  } else {
-    s.materials.unshift({
-      id: uid("mat"),
-      type: input.type,
-      version: "1.0",
-      author: input.author || "Admin",
-      ...base,
-      ...file,
-      fileUrl: file.fileUrl ?? null,
-      content:
-        input.type === "manual"
-          ? parseManual(input.manualText || "")
-          : input.type === "media"
-            ? { url: (input.mediaUrl || "").trim(), kind: input.mediaKind || "video" }
-            : { blocks: [{ type: "p", text: base.description || "Uploaded document." }] },
-    });
+    if (input.requireRecompletion) body.requireRecompletion = true;
+    return patch(`/admin/materials/${enc(input.id)}`, body);
   }
-  commit();
+  return post("/admin/materials", { ...body, type: input.type });
 }
 
-const bump = (v = "1.0") => {
-  const [a, b] = v.split(".").map(Number);
-  return `${a}.${(b || 0) + 1}`;
-};
+export const setMaterialRequired = (id, required) => patch(`/admin/materials/${enc(id)}`, { required: !!required });
+export const setMaterialStatus = (id, status) => patch(`/admin/materials/${enc(id)}`, { status });
+export const deleteMaterial = (id) => del(`/admin/materials/${enc(id)}`);
 
-export async function setMaterialRequired(id, required) {
-  await delay(200);
-  const m = db().materials.find((x) => x.id === id);
-  if (m) m.required = !!required;
-  commit();
-}
+// ── Assessments & question bank ──
+export const listAssessments = () => get("/admin/assessments");
 
-export async function deleteMaterial(id) {
-  await delay(300);
-  const s = db();
-  s.materials = s.materials.filter((m) => m.id !== id);
-  for (const p of Object.values(s.progress)) delete p[id];
-  commit();
-}
-
-// ── Assessments & question bank ─────────────────────────────────────────────
-
-// One assessment per department per level (team heads, seniors, juniors).
-export async function listAssessments() {
-  await delay();
-  const s = db();
-  return s.assessments.map((a) => {
-    const d = s.departments.find((x) => x.id === a.departmentId);
-    const attempts = s.attempts.filter((x) => x.assessmentId === a.id);
-    const people = s.users.filter((u) => u.role === "employee" && deptOf(u.designationId)?.id === a.departmentId && levelOfUser(u) === a.level);
-    return {
-      ...clone(a),
-      name: `${d?.name ?? "—"} · ${levelInfo(a.level).plural}`,
-      departmentName: d?.name ?? "—",
-      levelLabel: levelInfo(a.level).plural,
-      designations: s.designations.filter((x) => x.departmentId === a.departmentId && levelKey(x.level) === a.level).map((x) => x.title),
-      employees: people.length,
-      questions: (s.questions[a.id] || []).length,
-      attempts: attempts.length,
-      avgScore: attempts.length ? Math.round(attempts.reduce((t, x) => t + x.percentage, 0) / attempts.length) : null,
-      passRate: attempts.length ? Math.round((attempts.filter((x) => x.passed).length / attempts.length) * 100) : null,
-    };
+export const saveAssessmentSettings = (id, p) =>
+  patch(`/admin/assessments/${enc(id)}`, {
+    ...pick(p, ["title", "description", "shuffle", "active"]),
+    ...Object.fromEntries(["durationMinutes", "passPercent", "marksPerQuestion", "maxAttempts", "questionsPerAttempt"].filter((k) => p[k] !== undefined && p[k] !== "").map((k) => [k, Number(p[k])])),
   });
+
+export const listQuestions = (assessmentId, filters) => get(`/admin/assessments/${enc(assessmentId)}/questions`, filters);
+
+export function saveQuestion(assessmentId, q) {
+  const body = { text: q.text.trim(), options: q.options.map((o) => o.trim()), answer: Number(q.answer), ...pick(q, ["explanation", "difficulty", "active"]) };
+  return q.id ? patch(`/admin/questions/${enc(q.id)}`, body) : post(`/admin/assessments/${enc(assessmentId)}/questions`, body);
 }
 
-export async function saveAssessmentSettings(id, patch) {
-  await delay(450);
-  const a = db().assessments.find((x) => x.id === id);
-  for (const k of ["durationMinutes", "passPercent", "marksPerQuestion", "maxAttempts", "questionsPerAttempt", "shuffle"]) {
-    if (k in patch) a[k] = k === "shuffle" ? !!patch[k] : Number(patch[k]);
-  }
-  commit();
-}
+export const deleteQuestion = (assessmentId, id) => del(`/admin/questions/${enc(id)}`);
 
-export async function listQuestions(departmentId) {
-  await delay(220);
-  const s = db();
-  // How often each question is answered correctly (portal attempts only).
-  const stats = {};
-  for (const a of s.attempts) {
-    if ((a.assessmentId ?? a.departmentId) !== departmentId || !a.review) continue;
-    for (const r of a.review) {
-      stats[r.id] ??= { seen: 0, correct: 0 };
-      stats[r.id].seen++;
-      if (r.isCorrect) stats[r.id].correct++;
-    }
-  }
-  return clone(s.questions[departmentId] || []).map((q) => ({ ...q, stats: stats[q.id] || null }));
-}
+// ── Results ──
+export const listResults = (filters) => get("/admin/results", filters);
+export const getResult = (id) => get(`/admin/results/${enc(id)}`);
+export const deleteResult = (id) => del(`/admin/results/${enc(id)}`);
 
-export async function saveQuestion(departmentId, q) {
-  await delay(350);
-  const s = db();
-  s.questions[departmentId] ??= [];
-  const bank = s.questions[departmentId];
-  const clean = { text: q.text.trim(), options: q.options.map((o) => o.trim()), answer: Number(q.answer) };
-  if (q.id) Object.assign(bank.find((x) => x.id === q.id), clean);
-  else bank.push({ id: uid("q"), ...clean });
-  commit();
-}
+// ── Announcements ──
+export const listAnnouncements = () => get("/admin/announcements");
+export const postAnnouncement = ({ title, body, author, departmentIds, tone }) => post("/admin/announcements", pick({ title, body, author, departmentIds, tone }, ["title", "body", "author", "departmentIds", "tone"]));
+export const updateAnnouncement = (id, p) => patch(`/admin/announcements/${enc(id)}`, p);
+export const deleteAnnouncement = (id) => del(`/admin/announcements/${enc(id)}`);
 
-export async function deleteQuestion(departmentId, id) {
-  await delay(250);
-  const s = db();
-  s.questions[departmentId] = (s.questions[departmentId] || []).filter((q) => q.id !== id);
-  commit();
-}
-
-// ── Results ─────────────────────────────────────────────────────────────────
-
-export async function listResults() {
-  await delay();
-  const s = db();
-  return s.attempts.map(({ review, ...a }) => {
-    const u = s.users.find((x) => x.id === a.userId);
-    return { ...clone(a), userName: u?.name ?? "Unknown", userEmail: u?.email ?? "", userCode: u?.code ?? "", hasReview: !!review };
-  });
-}
-
-export async function getResult(id) {
-  await delay(200);
-  const s = db();
-  const a = s.attempts.find((x) => x.id === id);
-  if (!a) throw new Error("Result not found.");
-  const u = s.users.find((x) => x.id === a.userId);
-  return { ...clone(a), userName: u?.name, userEmail: u?.email };
-}
-
-// ── Announcements & demo data ───────────────────────────────────────────────
-
-export async function postAnnouncement({ title, body, author }) {
-  await delay(400);
-  db().announcements.unshift({ id: uid("an"), title, body, author, tone: "lime", createdAt: new Date().toISOString() });
-  commit();
-}
-
-export async function resetDemoData() {
-  await delay(400);
-  resetDb();
-}
+// Demo data only exists in mock mode.
+export const resetDemoData = async () => {};

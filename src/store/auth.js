@@ -1,11 +1,14 @@
-// Signed-in user, shared app-wide. The token is opaque to the UI; in mock
-// mode it's "mock.<userId>". When the backend lands this keeps the same API —
-// only services/auth.js changes (or a session cookie replaces the token).
+// Signed-in user, shared app-wide.
+//
+// Real API: the session is an httpOnly cookie set by the server — nothing
+// is stored in JS. "Keep me signed in" asks the server for a persistent
+// cookie. Mock mode keeps its fake token in local/sessionStorage.
 
 import { createSignal } from "solid-js";
 import * as api from "../services/auth";
-import { load, save, remove } from "../lib/storage";
-import { bindSession } from "./assessment";
+import { setAuthProblemHandler } from "../services/api";
+import { load, save, remove, removeWhere } from "../lib/storage";
+import { bindSession, restoreRunningAttempt } from "./assessment";
 
 const TOKEN_KEY = "acl.auth.v1";
 
@@ -15,8 +18,7 @@ const [ready, setReady] = createSignal(false);
 export { user, ready };
 export const isAdmin = () => user()?.role === "admin";
 
-// "Remember me" keeps the token in localStorage; otherwise sessionStorage,
-// so the sign-in ends when the browser tab closes.
+// Mock-mode token: localStorage with "Keep me signed in", else sessionStorage.
 const sessionToken = {
   get: () => {
     try {
@@ -35,13 +37,39 @@ const sessionToken = {
   },
 };
 
+// Real API (cookie sessions): a browser that once ran the demo build may
+// still hold its mock database (sample users, answer keys) and fake token.
+// None of it is used here, so it is removed on load.
+if (!api.USES_TOKEN) {
+  removeWhere((k) => k.startsWith("acl.mockdb") || k === TOKEN_KEY);
+  sessionToken.set(null);
+}
+
+const clearLocal = () => {
+  remove(TOKEN_KEY);
+  sessionToken.set(null);
+  bindSession(null);
+  setUser(null);
+};
+
+// The server ended the session (expired, password changed elsewhere,
+// account deactivated) or requires a new password.
+setAuthProblemHandler((kind) => {
+  if (kind === "signed-out" && user()) clearLocal();
+  if (kind === "password-change" && user() && !user().mustChangePassword) setUser({ ...user(), mustChangePassword: true });
+});
+
+async function enter(me) {
+  bindSession(me.id);
+  setUser(me);
+  if (me.role === "employee" && !me.mustChangePassword) await restoreRunningAttempt();
+}
+
 export async function restoreSession() {
   const token = load(TOKEN_KEY, null) || sessionToken.get();
-  if (token) {
+  if (token || !api.USES_TOKEN) {
     try {
-      const me = await api.getMe(token);
-      bindSession(me.id);
-      setUser(me);
+      await enter(await api.getMe(token));
     } catch {
       remove(TOKEN_KEY);
       sessionToken.set(null);
@@ -51,23 +79,33 @@ export async function restoreSession() {
 }
 
 export async function signIn(email, password, remember = true) {
-  const { token, user: me } = await api.login(email, password);
-  if (remember) save(TOKEN_KEY, token);
-  else {
-    remove(TOKEN_KEY);
-    sessionToken.set(token);
+  const { token, user: me } = await api.login(email, password, remember);
+  if (token) {
+    if (remember) save(TOKEN_KEY, token);
+    else {
+      remove(TOKEN_KEY);
+      sessionToken.set(token);
+    }
   }
-  bindSession(me.id);
-  setUser(me);
+  await enter(me);
   return me;
 }
 
 export async function signOut() {
-  await api.logout();
-  remove(TOKEN_KEY);
-  sessionToken.set(null);
-  bindSession(null);
-  setUser(null);
+  try {
+    await api.logout();
+  } catch {
+    /* the local sign-out still happens */
+  }
+  clearLocal();
+  // Shared computers: drop any local copy of test answers (the server keeps
+  // its autosaved copy for the next sign-in; the demo has no server copy).
+  if (!api.USES_TOKEN) removeWhere((k) => k.startsWith("training.session."));
 }
 
 export const updateUser = (me) => setUser(me);
+
+// After a forced password change the user continues straight into the app.
+export async function passwordChanged(me) {
+  await enter(me);
+}

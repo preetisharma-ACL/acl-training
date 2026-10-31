@@ -5,7 +5,8 @@ import { Plus, Pencil, Trash2, Ellipsis, MapPin, UserRound, ClipboardList, Build
 import { navigate } from "../../lib/router";
 import { cx } from "../../lib/format";
 import { toast } from "../../store/toast";
-import { listDepartments, saveDepartment, deleteDepartment } from "../../services/admin";
+import { listDepartments, listLocations, saveDepartment, deleteDepartment } from "../../services/admin";
+import LocationSelect from "../../components/LocationSelect";
 import { PageHeader, Skeleton, Menu, MenuItem, Modal, Field, Toggle, ConfirmDialog, EmptyState } from "../../components/ui";
 import { DeptIcon } from "../../components/icons";
 
@@ -124,7 +125,7 @@ function DepartmentModal(props) {
     name: props.dept.name ?? "",
     description: props.dept.description ?? "",
     head: props.dept.head ?? "",
-    location: props.dept.location ?? "Lucknow HQ",
+    location: props.dept.location ?? "",
     active: props.dept.active ?? true,
   });
   const set = (k) => (v) => setF({ ...f(), [k]: v });
@@ -177,9 +178,7 @@ function DepartmentModal(props) {
             <input id="d-head" class="input" value={f().head} onInput={(e) => set("head")(e.currentTarget.value)} />
           </Field>
           <Field label="Location" for="d-loc">
-            <select id="d-loc" class="input" value={f().location} onChange={(e) => set("location")(e.currentTarget.value)}>
-              <For each={["Lucknow HQ", "Noida", "Gurugram", "Delhi", "Remote-first"]}>{(l) => <option>{l}</option>}</For>
-            </select>
+            <LocationSelect id="d-loc" load={listLocations} value={f().location} onChange={set("location")} />
           </Field>
         </div>
         <div class="flex items-center justify-between gap-4 p-4 rounded-2xl border border-line">

@@ -6,6 +6,8 @@
 //   • employee on /admin  → /dashboard;  admin on employee pages → /admin
 //   • assessment running  → /assessment, whatever URL is asked for. Nothing
 //     else (training module included) renders until it's submitted.
+//   • temporary password  → the "choose a new password" screen, whatever URL.
+// The server enforces every one of these rules too; these only route.
 
 import { createMemo, onMount, Show, Switch, Match } from "solid-js";
 import { Dynamic } from "solid-js/web";
@@ -13,6 +15,7 @@ import { pathname, query, navigate, matchPath, useLocation } from "./lib/router"
 import { user, ready, restoreSession } from "./store/auth";
 import { session } from "./store/assessment";
 import { Splash, Toaster } from "./components/ui";
+import NewPassword from "./pages/NewPassword";
 
 import EmployeeShell from "./layouts/EmployeeShell";
 import AdminShell from "./layouts/AdminShell";
@@ -27,11 +30,13 @@ import AdminOverview from "./pages/admin/Overview";
 import AdminUsers from "./pages/admin/Users";
 import AdminDepartments from "./pages/admin/Departments";
 import AdminDesignations from "./pages/admin/Designations";
+import AdminLocations from "./pages/admin/Locations";
 import AdminMaterials from "./pages/admin/Materials";
 import AdminAssessments from "./pages/admin/Assessments";
 import AdminQuestionBank from "./pages/admin/QuestionBank";
 import AdminResults from "./pages/admin/Results";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 
 const EMPLOYEE_ROUTES = [
   ["/dashboard", Dashboard],
@@ -40,6 +45,7 @@ const EMPLOYEE_ROUTES = [
   ["/training/:id", Viewer],
   ["/scoreboard", Scoreboard],
   ["/scoreboard/:id", Scoreboard],
+  ["/profile", Profile],
 ];
 
 const ADMIN_ROUTES = [
@@ -47,11 +53,13 @@ const ADMIN_ROUTES = [
   ["/admin/users", AdminUsers],
   ["/admin/departments", AdminDepartments],
   ["/admin/designations", AdminDesignations],
+  ["/admin/locations", AdminLocations],
   ["/admin/materials", AdminMaterials],
   ["/admin/materials/:id", Viewer],
   ["/admin/assessments", AdminAssessments],
   ["/admin/assessments/:id", AdminQuestionBank],
   ["/admin/results", AdminResults],
+  ["/admin/profile", Profile],
 ];
 
 const find = (routes, path) => {
@@ -71,6 +79,8 @@ function resolve(path, u, testRunning) {
     const next = path !== "/" ? `?next=${encodeURIComponent(full)}` : "";
     return { redirect: `/login${next}` };
   }
+  // An admin-issued temporary password must be replaced first (URL kept).
+  if (u.mustChangePassword) return { kind: "password" };
   if (path === "/" || path === "/login") {
     const next = query().get("next");
     return { redirect: next && next.startsWith("/") && !next.startsWith("//") ? next : homeFor(u) };
@@ -122,6 +132,9 @@ export default function App() {
         <Switch>
           <Match when={route().kind === "login"}>
             <Login />
+          </Match>
+          <Match when={route().kind === "password"}>
+            <NewPassword />
           </Match>
           <Match when={route().kind === "assessment"}>
             <Assessment />

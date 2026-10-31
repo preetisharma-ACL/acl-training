@@ -34,7 +34,20 @@ export function fmtRelative(iso) {
   return fmtDate(iso);
 }
 
-export const daysUntil = (iso) => Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
+// Calendar days from today to the date (0 = today, 1 = tomorrow, -1 =
+// yesterday), in local time, whatever the hour.
+export const daysUntil = (iso, now = new Date()) => {
+  const day = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((day(new Date(iso)) - day(now)) / 86400000);
+};
+
+// "Due 31 Oct · due today" / "· 1 day left" / "Overdue since …".
+export const dueLabel = (iso, now = new Date()) => {
+  const d = daysUntil(iso, now);
+  if (new Date(iso) < now) return `Overdue since ${fmtDate(iso)}`;
+  if (d === 0) return `Due ${fmtDate(iso)} · due today`;
+  return `Due ${fmtDate(iso)} · ${d} day${d === 1 ? "" : "s"} left`;
+};
 
 export const initials = (name = "") =>
   name

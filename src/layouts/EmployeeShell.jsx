@@ -6,13 +6,13 @@
 
 import { createResource, createSignal, For, Show } from "solid-js";
 import { Dynamic } from "solid-js/web";
-import { House, BookOpen, ClipboardCheck, Trophy, Bell, LogOut, Megaphone, ChevronDown, Moon, Sun } from "lucide-solid";
+import { House, BookOpen, ClipboardCheck, Trophy, Bell, LogOut, Megaphone, ChevronDown, Moon, Sun, Settings } from "lucide-solid";
 import { Link, isActive, navigate, pathname } from "../lib/router";
 import { cx, fmtRelative } from "../lib/format";
 import { user, signOut } from "../store/auth";
 import { dark, toggleTheme } from "../store/theme";
 import { Logo, ThemeToggle, Avatar, Menu, MenuItem } from "../components/ui";
-import { getAnnouncements } from "../services/training";
+import { loadAnnouncements } from "../store/announcements";
 
 const NAV = [
   { href: "/dashboard", label: "Home", icon: House },
@@ -25,11 +25,12 @@ const NAV = [
 const pageTitle = () => {
   const p = pathname();
   if (p.startsWith("/training/")) return "Training";
+  if (p === "/profile") return "Profile";
   return NAV.find((n) => isActive(n.href))?.label ?? "Aajneeti";
 };
 
 function Announcements() {
-  const [news] = createResource(getAnnouncements);
+  const [news] = createResource(() => user()?.id, loadAnnouncements);
   const [seen, setSeen] = createSignal(false);
   return (
     <Menu
@@ -117,6 +118,9 @@ function Account(props) {
             {dark() ? "Light mode" : "Dark mode"}
           </MenuItem>
         </div>
+        <MenuItem icon={<Settings size={16} />} onClick={() => navigate("/profile")}>
+          Profile settings
+        </MenuItem>
         <MenuItem icon={<LogOut size={16} />} danger onClick={out}>
           Sign out
         </MenuItem>

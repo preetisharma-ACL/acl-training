@@ -8,14 +8,14 @@
 // Department heads and descriptions shown on dashboards. Assessment settings
 // and guides live in trainingData.js.
 export const DEPARTMENT_META = {
-  account: { head: "Sandeep Malhotra", location: "Lucknow HQ" },
+  account: { head: "Sandeep Malhotra", location: "Lucknow" },
   sales: { head: "Rohit Verma", location: "Noida" },
-  coordination: { head: "Tarun Bhatia", location: "Lucknow HQ" },
-  content: { head: "Kavya Reddy", location: "Remote-first" },
+  coordination: { head: "Tarun Bhatia", location: "Lucknow" },
+  content: { head: "Kavya Reddy", location: "" },
   seo: { head: "Nikhil Arora", location: "Noida" },
-  operation: { head: "Aditya Menon", location: "Lucknow HQ" },
-  hr: { head: "Varun Desai", location: "Lucknow HQ" },
-  crm_dashboard: { head: "Divya Krishnan", location: "Gurugram" },
+  operation: { head: "Aditya Menon", location: "Lucknow" },
+  hr: { head: "Varun Desai", location: "Lucknow" },
+  crm_dashboard: { head: "Divya Krishnan", location: "" },
 };
 
 export const DESIGNATIONS = [
@@ -39,7 +39,7 @@ export const DESIGNATIONS = [
   { id: "intern", title: "Intern", departmentId: null, level: "Junior" },
 ];
 
-const LOCATIONS = ["Lucknow HQ", "Noida", "Gurugram", "Delhi", "Remote"];
+export const LOCATIONS = ["Lucknow", "Noida", "Kolkata"];
 
 // [name, designationId, status?]
 const PEOPLE = [
@@ -85,7 +85,7 @@ export const SEED_USERS = [
     phone: "+91 98390 10001",
     designationId: null,
     code: "AJN-0001",
-    location: "Lucknow HQ",
+    location: "Lucknow",
     joinedAt: daysAgo(1460),
     status: "active",
     lastActiveAt: daysAgo(0),
@@ -100,7 +100,7 @@ export const SEED_USERS = [
     phone: "+91 98390 10002",
     designationId: null,
     code: "AJN-0002",
-    location: "Lucknow HQ",
+    location: "Lucknow",
     joinedAt: daysAgo(980),
     status: "active",
     lastActiveAt: daysAgo(1),

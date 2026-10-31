@@ -22,13 +22,19 @@ import {
   Eye,
   EyeOff,
   Wand,
+  Trash2,
 } from "lucide-solid";
 import { navigate, query } from "../../lib/router";
 import { cx, fmtDate, fmtRelative } from "../../lib/format";
 import { exportCsv } from "../../lib/csv";
 import { toast } from "../../store/toast";
-import { listUsers, listDesignations, saveUser, setUserStatus, resetUserPassword, resetUserAttempts } from "../../services/admin";
+import { user as me } from "../../store/auth";
+import { listUsers, listDesignations, listLocations, saveUser, setUserStatus, resetUserPassword, resetUserAttempts, deleteUser } from "../../services/admin";
 import { PageHeader, SearchInput, Tabs, Avatar, Menu, MenuItem, Drawer, Field, Toggle, ConfirmDialog, EmptyState, Skeleton } from "../../components/ui";
+import TempPasswordModal from "../../components/TempPasswordModal";
+import LocationSelect from "../../components/LocationSelect";
+import { phoneProblem } from "../../lib/phone";
+import { paginate } from "../../lib/paginate";
 import { STATUS_LABELS } from "../../components/status";
 
 const PAGE = 10;
@@ -62,8 +68,9 @@ export default function Users() {
         (!term || [u.name, u.email, u.code, u.designation].some((v) => v?.toLowerCase().includes(term))),
     );
   });
-  const pages = () => Math.max(1, Math.ceil(filtered().length / PAGE));
-  const rows = () => filtered().slice(page() * PAGE, page() * PAGE + PAGE);
+  const view = createMemo(() => paginate(filtered(), page(), PAGE));
+  const pages = () => view().pages;
+  const rows = () => view().rows;
   const counts = () => {
     const all = users() ?? [];
     return {
@@ -96,6 +103,19 @@ export default function Users() {
       ],
       filtered(),
     );
+
+  // Temporary password from a reset, shown once.
+  const [issued, setIssued] = createSignal(null);
+  const resetPassword = async (u) => {
+    try {
+      const r = await resetUserPassword(u.id);
+      if (r?.temporaryPassword) setIssued({ name: u.name, email: u.email, password: r.temporaryPassword });
+      else toast(`${u.name}'s password has been reset.`);
+      refetch();
+    } catch (e) {
+      toast(e.message, { tone: "error" });
+    }
+  };
 
   const act = async (fn, msg) => {
     try {
@@ -175,7 +195,7 @@ export default function Users() {
           <Show
             when={filtered().length}
             fallback={
-              <EmptyState icon={<UsersIcon size={24} />} title="No users match" action={<button class="btn btn-secondary btn-sm" onClick={() => { setQ(""); setDept(""); setStatus(""); setRole("all"); }}>Clear filters</button>}>
+              <EmptyState icon={<UsersIcon size={24} />} title="No users match" action={<button class="btn btn-secondary btn-sm" onClick={() => { setQ(""); setDept(""); setStatus(""); setRole("all"); setPage(0); }}>Clear filters</button>}>
                 Try a different search or filter.
               </EmptyState>
             }
@@ -204,6 +224,11 @@ export default function Users() {
                                 {u.name}
                                 <Show when={u.role === "admin"}>
                                   <span class="badge badge-lime">Admin</span>
+                                </Show>
+                                <Show when={u.resetRequestedAt}>
+                                  <span class="badge badge-warn" title={`Asked for a password reset ${fmtRelative(u.resetRequestedAt)}`}>
+                                    Reset requested
+                                  </span>
                                 </Show>
                               </span>
                               <span class="block text-[13px] text-muted whitespace-nowrap">
@@ -254,8 +279,8 @@ export default function Users() {
                                 Reset attempts
                               </MenuItem>
                             </Show>
-                            <MenuItem icon={<KeyRound size={15} />} onClick={() => act(() => resetUserPassword(u.id), `A password reset link was sent to ${u.email}.`)}>
-                              Send password reset
+                            <MenuItem icon={<KeyRound size={15} />} onClick={() => resetPassword(u)}>
+                              Reset password
                             </MenuItem>
                             <Show
                               when={u.status === "active"}
@@ -281,6 +306,26 @@ export default function Users() {
                                 Deactivate
                               </MenuItem>
                             </Show>
+                            <Show when={u.id !== me()?.id && (!u.isSuperAdmin || me()?.isSuperAdmin)}>
+                              <MenuItem
+                                icon={<Trash2 size={15} />}
+                                danger
+                                onClick={() =>
+                                  setConfirm({
+                                    title: `Delete ${u.name}?`,
+                                    message:
+                                      u.role === "employee"
+                                        ? `This permanently deletes the account and all of their assessment results${u.attempts ? ` (${u.attempts} attempt${u.attempts === 1 ? "" : "s"})` : ""} and training progress. It can't be undone — deactivate instead to keep their history.`
+                                        : "This permanently deletes the admin account. It can't be undone — deactivate instead to keep it.",
+                                    label: "Delete permanently",
+                                    danger: true,
+                                    run: () => act(() => deleteUser(u.id), `${u.name} has been deleted.`),
+                                  })
+                                }
+                              >
+                                Delete user
+                              </MenuItem>
+                            </Show>
                           </Menu>
                         </td>
                       </tr>
@@ -291,17 +336,17 @@ export default function Users() {
             </div>
             <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-line text-[13.5px] text-muted">
               <span>
-                Showing <strong class="text-ink">{page() * PAGE + 1}</strong>–<strong class="text-ink">{Math.min(filtered().length, (page() + 1) * PAGE)}</strong> of{" "}
+                Showing <strong class="text-ink">{view().from}</strong>–<strong class="text-ink">{view().to}</strong> of{" "}
                 <strong class="text-ink">{filtered().length}</strong>
               </span>
               <div class="flex items-center gap-1.5">
-                <button class="btn btn-secondary btn-sm btn-icon !w-8 !h-8" disabled={page() === 0} onClick={() => setPage(page() - 1)} aria-label="Previous page">
+                <button class="btn btn-secondary btn-sm btn-icon !w-8 !h-8" disabled={view().page === 0} onClick={() => setPage(view().page - 1)} aria-label="Previous page">
                   <ChevronLeft size={15} />
                 </button>
                 <span class="px-2 tabular">
-                  {page() + 1} / {pages()}
+                  {view().page + 1} / {pages()}
                 </span>
-                <button class="btn btn-secondary btn-sm btn-icon !w-8 !h-8" disabled={page() >= pages() - 1} onClick={() => setPage(page() + 1)} aria-label="Next page">
+                <button class="btn btn-secondary btn-sm btn-icon !w-8 !h-8" disabled={view().page >= pages() - 1} onClick={() => setPage(view().page + 1)} aria-label="Next page">
                   <ChevronRight size={15} />
                 </button>
               </div>
@@ -310,6 +355,9 @@ export default function Users() {
         </Show>
       </section>
 
+      <Show when={issued()}>
+        <TempPasswordModal issued={issued()} onClose={() => setIssued(null)} />
+      </Show>
       <Show when={editing()}>
         <UserDrawer
           user={editing()}
@@ -344,7 +392,7 @@ function UserDrawer(props) {
     name: props.user.name ?? "",
     email: props.user.email ?? "",
     phone: props.user.phone ?? "",
-    location: props.user.location ?? "Lucknow HQ",
+    location: props.user.location ?? "",
     role: props.user.role ?? "employee",
     designationId: props.user.designationId ?? "",
     adminTitle: props.user.adminTitle ?? "Training Admin",
@@ -375,6 +423,7 @@ function UserDrawer(props) {
           ? "Use at least 8 characters."
           : null,
     designationId: f().role === "employee" && !f().designationId ? "Choose a designation." : null,
+    phone: phoneProblem(f().phone),
   });
   const valid = () => !Object.values(errors()).some(Boolean);
 
@@ -474,13 +523,11 @@ function UserDrawer(props) {
           </div>
         </Field>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Phone" for="u-phone" optional>
-            <input id="u-phone" class="input" value={f().phone} onInput={(e) => set("phone")(e.currentTarget.value)} />
+          <Field label="Phone" for="u-phone" optional error={touched() && errors().phone}>
+            <input id="u-phone" type="tel" inputmode="tel" maxLength={30} placeholder="+91 98765 43210" class={cx("input", touched() && errors().phone && "input-invalid")} value={f().phone} onInput={(e) => set("phone")(e.currentTarget.value)} />
           </Field>
           <Field label="Location" for="u-loc">
-            <select id="u-loc" class="input" value={f().location} onChange={(e) => set("location")(e.currentTarget.value)}>
-              <For each={["Lucknow HQ", "Noida", "Gurugram", "Delhi", "Remote"]}>{(l) => <option>{l}</option>}</For>
-            </select>
+            <LocationSelect id="u-loc" load={listLocations} value={f().location} onChange={set("location")} />
           </Field>
         </div>
 

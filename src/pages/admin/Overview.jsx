@@ -10,20 +10,37 @@ import {
   ClipboardList,
   UserPlus,
   Crown,
+  KeyRound,
 } from "lucide-solid";
 import { Link, navigate } from "../../lib/router";
 import { cx, fmtRelative, greeting } from "../../lib/format";
 import { user } from "../../store/auth";
 import { toast } from "../../store/toast";
-import { getOverview, postAnnouncement } from "../../services/admin";
+import { getOverview, postAnnouncement, resetUserPassword } from "../../services/admin";
+import TempPasswordModal from "../../components/TempPasswordModal";
 import { Skeleton, SectionTitle, Avatar, Modal, Field } from "../../components/ui";
 import { ColumnChart } from "../../components/charts";
 import { DeptIcon } from "../../components/icons";
 import { STATUS_LABELS } from "../../components/status";
 
 export default function Overview() {
-  const [data] = createResource(getOverview);
+  const [data, { refetch }] = createResource(getOverview);
   const [announce, setAnnounce] = createSignal(false);
+  const [issued, setIssued] = createSignal(null);
+  const [resetting, setResetting] = createSignal(null);
+
+  const resetPassword = async (r) => {
+    setResetting(r.userId);
+    try {
+      const res = await resetUserPassword(r.userId);
+      setIssued({ name: r.name, email: r.email, password: res.temporaryPassword });
+      refetch();
+    } catch (e) {
+      toast(e.message, { tone: "error" });
+    } finally {
+      setResetting(null);
+    }
+  };
 
   return (
     <div class="grid gap-6">
@@ -48,6 +65,36 @@ export default function Overview() {
           </button>
         </div>
       </section>
+
+      {/* "Forgot password" requests waiting for an admin */}
+      <Show when={data()?.resetRequests?.length}>
+        <section class="card p-5 sm:p-6 border-amber-300/70 dark:border-amber-400/30">
+          <SectionTitle
+            title="Password reset requests"
+            subtitle="These people used “Forgot password?”. Reset it, then share the temporary password with them."
+            action={<span class="badge badge-warn">{data().resetRequests.length} waiting</span>}
+          />
+          <ul class="mt-4 grid gap-2">
+            <For each={data().resetRequests}>
+              {(r) => (
+                <li class="flex flex-wrap items-center gap-3 p-2.5 rounded-xl border border-line">
+                  <Avatar name={r.name} size={34} />
+                  <span class="flex-1 min-w-[180px]">
+                    <span class="block text-[14px] font-semibold truncate">{r.name}</span>
+                    <span class="block text-[12.5px] text-muted truncate">
+                      {r.email}
+                      {r.designation ? ` · ${r.designation}` : ""} · asked {fmtRelative(r.requestedAt)}
+                    </span>
+                  </span>
+                  <button class="btn btn-primary btn-sm" disabled={resetting() === r.userId} onClick={() => resetPassword(r)}>
+                    <KeyRound size={14} /> {resetting() === r.userId ? "Resetting…" : "Reset password"}
+                  </button>
+                </li>
+              )}
+            </For>
+          </ul>
+        </section>
+      </Show>
 
       <section class="card p-5 sm:p-6">
         <SectionTitle
@@ -204,6 +251,9 @@ export default function Overview() {
         </div>
       </section>
 
+      <Show when={issued()}>
+        <TempPasswordModal issued={issued()} onClose={() => setIssued(null)} />
+      </Show>
       <Show when={announce()}>
         <AnnounceModal onClose={() => setAnnounce(false)} />
       </Show>

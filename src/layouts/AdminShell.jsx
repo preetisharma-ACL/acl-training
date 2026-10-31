@@ -16,6 +16,8 @@ import {
   X,
   RefreshCw,
   ChevronDown,
+  Settings,
+  MapPin,
 } from "lucide-solid";
 import { Link, isActive, navigate, pathname } from "../lib/router";
 import { cx } from "../lib/format";
@@ -23,6 +25,7 @@ import { user, signOut } from "../store/auth";
 import { toast } from "../store/toast";
 import { ThemeToggle, Avatar, Menu, MenuItem, ConfirmDialog } from "../components/ui";
 import { resetDemoData } from "../services/admin";
+import { DEMO_MODE } from "../services/demo";
 
 const GROUPS = [
   { label: "Overview", items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true }] },
@@ -32,6 +35,7 @@ const GROUPS = [
       { href: "/admin/users", label: "Users", icon: Users },
       { href: "/admin/departments", label: "Departments", icon: Building2 },
       { href: "/admin/designations", label: "Designations", icon: BadgeCheck },
+      { href: "/admin/locations", label: "Locations", icon: MapPin },
     ],
   },
   {
@@ -47,6 +51,7 @@ const GROUPS = [
 const ALL = GROUPS.flatMap((g) => g.items);
 const currentTitle = () => {
   const p = pathname();
+  if (p === "/admin/profile") return "Profile settings";
   return [...ALL].reverse().find((i) => (i.exact ? p === i.href : p === i.href || p.startsWith(i.href + "/")))?.label ?? "Admin";
 };
 
@@ -160,9 +165,14 @@ export default function AdminShell(props) {
                   <span class="badge badge-lime">{user()?.adminTitle ?? "Admin"}</span>
                 </div>
                 <div class="h-px bg-line mx-1.5 my-1" />
-              <MenuItem icon={<RefreshCw size={16} />} onClick={() => setConfirmReset(true)}>
-                Reset demo data
+              <MenuItem icon={<Settings size={16} />} onClick={() => navigate("/admin/profile")}>
+                Profile settings
               </MenuItem>
+              <Show when={DEMO_MODE}>
+                <MenuItem icon={<RefreshCw size={16} />} onClick={() => setConfirmReset(true)}>
+                  Reset demo data
+                </MenuItem>
+              </Show>
               <MenuItem icon={<LogOut size={16} />} danger onClick={out}>
                 Sign out
               </MenuItem>

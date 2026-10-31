@@ -24,6 +24,7 @@ import {
 } from "lucide-solid";
 import { Link, navigate } from "../../lib/router";
 import { cx } from "../../lib/format";
+import { pct } from "../../lib/progress";
 import { user } from "../../store/auth";
 import { beginSession } from "../../store/assessment";
 import { getMyModule, startAttempt } from "../../services/training";
@@ -65,7 +66,7 @@ function TestCard(props) {
   const [rules, setRules] = createSignal(false);
   const [starting, setStarting] = createSignal(false);
   const [error, setError] = createSignal(null);
-  const blocker = () => mod().conditions.find((c) => !c.met);
+  const blocker = () => (mod().blocker ? { id: mod().blocker } : mod().conditions.find((c) => !c.met));
 
   const begin = async () => {
     setStarting(true);
@@ -104,7 +105,7 @@ function TestCard(props) {
               each={[
                 [ListChecks, a().questionCount, "Questions"],
                 [Timer, `${a().durationMinutes} min`, "Time"],
-                [Target, `${a().passPercent}%`, "To pass"],
+                [Target, pct(a().passPercent), "To pass"],
               ]}
             >
               {([Icon, v, l]) => (
@@ -158,11 +159,20 @@ function TestCard(props) {
                   <span class="grid place-items-center shrink-0 w-10 h-10 rounded-xl badge-warn">
                     <Info size={18} />
                   </span>
-                  <p class="text-[14.5px] text-ink-2 leading-relaxed">
-                    {blocker()?.id === "attempts"
-                      ? "You've used all your attempts. Your training admin can give you another one."
-                      : "Your test isn't ready yet. Please check back later or contact your training admin."}
-                  </p>
+                  <div class="grid gap-3 justify-items-start">
+                    <p class="text-[14.5px] text-ink-2 leading-relaxed">
+                      {mod().activeAttempt
+                        ? "You have a test in progress. Resume it before the timer runs out — your answers are saved."
+                        : blocker()?.id === "attempts"
+                          ? "You've used all your attempts. Your training admin can give you another one."
+                          : "Your test isn't ready yet. Please check back later or contact your training admin."}
+                    </p>
+                    <Show when={mod().activeAttempt}>
+                      <button class="btn btn-primary btn-sm" onClick={begin} disabled={starting()}>
+                        {starting() ? "Opening…" : "Resume test"}
+                      </button>
+                    </Show>
+                  </div>
                 </div>
               }
             >

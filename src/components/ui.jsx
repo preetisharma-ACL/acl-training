@@ -662,7 +662,7 @@ export function Toaster() {
     tone === "error" ? <CircleAlert size={18} /> : tone === "info" ? <Info size={18} /> : <CircleCheck size={18} />;
   return (
     <Portal>
-      <div class="fixed z-[1300] bottom-4 right-4 left-4 sm:left-auto grid gap-2.5 sm:w-[380px]" aria-live="polite">
+      <div class="no-print fixed z-[1300] bottom-4 right-4 left-4 sm:left-auto grid gap-2.5 sm:w-[380px]" aria-live="polite">
         <For each={toasts()}>
           {(t) => (
             <div class="flex items-start gap-3 p-3.5 pr-2.5 rounded-2xl bg-plum-950 text-white shadow-float border border-white/10 animate-toast-in">

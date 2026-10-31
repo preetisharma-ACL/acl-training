@@ -2,9 +2,12 @@
 //   pdf        → the browser's PDF viewer in a framed preview
 //   manual     → a paper-style reader with chapters and a contents rail
 //   structured → section cards with key points and tips
-// Every type can be downloaded as a PDF. Reading progress is reported to the
-// backend; manuals and guides complete themselves when read to the end, PDFs
-// are marked complete by the reader.
+// Every type can be downloaded as a PDF. Opening is recorded by the server
+// when the material loads; while it's open the viewer sends a heartbeat
+// (scroll percent + chapters/sections seen). The SERVER decides completion
+// from its own evidence (reading time, sections, PDF actually opened):
+// manuals and guides complete themselves once it's met, PDFs and media when
+// the reader clicks "Mark as complete", which stays disabled until then.
 //
 // Also used by admins (/admin/materials/:id) as a read-only preview.
 
@@ -36,6 +39,7 @@ import { getMaterialForAdmin } from "../../services/admin";
 import { Skeleton, ProgressBar, EmptyState } from "../../components/ui";
 import { TypeIcon, MATERIAL_TYPES } from "../../components/icons";
 import { parseMedia, PROVIDER_LABEL } from "../../lib/media";
+import { completionNeeded } from "../../lib/progress";
 
 // Types that are read on the page (scroll progress, text size, print).
 const READING = ["manual", "structured"];
@@ -63,44 +67,88 @@ export default function Viewer(props) {
   );
   const [fontIdx, setFontIdx] = createSignal(2);
   const [readPct, setReadPct] = createSignal(0);
+  const [seen, setSeen] = createStore({});
+  const [busy, setBusy] = createSignal(false);
+  const prog = () => doc()?.progress;
+  const tracking = () => !admin && doc() && !prog()?.completed;
 
   // Reading progress from scroll position (manual + structured).
   onMount(() => {
-    let last = 0;
     const onScroll = () => {
       const el = document.getElementById("doc-body");
       if (!el) return;
       const r = el.getBoundingClientRect();
       const total = r.height - window.innerHeight * 0.6;
-      const pct = total <= 0 ? 100 : Math.min(100, Math.max(0, ((-r.top + window.innerHeight * 0.25) / total) * 100));
-      setReadPct(pct);
-      if (!admin && doc() && READING.includes(doc().type) && pct - last >= 10) {
-        last = pct;
-        updateProgress(me, doc().id, { percent: pct });
-      }
+      setReadPct(total <= 0 ? 100 : Math.min(100, Math.max(0, ((-r.top + window.innerHeight * 0.25) / total) * 100)));
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onCleanup(() => window.removeEventListener("scroll", onScroll));
   });
 
-  // Mark opened.
-  createEffect(() => {
-    if (!admin && doc() && !doc().progress.opened) updateProgress(me, doc().id, {});
+  // The server's answer is the truth: keep the page in step with it.
+  const apply = (p) => {
+    if (!p || !doc()) return;
+    const was = prog()?.completed;
+    mutate({ ...doc(), progress: p });
+    if (p.completed && !was) {
+      refetchModule();
+      toast("Nice work — this material is complete.", { title: doc().title });
+    }
+  };
+
+  const report = async (extra = {}) => {
+    if (!tracking()) return;
+    const body = { ...extra };
+    if (READING.includes(doc().type)) {
+      body.percent = Math.round(readPct());
+      const ids = Object.keys(seen).filter((k) => seen[k]);
+      if (ids.length) body.seen = ids;
+    }
+    try {
+      apply(await updateProgress(me, doc().id, body));
+    } catch (e) {
+      if (e.details?.requirement) apply(e.details);
+      if (extra.completed) toast(e.message, { tone: "error", title: "Not complete yet" });
+    }
+  };
+
+  // Heartbeat while the page is visible, and once more when leaving it.
+  onMount(() => {
+    const t = setInterval(() => document.visibilityState === "visible" && report(), 15000);
+    onCleanup(() => {
+      clearInterval(t);
+      report();
+    });
   });
 
-  const complete = async (auto = false) => {
-    if (admin || !doc() || doc().progress.completed) return;
-    await updateProgress(me, doc().id, { completed: true });
-    mutate({ ...doc(), progress: { ...doc().progress, completed: true, percent: 100 } });
-    refetchModule();
-    toast(auto ? "You've reached the end — marked as complete." : "Nice work — this material is complete.", { title: doc().title });
+  // Newly seen chapters/sections are reported shortly after (batched).
+  let seenTimer;
+  const markSeen = (ids) => {
+    const fresh = ids.filter((id) => !seen[id]);
+    if (!fresh.length) return;
+    for (const id of fresh) setSeen(id, true);
+    clearTimeout(seenTimer);
+    seenTimer = setTimeout(() => report(), 1200);
   };
+  onCleanup(() => clearTimeout(seenTimer));
+
+  const complete = async () => {
+    if (!tracking() || busy()) return;
+    setBusy(true);
+    await report({ completed: true });
+    setBusy(false);
+  };
+
+  // What's still needed before "Mark as complete" unlocks.
+  const needed = () => completionNeeded(prog(), doc()?.type);
 
   const download = () => {
     const f = file();
     if (!f) return;
     const a = document.createElement("a");
-    a.href = f.url;
+    // PDFs: the server's attachment URL (Content-Disposition carries the
+    // file name); manuals/guides: the generated blob.
+    a.href = f.downloadUrl ?? f.url;
     a.download = f.fileName;
     document.body.appendChild(a);
     a.click();
@@ -118,7 +166,7 @@ export default function Viewer(props) {
     <div class="grid gap-5">
       {/* Reading progress hairline */}
       <Show when={doc() && READING.includes(doc().type)}>
-        <div class="fixed top-0 left-0 right-0 h-[3px] z-[60] pointer-events-none">
+        <div class="no-print fixed top-0 left-0 right-0 h-[3px] z-[60] pointer-events-none">
           <div class="h-full bg-gradient-to-r from-plum-500 via-plum-400 to-lime-400 transition-[width] duration-150" style={{ width: `${readPct()}%` }} />
         </div>
       </Show>
@@ -226,7 +274,7 @@ export default function Viewer(props) {
                     </span>
                   }
                 >
-                  <button class="btn btn-primary btn-sm" onClick={() => complete(false)}>
+                  <button class="btn btn-primary btn-sm" onClick={complete} disabled={!prog()?.canComplete || busy()} title={needed() ? `To complete: ${needed()}` : undefined}>
                     <Check size={14} /> Mark as complete
                   </button>
                 </Show>
@@ -235,10 +283,16 @@ export default function Viewer(props) {
             </div>
           </header>
 
+          <Show when={!admin && needed()}>
+            <p class="no-print -mt-2 flex items-center gap-2 px-1 text-[13px] text-muted">
+              <Clock size={13} /> To complete: {needed()}
+            </p>
+          </Show>
+
           {/* Phones: the main action, pinned above the tab bar. */}
           <Show when={!admin && !doc().progress.completed}>
-            <div class="sm:hidden fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-40 px-4 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
-              <button class="btn btn-primary btn-lg w-full" onClick={() => complete(false)}>
+            <div class="no-print sm:hidden fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-40 px-4 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
+              <button class="btn btn-primary btn-lg w-full" onClick={complete} disabled={!prog()?.canComplete || busy()}>
                 <Check size={17} /> Mark as complete
               </button>
             </div>
@@ -250,13 +304,13 @@ export default function Viewer(props) {
                 <PdfFrame file={file()} title={doc().title} onDownload={download} />
               </Match>
               <Match when={doc().type === "manual"}>
-                <ManualReader doc={doc()} fontSize={FONT_SIZES[fontIdx()]} onEnd={() => complete(true)} />
+                <ManualReader doc={doc()} fontSize={FONT_SIZES[fontIdx()]} seen={seen} onSeen={markSeen} />
               </Match>
               <Match when={doc().type === "media"}>
-                <MediaPlayer doc={doc()} onEnded={() => complete(true)} />
+                <MediaPlayer doc={doc()} onEnded={complete} />
               </Match>
               <Match when={doc().type === "structured"}>
-                <StructuredReader doc={doc()} fontSize={FONT_SIZES[fontIdx()]} onAllSeen={() => complete(true)} admin={admin} />
+                <StructuredReader doc={doc()} fontSize={FONT_SIZES[fontIdx()]} seen={seen} onSeen={markSeen} />
               </Match>
             </Switch>
           </div>
@@ -317,7 +371,7 @@ export default function Viewer(props) {
 
 function UnlockHint() {
   return (
-    <div class="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-lime-100 text-lime-900 dark:bg-lime-400/10 dark:text-lime-200 border border-lime-300/60 dark:border-lime-400/20 animate-fade-up">
+    <div class="no-print flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-lime-100 text-lime-900 dark:bg-lime-400/10 dark:text-lime-200 border border-lime-300/60 dark:border-lime-400/20 animate-fade-up">
       <LockOpen size={18} />
       <p class="flex-1 text-[14.5px] font-medium">All required modules are done — your test is unlocked.</p>
       <button class="btn btn-primary btn-sm" onClick={() => navigate("/test")}>
@@ -428,29 +482,43 @@ function MediaPlayer(props) {
 
 // ── Shared reader pieces ────────────────────────────────────────────────────
 
-// Scroll-spy for [data-section]; marks sections seen once they've been on screen.
+// Scroll-spy for [data-section]. A section counts as seen once its top has
+// come into view: checked when the reader opens (so sections already on
+// screen count) and on every scroll/resize frame (so a fast scroll or a
+// jump from the contents still counts everything scrolled past). The
+// server still requires the minimum reading time before completion.
 function useSections(ids, onSeen) {
   const [active, setActive] = createSignal(null);
-  let observer;
+  let frame;
+  const check = () => {
+    frame = null;
+    const vh = window.innerHeight;
+    const els = [...document.querySelectorAll("[data-section]")];
+    const seenNow = [];
+    let current = els[0]?.dataset.section ?? null;
+    for (const el of els) {
+      const r = el.getBoundingClientRect();
+      if (r.top < vh * 0.9) seenNow.push(el.dataset.section);
+      if (r.top < vh * 0.35) current = el.dataset.section;
+    }
+    // At the very bottom, the last section is the current one.
+    if (els.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) current = els[els.length - 1].dataset.section;
+    setActive(current);
+    if (seenNow.length) onSeen?.(seenNow);
+  };
+  const schedule = () => (frame ??= requestAnimationFrame(check));
   createEffect(() => {
-    if (!ids().length) return;
-    queueMicrotask(() => {
-      observer?.disconnect();
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const en of entries) {
-            if (en.isIntersecting) {
-              setActive(en.target.dataset.section);
-              onSeen?.(en.target.dataset.section);
-            }
-          }
-        },
-        { rootMargin: "-20% 0px -55% 0px" },
-      );
-      document.querySelectorAll("[data-section]").forEach((el) => observer.observe(el));
-    });
+    if (ids().length) queueMicrotask(schedule);
   });
-  onCleanup(() => observer?.disconnect());
+  onMount(() => {
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+  });
+  onCleanup(() => {
+    window.removeEventListener("scroll", schedule);
+    window.removeEventListener("resize", schedule);
+    if (frame) cancelAnimationFrame(frame);
+  });
   return active;
 }
 
@@ -548,18 +616,12 @@ function Block(props) {
 
 function ManualReader(props) {
   const chapters = () => props.doc.content.chapters;
-  const [seen, setSeen] = createStore({});
-  const active = useSections(() => chapters().map((c) => c.id), (id) => setSeen(id, true));
-  let end;
-  onMount(() => {
-    const io = new IntersectionObserver((e) => e[0].isIntersecting && props.onEnd(), { threshold: 1 });
-    if (end) io.observe(end);
-    onCleanup(() => io.disconnect());
-  });
+  const seen = props.seen;
+  const active = useSections(() => chapters().map((c) => c.id), props.onSeen);
   const seenCount = () => chapters().filter((c) => seen[c.id]).length;
 
   return (
-    <div class="grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)] gap-6 items-start">
+    <div class="print-flat grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)] gap-6 items-start">
       <Contents
         items={chapters()}
         active={active()}
@@ -584,7 +646,7 @@ function ManualReader(props) {
               </section>
             )}
           </For>
-          <div ref={end} class="flex items-center gap-3 pt-6 border-t border-line text-[0.85em] text-muted">
+          <div class="flex items-center gap-3 pt-6 border-t border-line text-[0.85em] text-muted">
             <CircleCheck size={16} class="text-lime-600 dark:text-lime-300" /> End of document
           </div>
         </div>
@@ -597,22 +659,12 @@ function ManualReader(props) {
 
 function StructuredReader(props) {
   const sections = () => props.doc.content.sections;
-  const [seen, setSeen] = createStore({});
-  let fired = false;
-  const active = useSections(
-    () => sections().map((s) => s.id),
-    (id) => {
-      setSeen(id, true);
-      if (!fired && sections().every((s) => seen[s.id])) {
-        fired = true;
-        props.onAllSeen();
-      }
-    },
-  );
+  const seen = props.seen;
+  const active = useSections(() => sections().map((s) => s.id), props.onSeen);
   const seenCount = () => sections().filter((s) => seen[s.id]).length;
 
   return (
-    <div class="grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)] gap-6 items-start">
+    <div class="print-flat grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)] gap-6 items-start">
       <Contents
         items={sections()}
         active={active()}

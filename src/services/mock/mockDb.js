@@ -8,11 +8,11 @@
 // real API exists, their function bodies become fetch calls and this file is
 // deleted — no component imports it.
 
-import { DEPARTMENTS } from "../data/trainingData";
-import { LEVELS } from "../lib/levels";
-import { DEPARTMENT_META, DESIGNATIONS, SEED_USERS } from "../data/org";
-import { SEED_MATERIALS } from "../data/materials";
-import { load, save, remove } from "../lib/storage";
+import { DEPARTMENTS } from "../../data/trainingData";
+import { LEVELS } from "../../lib/levels";
+import { DEPARTMENT_META, DESIGNATIONS, SEED_USERS, LOCATIONS } from "../../data/org";
+import { SEED_MATERIALS } from "../../data/materials";
+import { load, save, remove } from "../../lib/storage";
 
 const DB_KEY = "acl.mockdb.v6";
 
@@ -98,6 +98,9 @@ if (!state || state.version !== 6) {
 
 export const db = () => state;
 export const commit = () => save(DB_KEY, state);
+
+// Office locations (older saved demo data has none yet).
+export const locationsOf = (s) => (s.locations ??= LOCATIONS.map((name, i) => ({ id: `loc-${i + 1}`, name })));
 
 export function resetDb() {
   remove(DB_KEY);
