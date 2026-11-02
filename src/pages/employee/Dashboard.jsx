@@ -368,10 +368,10 @@ function Journey(props) {
     ];
   };
   const TINTS = [
-    { bg: "bg-tint-blue", icon: "text-[#3463AF]", Icon: BookOpen },
-    { bg: "bg-tint-cream", icon: "text-[#D97706]", Icon: ListChecks },
-    { bg: "bg-tint-mint", icon: "text-[#0F766E]", Icon: Target },
-    { bg: "bg-tint-lavender", icon: "text-[#6D28D9]", Icon: Trophy },
+    { bg: "glass-tint glass-tint-rose", icon: "text-[#AC2334]", Icon: BookOpen },
+    { bg: "glass-tint glass-tint-peach", icon: "text-[#C2531F]", Icon: ListChecks },
+    { bg: "glass-tint glass-tint-gold", icon: "text-[#B45309]", Icon: Target },
+    { bg: "glass-tint glass-tint-mist", icon: "text-[#7A2E5C]", Icon: Trophy },
   ];
   return (
     <section>
@@ -384,12 +384,12 @@ function Journey(props) {
               <Link
                 href={s.href}
                 class={cx(
-                  "flex sm:flex-col gap-4 h-full p-5 sm:p-6 rounded-[20px] transition dark:!bg-surface dark:border dark:border-line",
+                  "flex sm:flex-col gap-4 h-full p-5 sm:p-6 rounded-[20px] transition",
                   TINTS[i()].bg,
-                  s.state === "current" ? "ring-2 ring-plum-700 dark:ring-lime-400" : "hover:ring-1 hover:ring-line-strong",
+                  s.state === "current" && "glass-tint-current",
                 )}
               >
-                <span class={cx("grid place-items-center shrink-0 w-12 h-12 rounded-full bg-white dark:bg-sunken", TINTS[i()].icon)}>
+                <span class={cx("glass-tint-icon grid place-items-center shrink-0 w-12 h-12 rounded-full", TINTS[i()].icon)}>
                   <Dynamic component={TINTS[i()].Icon} size={22} />
                 </span>
                 <span class="min-w-0 flex-1">

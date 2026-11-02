@@ -1,4 +1,4 @@
-// Course player (Study Materials → a course), laid out like Udemy: the video
+// Course player (Training → a video course), laid out like Udemy: the video
 // on the left, "Course content" (sections → videos, with progress) on the
 // right, stacked on phones. Videos are unlisted YouTube videos played in the
 // embedded player; employees stay in the portal.
@@ -200,8 +200,8 @@ export default function CoursePlayer(props) {
             icon={<MonitorPlay size={24} />}
             title="Course unavailable"
             action={
-              <Link href="/courses" class="btn btn-secondary">
-                <ArrowLeft size={15} /> Study Materials
+              <Link href="/training" class="btn btn-secondary">
+                <ArrowLeft size={15} /> Training
               </Link>
             }
           >
@@ -213,11 +213,11 @@ export default function CoursePlayer(props) {
       <div class="grid gap-4">
         {/* Course bar */}
         <header class="flex items-center gap-3 px-3 sm:px-5 py-3 rounded-2xl bg-plum-950 text-white">
-          <Link href="/courses" class="grid place-items-center w-9 h-9 rounded-lg hover:bg-white/10 shrink-0" aria-label="Back to Study Materials">
+          <Link href="/training" class="grid place-items-center w-9 h-9 rounded-lg hover:bg-white/10 shrink-0" aria-label="Back to Training">
             <ArrowLeft size={18} />
           </Link>
           <div class="min-w-0 flex-1">
-            <p class="text-[12px] uppercase tracking-[0.14em] text-white/50">Study Materials</p>
+            <p class="text-[12px] uppercase tracking-[0.14em] text-white/50">Training</p>
             <h1 class="text-[15px] sm:text-[17px] font-semibold truncate !text-white">{course.title ?? "Loading…"}</h1>
           </div>
           <Show when={data()}>

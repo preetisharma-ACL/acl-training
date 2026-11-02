@@ -284,9 +284,19 @@ export default function Viewer(props) {
           </header>
 
           <Show when={!admin && needed()}>
-            <p class="no-print -mt-2 flex items-center gap-2 px-1 text-[13px] text-muted">
-              <Clock size={13} /> To complete: {needed()}
-            </p>
+            <div
+              class="no-print -mt-1 flex items-center gap-3.5 px-4 sm:px-5 py-3.5 rounded-2xl border border-lime-300/70 bg-lime-50 dark:bg-lime-400/10 dark:border-lime-400/25"
+              role="status"
+            >
+              <span class="relative grid place-items-center shrink-0 w-10 h-10 rounded-xl bg-lime-400 text-white dark:bg-lime-400/20 dark:text-lime-300">
+                <Clock size={19} />
+                <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-plum-700 ring-2 ring-lime-50 dark:ring-[rgb(var(--canvas))] animate-pulse" />
+              </span>
+              <p class="text-[14.5px] leading-snug text-ink">
+                <span class="font-semibold text-lime-800 dark:text-lime-300">To complete this guide:</span> {needed()}
+                <span class="block mt-0.5 text-[13px] text-ink-2">"Mark as complete" unlocks as soon as you're done.</span>
+              </p>
+            </div>
           </Show>
 
           {/* Phones: the main action, pinned above the tab bar. */}

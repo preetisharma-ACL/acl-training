@@ -1,6 +1,7 @@
-// Study Materials: the video courses assigned to the employee (their
-// department and level, plus company-wide), with progress. Required courses
-// must be completed before the assessment unlocks.
+// Video courses: the courses assigned to the employee (their department and
+// level, plus company-wide), with progress. Shown as a section of the
+// Training page; required courses must be completed before the assessment
+// unlocks. Hidden when nothing is assigned.
 
 import { createResource, For, Show } from "solid-js";
 import { MonitorPlay, PlayCircle, CircleCheck, Clock, ListVideo } from "lucide-solid";
@@ -8,45 +9,39 @@ import { Link } from "../../lib/router";
 import { cx } from "../../lib/format";
 import { listMyCourses } from "../../services/training";
 import { thumbnail, totalLength } from "../../lib/youtube";
-import { ProgressBar, Skeleton, EmptyState } from "../../components/ui";
+import { ProgressBar, Skeleton } from "../../components/ui";
 
-export default function Courses() {
+export function VideoCourses() {
   const [courses] = createResource(listMyCourses);
   const required = () => (courses() ?? []).filter((c) => c.required);
   const requiredLeft = () => required().filter((c) => !c.completed).length;
 
   return (
-    <div class="grid gap-5 max-w-[1100px] mx-auto">
-      <div>
-        <p class="kicker mb-2">Video courses</p>
-        <h1 class="text-[24px] sm:text-[28px] font-semibold tracking-[-0.025em]">Study Materials</h1>
-        <p class="mt-1.5 text-[15px] text-muted">Watch each course in order. Your progress is saved as you go.</p>
-      </div>
+    <Show when={!courses() || courses().length}>
+      <section id="video-courses" class="grid gap-4 scroll-mt-24">
+        <div class="flex items-end justify-between gap-3">
+          <div>
+            <h2 class="flex items-center gap-2 text-[18px] font-semibold">
+              <MonitorPlay size={19} class="text-plum-700 dark:text-lime-400" /> Video courses
+            </h2>
+            <p class="mt-1 text-[14px] text-muted">Watch each course in order. Your progress is saved as you go.</p>
+          </div>
+        </div>
 
-      <Show when={courses() && requiredLeft()}>
-        <p class="flex items-start gap-2.5 px-4 py-3 rounded-2xl badge-warn !flex !text-[14px] !font-medium !rounded-2xl">
-          <ListVideo size={17} class="shrink-0 mt-0.5" />
-          {requiredLeft()} required course{requiredLeft() === 1 ? "" : "s"} to finish before your test unlocks.
-        </p>
-      </Show>
+        <Show when={courses() && requiredLeft()}>
+          <p class="flex items-start gap-2.5 px-4 py-3 rounded-2xl badge-warn !flex !text-[14px] !font-medium !rounded-2xl">
+            <ListVideo size={17} class="shrink-0 mt-0.5" />
+            {requiredLeft()} required course{requiredLeft() === 1 ? "" : "s"} to finish before your test unlocks.
+          </p>
+        </Show>
 
-      <Show when={courses()} fallback={<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"><For each={[1, 2, 3]}>{() => <Skeleton class="h-[300px] !rounded-2xl" />}</For></div>}>
-        <Show
-          when={courses().length}
-          fallback={
-            <div class="card">
-              <EmptyState icon={<MonitorPlay size={24} />} title="No courses yet">
-                Video courses assigned to you will appear here.
-              </EmptyState>
-            </div>
-          }
-        >
+        <Show when={courses()} fallback={<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"><For each={[1, 2, 3]}>{() => <Skeleton class="h-[300px] !rounded-2xl" />}</For></div>}>
           <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
             <For each={courses()}>{(c) => <CourseCard c={c} />}</For>
           </div>
         </Show>
-      </Show>
-    </div>
+      </section>
+    </Show>
   );
 }
 

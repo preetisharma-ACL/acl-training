@@ -122,7 +122,7 @@ export default function NewPassword() {
         />
         <LinePassword id="np-confirm" label="Confirm new password" icon={KeyRound} autocomplete="new-password" value={confirm()} onInput={setConfirm} error={show("confirm")} />
 
-        <button type="submit" class="btn btn-primary btn-lg w-full !h-[52px] !rounded-full mt-1 shadow-[0_12px_24px_-12px_rgba(52,99,175,0.7)]" disabled={busy()}>
+        <button type="submit" class="btn btn-primary btn-lg w-full !h-[52px] !rounded-full mt-1 shadow-[0_12px_24px_-12px_rgba(172, 35, 52,0.7)]" disabled={busy()}>
           <Show
             when={busy()}
             fallback={

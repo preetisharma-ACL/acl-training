@@ -277,14 +277,7 @@ function CourseBuilder(props) {
           <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
         </Show>
 
-        <Field label="Course title" for="c-title" error={err("title")}>
-          <input id="c-title" class={cx("input", err("title") && "input-invalid")} value={f.title} onInput={(e) => setF("title", e.currentTarget.value)} placeholder="e.g. Facebook Ads Mastery" />
-        </Field>
-        <Field label="Description" for="c-desc" optional hint="Shown on the course card and under the player.">
-          <textarea id="c-desc" rows="3" class="input" value={f.description} onInput={(e) => setF("description", e.currentTarget.value)} />
-        </Field>
-
-        <Field label="Assigned to" for="c-dept" error={err("scope")}>
+        <Field label="Select Department" for="c-dept" error={err("scope")}>
           <select id="c-dept" class={cx("input", err("scope") && "input-invalid")} value={f.departmentId} onChange={(e) => setF("departmentId", e.currentTarget.value)}>
             <option value="" disabled>
               Choose who gets it…
@@ -310,6 +303,13 @@ function CourseBuilder(props) {
             <p class="error-text">{err("levels")}</p>
           </Show>
         </div>
+
+        <Field label="Course title" for="c-title" error={err("title")}>
+          <input id="c-title" class={cx("input", err("title") && "input-invalid")} value={f.title} onInput={(e) => setF("title", e.currentTarget.value)} placeholder="e.g. Facebook Ads Mastery" />
+        </Field>
+        <Field label="Description" for="c-desc" optional hint="Shown on the course card and under the player.">
+          <textarea id="c-desc" rows="3" class="input" value={f.description} onInput={(e) => setF("description", e.currentTarget.value)} />
+        </Field>
 
         <div>
           <div class={cx("flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border", err("required") ? "border-crimson-400" : "border-line")}>

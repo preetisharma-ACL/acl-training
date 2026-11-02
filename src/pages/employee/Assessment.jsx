@@ -144,7 +144,7 @@ export default function Assessment() {
   return (
     <div class="fixed inset-0 z-[1000] flex flex-col overflow-y-auto select-none bg-canvas" onContextMenu={(e) => e.preventDefault()}>
       {/* Top bar */}
-      <header class={cx("sticky top-0 z-[2] hero-aurora-soft text-white shadow-[0_10px_30px_-10px_rgba(29,14,33,0.5)] transition", behind())}>
+      <header class={cx("sticky top-0 z-[2] hero-aurora-soft text-white shadow-[0_10px_30px_-10px_rgba(46,10,16,0.5)] transition", behind())}>
         <div class="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_minmax(180px,360px)_auto] items-center gap-x-3 gap-y-2.5 md:gap-6 max-w-[1280px] mx-auto px-4 md:px-6 py-3 pt-[max(env(safe-area-inset-top),12px)]">
           <div class="flex items-center gap-3 min-w-0">
             <span class="hidden sm:grid place-items-center shrink-0 w-10 h-10 rounded-xl glass">

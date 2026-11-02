@@ -6,7 +6,7 @@
 
 import { createResource, createSignal, For, Show } from "solid-js";
 import { Dynamic } from "solid-js/web";
-import { House, BookOpen, MonitorPlay, ClipboardCheck, Trophy, Bell, LogOut, Megaphone, ChevronDown, Moon, Sun, Settings } from "lucide-solid";
+import { House, BookOpen, ClipboardCheck, Trophy, Bell, LogOut, Megaphone, ChevronDown, Moon, Sun, Settings } from "lucide-solid";
 import { Link, isActive, navigate, pathname } from "../lib/router";
 import { cx, fmtRelative } from "../lib/format";
 import { user, signOut } from "../store/auth";
@@ -14,20 +14,21 @@ import { dark, toggleTheme } from "../store/theme";
 import { Logo, ThemeToggle, Avatar, Menu, MenuItem } from "../components/ui";
 import { loadAnnouncements } from "../store/announcements";
 
-// short: the label on the phone tab bar.
+// short: the label on the phone tab bar. also: other paths that count as
+// this tab (a video course opens from the Training page).
 const NAV = [
   { href: "/dashboard", label: "Home", icon: House },
-  { href: "/training", label: "Training", icon: BookOpen },
-  { href: "/courses", label: "Study Materials", short: "Videos", icon: MonitorPlay },
+  { href: "/training", label: "Training", icon: BookOpen, also: ["/courses"] },
   { href: "/test", label: "Test", icon: ClipboardCheck },
   { href: "/scoreboard", label: "Results", icon: Trophy },
 ];
+const navActive = (n) => isActive(n.href) || (n.also ?? []).some((h) => isActive(h));
 
 // Title shown in the phone app bar.
 const pageTitle = () => {
   const p = pathname();
   if (p.startsWith("/training/")) return "Training";
-  if (p.startsWith("/courses")) return "Study Materials";
+  if (p.startsWith("/courses")) return "Training";
   if (p === "/profile") return "Profile";
   return NAV.find((n) => isActive(n.href))?.label ?? "Aajneeti";
 };
@@ -137,7 +138,7 @@ export default function EmployeeShell(props) {
   return (
     <div class="min-h-screen flex flex-col overflow-x-clip">
       {/* Desktop / tablet bar */}
-      <header class="hidden md:block sticky top-0 z-50 border-b border-line bg-surface">
+      <header class="hidden md:block sticky top-0 z-50 border-b border-line bg-surface/85 backdrop-blur-xl">
         <div class="max-w-[1240px] mx-auto h-[74px] px-4 lg:px-6 flex items-center justify-between gap-4 lg:gap-6">
           <Link href="/dashboard" class="shrink-0" aria-label="Home">
             <Logo />
@@ -150,11 +151,11 @@ export default function EmployeeShell(props) {
                   class={cx(
                     "relative inline-flex items-center h-full text-[15px] font-medium transition",
                     "after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:rounded-full",
-                    isActive(n.href)
+                    navActive(n)
                       ? "text-plum-700 after:bg-plum-700 dark:text-lime-400 dark:after:bg-lime-400"
                       : "text-ink-2 hover:text-plum-700 dark:hover:text-lime-400",
                   )}
-                  aria-current={isActive(n.href) ? "page" : undefined}
+                  aria-current={navActive(n) ? "page" : undefined}
                 >
                   {/* Tablets: the short label, so the bar fits. */}
                   <span class="whitespace-nowrap lg:hidden">{n.short ?? n.label}</span>
@@ -172,7 +173,7 @@ export default function EmployeeShell(props) {
       </header>
 
       {/* Phone app bar */}
-      <header class="md:hidden sticky top-0 z-50 bg-surface border-b border-line pt-[env(safe-area-inset-top)]">
+      <header class="md:hidden sticky top-0 z-50 bg-surface/90 backdrop-blur-xl border-b border-line pt-[env(safe-area-inset-top)]">
         <div class="h-14 px-4 flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
             <img src="/aajneeti-favicon.png" alt="" class="w-8 h-8 rounded-lg object-contain" />
@@ -225,19 +226,19 @@ export default function EmployeeShell(props) {
 
       {/* Phone tab bar */}
       <nav class="md:hidden fixed bottom-0 inset-x-0 z-50 bg-surface border-t border-line pb-[env(safe-area-inset-bottom)]">
-        <div class="grid grid-cols-5 h-[64px]">
+        <div class="grid grid-cols-4 h-[64px]">
           <For each={NAV}>
             {(n) => (
               <Link
                 href={n.href}
-                aria-current={isActive(n.href) ? "page" : undefined}
+                aria-current={navActive(n) ? "page" : undefined}
                 class={cx(
                   "flex flex-col items-center justify-center gap-1 text-[12px] font-semibold transition active:scale-95",
-                  isActive(n.href) ? "text-plum-700 dark:text-lime-300" : "text-muted",
+                  navActive(n) ? "text-plum-700 dark:text-lime-300" : "text-muted",
                 )}
               >
-                <span class={cx("grid place-items-center w-12 h-8 rounded-full transition", isActive(n.href) && "bg-plum-50 dark:bg-lime-400/15")}>
-                  <Dynamic component={n.icon} size={20} stroke-width={isActive(n.href) ? 2.25 : 1.75} />
+                <span class={cx("grid place-items-center w-12 h-8 rounded-full transition", navActive(n) && "bg-plum-50 dark:bg-lime-400/15")}>
+                  <Dynamic component={n.icon} size={20} stroke-width={navActive(n) ? 2.25 : 1.75} />
                 </span>
                 {n.short ?? n.label}
               </Link>

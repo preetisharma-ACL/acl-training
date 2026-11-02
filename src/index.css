@@ -3,37 +3,38 @@
 @tailwind utilities;
 
 /* ── Design tokens ──────────────────────────────────────────────────────────
-   Modelled on hack2skill.com: white pages, navy headings (#0F172A), slate
-   body text (#344767 / #627594), one brand blue (#3463AF), soft blue tints
-   and pastel cards. DM Sans throughout. Surface colours are RGB triplets so
-   Tailwind can apply opacity (bg-surface/80); brand scales (plum = blue,
-   lime = sky accent) live in tailwind.config.js. Crimson = errors only. */
+   Taken from the Aajneeti logo and the login scene: warm ivory pages, deep
+   warm-brown text, the logo's wine-red as the brand colour (#AC2334) and the
+   silk's warm orange as the accent (#F89B62). DM Sans throughout. Surface
+   colours are RGB triplets so Tailwind can apply opacity (bg-surface/80);
+   brand scales (plum = wine-red, lime = warm orange) live in
+   tailwind.config.js. Crimson (rose-red) = errors only. */
 @layer base {
   :root {
-    --canvas: 255 255 255;
+    --canvas: 255 250 246;
     --surface: 255 255 255;
-    --sunken: 245 247 251;
-    --line: 228 232 237;
-    --line-strong: 206 213 223;
-    --ink: 15 23 42;
-    --ink-2: 52 71 103;
-    --muted: 98 117 148;
+    --sunken: 251 243 238;
+    --line: 240 227 219;
+    --line-strong: 226 207 196;
+    --ink: 38 20 18;
+    --ink-2: 94 64 56;
+    --muted: 145 116 106;
 
-    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
-    --shadow-lift: 0 2px 4px rgba(15, 23, 42, 0.04), 0 12px 28px -12px rgba(15, 23, 42, 0.14);
-    --shadow-float: 0 20px 48px -16px rgba(15, 23, 42, 0.28), 0 6px 16px -8px rgba(15, 23, 42, 0.12);
+    --shadow-card: 0 1px 2px rgba(80, 30, 20, 0.05);
+    --shadow-lift: 0 2px 4px rgba(80, 30, 20, 0.04), 0 14px 30px -14px rgba(120, 40, 25, 0.18);
+    --shadow-float: 0 22px 50px -18px rgba(110, 30, 25, 0.32), 0 6px 16px -8px rgba(80, 30, 20, 0.12);
     color-scheme: light;
   }
 
   .dark {
-    --canvas: 10 15 28;
-    --surface: 17 24 41;
-    --sunken: 24 33 54;
-    --line: 36 48 74;
-    --line-strong: 52 66 98;
-    --ink: 236 241 248;
-    --ink-2: 199 210 226;
-    --muted: 145 160 186;
+    --canvas: 21 13 14;
+    --surface: 31 20 21;
+    --sunken: 42 28 28;
+    --line: 60 41 40;
+    --line-strong: 82 57 55;
+    --ink: 250 240 234;
+    --ink-2: 224 204 195;
+    --muted: 170 145 136;
 
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-lift: 0 12px 28px -12px rgba(0, 0, 0, 0.6);
@@ -44,10 +45,23 @@
   body {
     @apply bg-canvas text-ink font-sans antialiased text-[15px] leading-relaxed;
     text-rendering: optimizeLegibility;
+    /* The login image's light gradient, washed across every page: misty
+       lavender top-left, blush in the middle, soft cream-yellow top-right. */
+    background-image:
+      radial-gradient(1100px 620px at 0% 0%, rgba(222, 220, 236, 0.55), transparent 62%),
+      radial-gradient(900px 520px at 55% -5%, rgba(250, 222, 220, 0.45), transparent 65%),
+      radial-gradient(1000px 600px at 100% 0%, rgba(255, 233, 204, 0.6), transparent 62%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(900px 420px at 100% -8%, rgba(248, 155, 98, 0.08), transparent 65%),
+      radial-gradient(800px 380px at 0% -10%, rgba(180, 42, 56, 0.12), transparent 65%);
   }
 
   ::selection {
-    background: rgba(52, 99, 175, 0.18);
+    background: rgba(172, 35, 52, 0.18);
   }
 
   h1, h2, h3, h4 {
@@ -63,11 +77,11 @@
   }
 
   :focus-visible {
-    outline: 2px solid #3463af;
+    outline: 2px solid #AC2334;
     outline-offset: 2px;
   }
   .dark :focus-visible {
-    outline-color: #86b4ff;
+    outline-color: #f89b62;
   }
 }
 
@@ -95,18 +109,28 @@
     @apply w-10 h-10 px-0 rounded-lg;
   }
 
-  /* Primary: brand blue. */
+  /* Primary: a glossy gradient from the logo's wine-red into the warm
+     orange, with a light top edge and a red glow. */
   .btn-primary {
-    @apply text-white bg-plum-700 hover:bg-plum-800;
+    @apply text-white bg-plum-700;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 48%, rgba(255, 255, 255, 0) 52%),
+      linear-gradient(100deg, #861426 0%, #a81e30 40%, #cc3f3f 72%, #e8703f 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 20px -10px rgba(172, 35, 52, 0.65);
+    text-shadow: 0 1px 1px rgba(80, 0, 12, 0.25);
   }
-  .dark .btn-primary {
-    @apply text-navy bg-lime-400 hover:bg-lime-300;
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.07) saturate(1.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 12px 26px -10px rgba(172, 35, 52, 0.75);
   }
-  /* Navy, as hack2skill's "Contact Us". */
+  .btn-primary:active:not(:disabled) {
+    filter: brightness(0.97);
+  }
+  /* Deep wine-black. */
   .btn-dark {
-    @apply text-white bg-navy hover:bg-[#1E293B] dark:bg-white dark:text-navy dark:hover:bg-white/90;
+    @apply text-white bg-navy hover:bg-plum-950 dark:bg-white dark:text-navy dark:hover:bg-white/90;
   }
-  /* On blue / dark panels: white with blue text. */
+  /* On brand / dark panels: white with wine-red text. */
   .btn-lime {
     @apply text-plum-700 bg-white hover:bg-plum-50;
   }
@@ -126,14 +150,23 @@
     @apply text-white border border-white/60 hover:bg-white/10;
   }
 
-  /* hack2skill's pill call-to-action with a white arrow circle on the right:
+  /* Pill call-to-action with a white arrow circle on the right, in the
+     brand gradient:
      <button class="btn-pill">Label <span class="btn-pill-arrow"><ArrowUpRight/></span></button> */
   .btn-pill {
-    @apply inline-flex items-center gap-3 h-12 pl-5 pr-1 rounded-full text-[16px] font-medium text-white bg-plum-700 hover:bg-plum-800
+    @apply inline-flex items-center gap-3 h-12 pl-5 pr-1 rounded-full text-[16px] font-medium text-white bg-plum-700
       transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 48%, rgba(255, 255, 255, 0) 52%),
+      linear-gradient(100deg, #861426 0%, #a81e30 40%, #cc3f3f 72%, #e8703f 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 24px -12px rgba(172, 35, 52, 0.7);
+  }
+  .btn-pill:hover:not(:disabled) {
+    filter: brightness(1.07);
   }
   .btn-pill.btn-pill-dark {
-    @apply bg-navy hover:bg-[#1E293B];
+    @apply bg-navy;
+    background-image: none;
   }
   .btn-pill-arrow {
     @apply grid place-items-center w-10 h-10 rounded-full bg-white text-plum-700;
@@ -165,17 +198,17 @@
     box-shadow: none;
   }
   .input-line:focus {
-    box-shadow: 0 1px 0 0 #3463af;
+    box-shadow: 0 1px 0 0 #AC2334;
   }
   .dark .input-line:focus {
-    box-shadow: 0 1px 0 0 #86b4ff;
+    box-shadow: 0 1px 0 0 #f89b62;
   }
   .input-line:-webkit-autofill {
     -webkit-box-shadow: 0 0 0 40px transparent inset;
     transition: background-color 9999s;
   }
 
-  /* Frosted card over the blue glow. */
+  /* Frosted card over the warm glow. */
   .glass-card {
     @apply rounded-[24px] border border-white/70 dark:border-white/10;
     background: linear-gradient(150deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.12) 100%);
@@ -184,7 +217,7 @@
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.85),
       inset 1px 0 0 rgba(255, 255, 255, 0.45),
-      0 24px 50px -24px rgba(15, 23, 42, 0.25);
+      0 24px 50px -24px rgba(110, 30, 25, 0.25);
   }
   .dark .glass-card {
     background: linear-gradient(150deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
@@ -223,23 +256,29 @@
   .badge-lime { @apply bg-lime-100 text-lime-800 dark:bg-lime-400/15 dark:text-lime-300; }
   .badge-outline { @apply border border-line text-ink-2 bg-surface; }
 
-  /* The soft blue glow behind hack2skill's hero. */
+  /* The soft warm glow behind a hero. */
   .hero-glow {
     background:
-      radial-gradient(70% 90% at 50% 18%, rgba(134, 180, 255, 0.55) 0%, rgba(200, 216, 255, 0.35) 38%, transparent 72%),
-      linear-gradient(180deg, #ffffff 0%, #f5f8ff 55%, #ffffff 100%);
+      radial-gradient(70% 90% at 50% 18%, rgba(248, 155, 98, 0.45) 0%, rgba(255, 214, 186, 0.35) 38%, transparent 72%),
+      linear-gradient(180deg, #fffaf6 0%, #fff3ea 55%, #fffaf6 100%);
   }
   .dark .hero-glow {
     background:
-      radial-gradient(70% 90% at 50% 15%, rgba(52, 99, 175, 0.35) 0%, transparent 70%),
+      radial-gradient(70% 90% at 50% 15%, rgba(172, 35, 52, 0.35) 0%, transparent 70%),
       rgb(var(--canvas));
   }
-  /* Full-width hero wash: blue glows at both sides and below the centre. */
-  /* Hero background, built the way hack2skill.com builds theirs: three
-     stacked ellipses (#387EF0, #86B4FF, white) at 32% opacity, blurred 91px.
+  /* Full-width hero wash: the login image's light gradient (misty lavender →
+     blush → peach → cream-yellow) fading into the page, with soft pastel
+     glows (peach, blush, white) blurred over it.
      Markup: <section class="hero-wash"><div class="hero-ellipses"><span/><span/><span/></div>…</section> */
   .hero-wash {
     @apply relative overflow-hidden bg-canvas;
+    background-image:
+      linear-gradient(to bottom, rgba(255, 250, 246, 0) 55%, rgb(var(--canvas)) 100%),
+      linear-gradient(100deg, #ecebf4 0%, #f6e9ec 30%, #fdeae0 62%, #fff3dc 100%);
+  }
+  .dark .hero-wash {
+    background-image: none;
   }
   .hero-wash > :not(.hero-ellipses) {
     @apply relative;
@@ -251,7 +290,7 @@
     width: 1750px;
     height: 628px;
     transform: translateX(-50%);
-    opacity: 0.32;
+    opacity: 0.5;
     filter: blur(91px);
     pointer-events: none;
   }
@@ -262,24 +301,119 @@
     transform: translateX(-50%);
     border-radius: 50%;
   }
-  .hero-ellipses > span:nth-child(1) { width: 1750px; height: 628px; background: #387ef0; }
-  .hero-ellipses > span:nth-child(2) { width: 1217px; height: 437px; background: #86b4ff; }
+  .hero-ellipses > span:nth-child(1) { width: 1750px; height: 628px; background: #ffd9c2; }
+  .hero-ellipses > span:nth-child(2) { width: 1217px; height: 437px; background: #f8d6d8; }
   .hero-ellipses > span:nth-child(3) { width: 658px; height: 237px; background: #ffffff; }
   .dark .hero-ellipses { opacity: 0.22; }
+  .dark .hero-ellipses > span:nth-child(1) { background: #AC2334; }
+  .dark .hero-ellipses > span:nth-child(2) { background: #c2531f; }
   .dark .hero-ellipses > span:nth-child(3) { background: rgb(var(--canvas)); }
-  /* Light-blue band (hack2skill's stats strip). */
-  .band-blue {
-    @apply bg-plum-200 dark:bg-plum-900/50;
+  /* Frosted glass cards tinted with the login image's light shades (rose,
+     peach, gold, lavender mist), e.g. the dashboard's certification steps:
+     <a class="glass-tint glass-tint-rose">…<span class="glass-tint-icon">…</span></a>
+     No shadow: a glassy white rim instead (::after, bright at the top-left,
+     softer along the far edges). Tailwind ring-* still works on top. */
+  .glass-tint {
+    position: relative;
+    isolation: isolate;
+    border: 1.5px solid transparent;
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    transition: transform 0.3s ease;
+  }
+  .glass-tint::after {
+    content: "";
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(140deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.55) 45%, rgba(255, 255, 255, 0.9) 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    pointer-events: none;
+  }
+  .glass-tint::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 55%);
+    pointer-events: none;
+  }
+  .glass-tint:hover {
+    transform: translateY(-3px);
+  }
+  /* The step that's up next: a thicker, brighter white rim (no colour). */
+  .glass-tint-current::after {
+    inset: -2.5px;
+    padding: 2.5px;
+    background: linear-gradient(140deg, #ffffff 0%, rgba(255, 255, 255, 0.85) 50%, #ffffff 100%);
+  }
+  .dark .glass-tint-current::after {
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.4) 100%);
+  }
+  .glass-tint-rose {
+    background-image: linear-gradient(150deg, rgba(253, 234, 235, 0.88) 0%, rgba(247, 218, 224, 0.6) 100%);
+  }
+  .glass-tint-peach {
+    background-image: linear-gradient(150deg, rgba(255, 239, 226, 0.88) 0%, rgba(253, 216, 192, 0.6) 100%);
+  }
+  .glass-tint-gold {
+    background-image: linear-gradient(150deg, rgba(255, 248, 228, 0.9) 0%, rgba(255, 230, 194, 0.6) 100%);
+  }
+  .glass-tint-mist {
+    background-image: linear-gradient(150deg, rgba(240, 238, 248, 0.9) 0%, rgba(248, 230, 236, 0.6) 100%);
+  }
+  .glass-tint-icon {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1.5px solid rgba(255, 255, 255, 0.95);
+  }
+  .dark .glass-tint::after {
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0.18) 100%);
+  }
+  .dark .glass-tint::before {
+    opacity: 0.12;
+  }
+  .dark .glass-tint-rose {
+    background-image: linear-gradient(150deg, rgba(180, 42, 56, 0.24) 0%, rgba(180, 42, 56, 0.08) 100%);
+  }
+  .dark .glass-tint-peach {
+    background-image: linear-gradient(150deg, rgba(232, 112, 63, 0.22) 0%, rgba(232, 112, 63, 0.06) 100%);
+  }
+  .dark .glass-tint-gold {
+    background-image: linear-gradient(150deg, rgba(245, 158, 11, 0.18) 0%, rgba(245, 158, 11, 0.05) 100%);
+  }
+  .dark .glass-tint-mist {
+    background-image: linear-gradient(150deg, rgba(170, 130, 190, 0.18) 0%, rgba(170, 130, 190, 0.05) 100%);
+  }
+  .dark .glass-tint-icon {
+    color: #fdba8c;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
   }
 
-  /* Dark panels (kept for a few admin/test headers): flat navy. */
+  /* Warm band (the stats strip): peach into blush. Name kept. */
+  .band-blue {
+    @apply bg-lime-100 dark:bg-plum-900/40;
+    background-image: linear-gradient(110deg, rgba(255, 232, 214, 0.85) 0%, rgba(252, 236, 238, 0.85) 55%, rgba(255, 243, 222, 0.85) 100%);
+  }
+  .dark .band-blue {
+    background-image: none;
+  }
+
+  /* Brand panels (admin/test headers): the logo's wine-red deepening to
+     wine-black, with the scene's orange glowing in from the corner. */
   .hero-aurora,
   .hero-aurora-soft,
   .hero-mid {
-    background: linear-gradient(135deg, #1e3a6b 0%, #0f172a 100%);
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgba(248, 155, 98, 0.45) 0%, rgba(248, 155, 98, 0) 55%),
+      linear-gradient(135deg, #AC2334 0%, #6a1222 55%, #2e0a10 100%);
   }
   .hero-deep {
-    background: #0f172a;
+    background: #2e0a10;
   }
 
   /* Retired effects, kept as no-ops so existing markup stays harmless. */
@@ -299,7 +433,7 @@
   }
 
   .hairline {
-    background: linear-gradient(90deg, #3463af 0%, #86b4ff 60%, transparent 100%);
+    background: linear-gradient(90deg, #AC2334 0%, #f89b62 60%, transparent 100%);
   }
 
   .skeleton {
@@ -387,6 +521,448 @@
   to { background-position: 200% 0; }
 }
 
+/* ── Sign-in screens ────────────────────────────────────────────────────────
+   Login and "choose a new password" (AuthLayout in pages/Login.jsx): a brand
+   panel on the left (the flowing silk, recoloured to dark blue, with the logo
+   and intro) and a light panel on the right holding the frosted form card.
+   Dark blue leads; the logo crimson (#AC2334) is kept for the Sign in button
+   and small accents. Everything here is scoped to those two screens. */
+.auth-root em {
+  font-style: italic;
+}
+
+/* ── Brand panel ── */
+.auth-hero {
+  color: #fff;
+  background: linear-gradient(160deg, #060b20 0%, #050919 55%, #081233 100%);
+}
+
+/* The moving scene fills the panel. */
+.flow-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.flow-reveal,
+.flow-parallax,
+.flow-drift,
+.flow-image {
+  position: absolute;
+  inset: 0;
+}
+/* Static fallback (no WebGL): the brand gradient, not the warm photo. */
+.flow-image {
+  background:
+    radial-gradient(70% 55% at 85% 90%, rgba(172, 35, 52, 0.35) 0%, rgba(172, 35, 52, 0) 70%),
+    radial-gradient(70% 60% at 15% 20%, rgba(22, 42, 105, 0.5) 0%, rgba(22, 42, 105, 0) 70%),
+    linear-gradient(160deg, #060b20 0%, #050919 60%, #081233 100%);
+}
+
+/* Opening: the scene settles from a slight zoom. */
+.flow-reveal {
+  animation: flow-reveal 2.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes flow-reveal {
+  from { opacity: 0; transform: scale(1.08); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Follows the mouse a little (the vars are set by AuthLayout). */
+.flow-parallax {
+  transform: translate3d(calc(var(--px, 0) * -8px), calc(var(--py, 0) * -5px), 0);
+  transition: transform 1.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: transform;
+}
+
+/* Slow camera drift. */
+.flow-drift {
+  animation: flow-drift 38s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes flow-drift {
+  0% { transform: scale(1.03) translate3d(0, 0, 0); }
+  50% { transform: scale(1.05) translate3d(-0.8%, -0.4%, 0); }
+  100% { transform: scale(1.035) translate3d(0.8%, 0.3%, 0); }
+}
+
+/* The rolling silk: a WebGL canvas (lib/flowWaves.js) over the fallback,
+   faded in once its first frame is drawn. */
+.flow-waves {
+  position: absolute;
+  inset: 0;
+}
+.flow-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.flow-canvas.is-ready {
+  opacity: 1;
+}
+
+/* Keeps the copy readable: deep midnight navy at the left and top/bottom
+   edges, with a soft logo-crimson glow rising from the lower right. */
+.flow-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 50% at 100% 100%, rgba(172, 35, 52, 0.32) 0%, rgba(172, 35, 52, 0) 70%),
+    linear-gradient(90deg, rgba(4, 8, 24, 0.85) 0%, rgba(4, 8, 24, 0.55) 55%, rgba(4, 8, 24, 0.3) 100%),
+    linear-gradient(180deg, rgba(4, 8, 24, 0.65) 0%, rgba(4, 8, 24, 0) 28%, rgba(4, 8, 24, 0) 70%, rgba(4, 8, 24, 0.7) 100%);
+}
+
+/* Entrances. --d staggers them. Glass elements use the soft version: a
+   filter on them would switch their backdrop blur off while it runs. */
+.flow-rise {
+  animation: flow-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) both;
+}
+@keyframes flow-rise {
+  from { opacity: 0; transform: translateY(28px); filter: blur(12px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+.flow-rise-soft {
+  animation: flow-rise-soft 1s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) both;
+}
+@keyframes flow-rise-soft {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.flow-card-in {
+  animation: flow-card-in 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+}
+@keyframes flow-card-in {
+  from { opacity: 0; transform: translateY(40px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.flow-pulse {
+  box-shadow: 0 0 0 0 rgba(240, 90, 110, 0.6);
+  animation: flow-pulse 2.4s ease-out infinite;
+}
+@keyframes flow-pulse {
+  70%, 100% { box-shadow: 0 0 0 7px rgba(240, 90, 110, 0); }
+}
+
+/* Intro copy on the brand panel. */
+.auth-badge {
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.auth-headline {
+  color: #ffffff;
+}
+.auth-headline-accent {
+  background: linear-gradient(95deg, #a9bdf5 0%, #d6e0ff 55%, #ffffff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.auth-lede {
+  color: rgba(255, 255, 255, 0.75);
+}
+.auth-hero-foot {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Feature tiles: frosted glass with a glassy white border, no shadow. */
+.auth-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 15px;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+.auth-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.32);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.auth-tile-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #fff;
+  background: linear-gradient(140deg, #c8364b 0%, #ac2334 55%, #7e1526 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.auth-tile-text {
+  color: rgba(255, 255, 255, 0.66);
+}
+
+/* ── Light panel (the form side) ── */
+/* Navy text tones for the form in the light theme. */
+html:not(.dark) .auth-side {
+  --ink: 15 24 56;
+  --ink-2: 66 76 108;
+  --muted: 118 126 150;
+}
+.auth-side {
+  background:
+    radial-gradient(60% 45% at 100% 0%, rgba(59, 100, 220, 0.1) 0%, rgba(59, 100, 220, 0) 70%),
+    radial-gradient(55% 45% at 0% 100%, rgba(30, 58, 138, 0.1) 0%, rgba(30, 58, 138, 0) 70%),
+    #f5f7fc;
+}
+.dark .auth-side {
+  background:
+    radial-gradient(60% 45% at 100% 0%, rgba(59, 100, 220, 0.18) 0%, rgba(59, 100, 220, 0) 70%),
+    radial-gradient(55% 45% at 0% 100%, rgba(30, 58, 138, 0.2) 0%, rgba(30, 58, 138, 0) 70%),
+    #0a1022;
+}
+/* Soft colour behind the card for the glass to frost. */
+.auth-side-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+}
+.auth-side-glow-a {
+  width: 340px;
+  height: 340px;
+  top: calc(50% - 300px);
+  right: calc(50% - 280px);
+  background: radial-gradient(circle, rgba(59, 100, 220, 0.35) 0%, rgba(59, 100, 220, 0) 70%);
+  animation: side-glow 14s ease-in-out infinite alternate;
+}
+.auth-side-glow-b {
+  width: 320px;
+  height: 320px;
+  bottom: calc(50% - 320px);
+  left: calc(50% - 300px);
+  background: radial-gradient(circle, rgba(30, 58, 138, 0.35) 0%, rgba(30, 58, 138, 0) 70%);
+  animation: side-glow 18s ease-in-out infinite alternate-reverse;
+}
+@keyframes side-glow {
+  to { transform: translate3d(30px, 24px, 0) scale(1.08); }
+}
+.auth-side-foot {
+  color: #6b7185;
+}
+.dark .auth-side-foot {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* The glass card. ::before is a highlight that follows the mouse, ::after a
+   light rim (a gradient border). */
+.auth-glass {
+  position: relative;
+  isolation: isolate;
+  border-radius: 28px;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.6) 55%, rgba(255, 255, 255, 0.72) 100%);
+  -webkit-backdrop-filter: blur(26px) saturate(165%);
+  backdrop-filter: blur(26px) saturate(165%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 34px 70px -34px rgba(15, 23, 60, 0.35),
+    0 10px 26px -16px rgba(15, 23, 60, 0.18);
+}
+.auth-glass::before,
+.auth-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.auth-glass::before {
+  z-index: -1;
+  background: radial-gradient(
+    480px circle at calc(50% + var(--px, 0) * 45%) calc(var(--py, 0) * 35%),
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0) 60%
+  );
+}
+.auth-glass::after {
+  padding: 1px;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.4) 45%, rgba(59, 100, 220, 0.3) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.dark .auth-glass {
+  background: linear-gradient(155deg, rgba(22, 30, 58, 0.72) 0%, rgba(14, 20, 42, 0.55) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 34px 70px -30px rgba(0, 0, 0, 0.85);
+}
+.dark .auth-glass::before {
+  opacity: 0.15;
+}
+.dark .auth-glass::after {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(110, 150, 255, 0.4) 100%);
+}
+
+/* Fields: frosted boxes instead of the underline. */
+.auth-glass .input-line {
+  height: 50px;
+  padding-left: 2.75rem;
+  padding-right: 1rem;
+  border: 1px solid rgba(20, 30, 70, 0.12);
+  border-radius: 14px;
+  background-color: rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 60, 0.04);
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.auth-glass .input-line.pr-10 {
+  padding-right: 3rem;
+}
+.auth-glass .input-line:hover {
+  background-color: #fff;
+  border-color: rgba(20, 30, 70, 0.2);
+}
+.auth-glass .input-line:focus {
+  background-color: #fff;
+  border-color: rgba(30, 58, 138, 0.55);
+  box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.12);
+}
+.auth-glass .input-line.input-invalid {
+  border-color: #e11d48;
+}
+.auth-glass .input-line.input-invalid:focus {
+  box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.14);
+}
+.auth-glass .input-line:-webkit-autofill {
+  -webkit-text-fill-color: rgb(var(--ink));
+  transition: background-color 9999s, border-color 0.2s, box-shadow 0.2s;
+}
+.auth-glass .relative > .left-0 {
+  left: 15px;
+}
+.auth-glass .relative > .right-0 {
+  right: 6px;
+}
+.dark .auth-glass .input-line {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+.dark .auth-glass .input-line:hover {
+  background-color: rgba(255, 255, 255, 0.09);
+}
+.dark .auth-glass .input-line:focus {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(120, 155, 255, 0.6);
+  box-shadow: 0 0 0 4px rgba(120, 155, 255, 0.14);
+}
+.dark .auth-glass .input-line.input-invalid {
+  border-color: #fb7185;
+}
+
+/* Dark blue accents on these screens (the crimson is kept for the button). */
+.auth-glass .text-plum-700 {
+  color: #1e3a8a;
+}
+.dark .auth-glass .text-plum-700 {
+  color: #9db5ff;
+}
+.auth-glass .bg-plum-50 {
+  background-color: rgba(30, 58, 138, 0.08);
+}
+.dark .auth-glass .bg-plum-50 {
+  background-color: rgba(120, 155, 255, 0.14);
+}
+.auth-glass input[type="checkbox"] {
+  accent-color: #1e3a8a;
+}
+.dark .auth-glass input[type="checkbox"] {
+  accent-color: #6e8fff;
+}
+
+/* Primary button: solid logo crimson (#AC2334), with only a faint light
+   top edge for depth, a soft crimson glow and a light sweep on hover; hover
+   deepens the red rather than lightening it. */
+.auth-glass .btn-primary {
+  overflow: hidden;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #ac2334;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 14px 30px -14px rgba(172, 35, 52, 0.6);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+.auth-glass .btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.9s ease;
+}
+.auth-glass .btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: none;
+  background: #961d2d;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 18px 34px -14px rgba(172, 35, 52, 0.7);
+}
+.auth-glass .btn-primary:hover:not(:disabled)::after {
+  transform: translateX(120%);
+}
+.auth-glass .btn-primary:active:not(:disabled) {
+  transform: scale(0.99);
+  background: #8a1a29;
+}
+.dark .auth-glass .btn-primary {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.auth-glass .btn-secondary {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(20, 30, 70, 0.14);
+}
+.dark .auth-glass .btn-secondary {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Demo account chips under the card (mock mode only). */
+.auth-below .bg-surface {
+  background-color: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.auth-below .border-line {
+  border-color: rgba(20, 30, 70, 0.1);
+}
+.auth-below button:hover {
+  background-color: #fff;
+}
+.auth-below .bg-plum-50 {
+  background-color: rgba(30, 58, 138, 0.07);
+}
+.auth-below .border-plum-400 {
+  border-color: rgba(30, 58, 138, 0.4);
+}
+.dark .auth-below .bg-surface,
+.dark .auth-below button:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+.dark .auth-below .border-line {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-parallax {
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -407,12 +983,12 @@
   .dark {
     --canvas: 255 255 255;
     --surface: 255 255 255;
-    --sunken: 245 247 251;
-    --line: 228 232 237;
-    --line-strong: 206 213 223;
-    --ink: 15 23 42;
-    --ink-2: 52 71 103;
-    --muted: 98 117 148;
+    --sunken: 251 243 238;
+    --line: 240 227 219;
+    --line-strong: 226 207 196;
+    --ink: 38 20 18;
+    --ink-2: 94 64 56;
+    --muted: 145 116 106;
     color-scheme: light;
   }
   header,

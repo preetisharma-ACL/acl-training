@@ -1,6 +1,7 @@
 // Training: every module assigned to the employee (their department and
-// level, plus company-wide), with progress. A banner at the top shows where
-// they stand and sends them to the Test tab once they're ready.
+// level, plus company-wide), with progress, below their video courses.
+// A banner at the top shows where they stand and sends them to the Test tab
+// once they're ready.
 
 import { createResource, For, Show } from "solid-js";
 import { ArrowRight, Download, ExternalLink, Lock, LockOpen, CircleCheck, Play, Eye, BookOpen, Trophy } from "lucide-solid";
@@ -11,6 +12,7 @@ import { toast } from "../../store/toast";
 import { getMyModule, getMaterial, getMaterialFile } from "../../services/training";
 import { ProgressBar, Skeleton, EmptyState } from "../../components/ui";
 import { TypeIcon, MATERIAL_TYPES } from "../../components/icons";
+import { VideoCourses } from "./Courses";
 
 export async function downloadMaterial(me, id) {
   try {
@@ -36,7 +38,8 @@ export default function Training() {
   const me = user();
   const [mod] = createResource(() => getMyModule(me));
   const left = () => (mod() ? mod().requiredCount - mod().completedRequired : 0);
-  // This page lists documents; required video courses live in Study Materials.
+  // The modules card counts documents; required video courses are listed
+  // (and counted) in the Video courses section above it.
   const matTotal = () => mod()?.requiredMaterials ?? mod()?.requiredCount ?? 0;
   const matDone = () => mod()?.completedRequiredMaterials ?? mod()?.completedRequired ?? 0;
 
@@ -45,12 +48,14 @@ export default function Training() {
       <div class="hidden md:block">
         <p class="kicker mb-2">Step 1 of 3</p>
         <h1 class="text-[28px] font-semibold tracking-[-0.025em]">Your training</h1>
-        <p class="mt-1.5 text-[15px] text-muted">Open each required module. Your test unlocks when they're all complete.</p>
+        <p class="mt-1.5 text-[15px] text-muted">Open each required module and watch the required video courses. Your test unlocks when they're all complete.</p>
       </div>
 
       <Show when={mod()} fallback={<Skeleton class="h-[96px] !rounded-2xl" />}>
         <StatusBanner mod={mod()} left={left()} />
       </Show>
+
+      <VideoCourses />
 
       <section class="card overflow-hidden">
         <header class="px-4 sm:px-6 py-4 border-b border-line">
@@ -67,10 +72,14 @@ export default function Training() {
           </Show>
           <Show when={mod()?.requiredCourses > mod()?.completedRequiredCourses}>
             <p class="mt-3 text-[13.5px] text-ink-2">
-              You also have {mod().requiredCourses - mod().completedRequiredCourses} required video course{mod().requiredCourses - mod().completedRequiredCourses === 1 ? "" : "s"} to finish in{" "}
-              <Link href="/courses" class="font-semibold text-plum-700 dark:text-lime-300 underline underline-offset-2">
-                Study Materials
-              </Link>
+              You also have {mod().requiredCourses - mod().completedRequiredCourses} required video course{mod().requiredCourses - mod().completedRequiredCourses === 1 ? "" : "s"} to finish{" "}
+              <button
+                type="button"
+                class="font-semibold text-plum-700 dark:text-lime-300 underline underline-offset-2"
+                onClick={() => document.getElementById("video-courses")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              >
+                above
+              </button>
               .
             </p>
           </Show>

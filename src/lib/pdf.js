@@ -77,15 +77,16 @@ const rgb = (hex) => {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((x) => (x / 255).toFixed(3)).join(" ");
 };
 
+// Brand palette (logo wine-red, warm orange accent); the names are old.
 const C = {
-  ink: "#0F172A",
-  body: "#344767",
-  muted: "#627594",
-  midnight: "#0F172A",
-  crimson: "#86B4FF",
-  gold: "#3463AF",
-  goldSoft: "#EFF4FF",
-  line: "#E4E8ED",
+  ink: "#261412",
+  body: "#5E4038",
+  muted: "#91746A",
+  midnight: "#7A1626",
+  crimson: "#F89B62",
+  gold: "#AC2334",
+  goldSoft: "#FFF3EA",
+  line: "#F0E3DB",
 };
 
 export function makePdf({ kicker = "Aajneeti Academy", title, subtitle, meta, blocks }) {
@@ -113,7 +114,7 @@ export function makePdf({ kicker = "Aajneeti Academy", title, subtitle, meta, bl
       }
       if (subtitle) {
         for (const l of wrap(subtitle, 10.5, CONTENT_W, false).slice(0, 2)) {
-          text(l, M, ty + 4, 10.5, "#C8D8FF");
+          text(l, M, ty + 4, 10.5, "#FFD6BA");
           ty -= 15;
         }
       }

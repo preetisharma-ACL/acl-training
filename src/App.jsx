@@ -32,7 +32,6 @@ import AdminDepartments from "./pages/admin/Departments";
 import AdminDesignations from "./pages/admin/Designations";
 import AdminLocations from "./pages/admin/Locations";
 import AdminCourses from "./pages/admin/Courses";
-import Courses from "./pages/employee/Courses";
 import CoursePlayer from "./pages/employee/CoursePlayer";
 import AdminMaterials from "./pages/admin/Materials";
 import AdminAssessments from "./pages/admin/Assessments";
@@ -46,7 +45,6 @@ const EMPLOYEE_ROUTES = [
   ["/training", Training],
   ["/test", Test],
   ["/training/:id", Viewer],
-  ["/courses", Courses],
   ["/courses/:id", CoursePlayer],
   ["/scoreboard", Scoreboard],
   ["/scoreboard/:id", Scoreboard],
@@ -103,6 +101,8 @@ function resolve(path, u, testRunning) {
   if (testRunning) return path === "/assessment" ? { kind: "assessment" } : { redirect: "/assessment" };
   if (path === "/assessment") return { redirect: "/test" };
   if (path.startsWith("/admin")) return { redirect: "/dashboard" };
+  // Video courses are listed on the Training page now.
+  if (path === "/courses") return { redirect: "/training" };
   const r = find(EMPLOYEE_ROUTES, path);
   return r ? { kind: "employee", ...r } : { kind: "employee", component: NotFound, params: {} };
 }

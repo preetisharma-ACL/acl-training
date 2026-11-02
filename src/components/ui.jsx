@@ -72,11 +72,11 @@ export function ThemeToggle(props) {
 // ── Avatar ──────────────────────────────────────────────────────────────────
 
 const AVATAR_TONES = [
-  "from-[#3463AF] to-[#3463AF] text-white",
-  "from-[#0F766E] to-[#0F766E] text-white",
-  "from-[#7C3AED] to-[#7C3AED] text-white",
-  "from-[#C2410C] to-[#C2410C] text-white",
-  "from-[#0F172A] to-[#0F172A] text-white",
+  "from-[#AC2334] to-[#C9434F] text-white",
+  "from-[#0F766E] to-[#14918A] text-white",
+  "from-[#7A2E5C] to-[#9E4377] text-white",
+  "from-[#C2531F] to-[#E8703F] text-white",
+  "from-[#2A0F14] to-[#5A2028] text-white",
 ];
 const hash = (s = "") => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
@@ -157,7 +157,7 @@ export function ProgressRing(props) {
                   fallback={
                     <>
                       <stop offset="0%" stop-color="#FFFFFF" />
-                      <stop offset="100%" stop-color="#C8D8FF" />
+                      <stop offset="100%" stop-color="#FFD6BA" />
                     </>
                   }
                 >
@@ -165,19 +165,19 @@ export function ProgressRing(props) {
                   when={tone() === "plum"}
                   fallback={
                     <>
-                      <stop offset="0%" stop-color={tone() === "danger" ? "#C4364B" : "#16A34A"} />
-                      <stop offset="100%" stop-color={tone() === "danger" ? "#AC2334" : "#16A34A"} />
+                      <stop offset="0%" stop-color={tone() === "danger" ? "#F43F5E" : "#16A34A"} />
+                      <stop offset="100%" stop-color={tone() === "danger" ? "#E11D48" : "#16A34A"} />
                     </>
                   }
                 >
-                  <stop offset="0%" stop-color="#3463AF" />
-                  <stop offset="100%" stop-color="#3463AF" />
+                  <stop offset="0%" stop-color="#AC2334" />
+                  <stop offset="100%" stop-color="#C9434F" />
                 </Show>
                 </Show>
               }
             >
-              <stop offset="0%" stop-color="#86B4FF" />
-              <stop offset="100%" stop-color="#86B4FF" />
+              <stop offset="0%" stop-color="#C9434F" />
+              <stop offset="100%" stop-color="#F89B62" />
             </Show>
           </linearGradient>
         </defs>
@@ -202,7 +202,9 @@ export function ProgressRing(props) {
           style={{ transition: "stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1)" }}
         />
       </svg>
-      <div class="absolute inset-0 grid place-content-center text-center">{props.children}</div>
+      {/* justify-items: the global one-column grid rule would otherwise pin a
+          fixed-width child (an icon) to the left edge. */}
+      <div class="absolute inset-0 grid place-content-center justify-items-center text-center">{props.children}</div>
     </div>
   );
 }
@@ -411,7 +413,7 @@ export function Tabs(props) {
               onClick={() => props.onChange(t.id)}
               class={cx(
                 "inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[14px] font-semibold whitespace-nowrap transition",
-                on() ? "bg-surface text-ink shadow-[0_1px_3px_rgba(47,24,53,0.12)]" : "text-muted hover:text-ink",
+                on() ? "bg-surface text-ink shadow-[0_1px_3px_rgba(80,30,20,0.12)]" : "text-muted hover:text-ink",
               )}
             >
               <Show when={t.icon}>

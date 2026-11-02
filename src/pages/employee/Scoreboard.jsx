@@ -95,7 +95,7 @@ function Confetti() {
             class="absolute top-[-12px] w-2 h-3 rounded-[2px]"
             style={{
               left: `${(i * 37) % 100}%`,
-              background: ["#3463AF", "#86B4FF", "#F59E0B", "#10B981"][i % 4],
+              background: ["#AC2334", "#F89B62", "#F59E0B", "#10B981"][i % 4],
               animation: `confetti ${2.2 + (i % 5) * 0.35}s cubic-bezier(.3,.7,.4,1) ${(i % 9) * 0.08}s both`,
               transform: `rotate(${i * 29}deg)`,
             }}
@@ -135,7 +135,7 @@ function ResultHero(props) {
       <div class="relative grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] lg:grid-cols-[auto_minmax(0,1fr)_240px] gap-5 sm:gap-7 lg:gap-9 items-center p-5 sm:p-6 lg:px-8 lg:py-6">
         {/* Score ring + counts */}
         <div class="grid gap-3 justify-items-center w-full md:w-[190px]">
-          <div class="grid place-items-center w-[164px] h-[164px] rounded-full bg-surface shadow-[0_18px_40px_-18px_rgba(15,23,42,0.25)]">
+          <div class="grid place-items-center w-[164px] h-[164px] rounded-full bg-surface shadow-[0_18px_40px_-18px_rgba(80,30,20,0.25)]">
             <ProgressRing value={r().percentage} size={142} stroke={10} tone={r().passed ? "success" : "danger"} trackClass="stroke-sunken">
               <span class="text-[38px] leading-none font-bold tracking-[-0.04em] text-ink tabular">
                 <CountUp value={r().percentage} decimals={r().percentage % 1 ? 1 : 0} />
@@ -257,23 +257,23 @@ function ResultArt(props) {
     <svg viewBox="0 0 300 260" class="hidden lg:block w-full max-w-[240px] justify-self-end" aria-hidden="true">
       <defs>
         <linearGradient id="ra-blob" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#DFE8FD" />
-          <stop offset="100%" stop-color="#EFF4FF" />
+          <stop offset="0%" stop-color="#FDE4DA" />
+          <stop offset="100%" stop-color="#FFF4EC" />
         </linearGradient>
         <filter id="ra-shadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#3463AF" flood-opacity="0.18" />
+          <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#AC2334" flood-opacity="0.18" />
         </filter>
       </defs>
 
       <ellipse cx="160" cy="140" rx="130" ry="110" fill="url(#ra-blob)" class="dark:opacity-20" />
-      <ellipse cx="150" cy="238" rx="110" ry="10" fill="#C8D8FF" opacity="0.5" />
+      <ellipse cx="150" cy="238" rx="110" ry="10" fill="#F8CDBB" opacity="0.5" />
 
       {/* Plant */}
       <g transform="translate(232 150)">
-        <path d="M18 70 C10 40 -8 26 -14 4 C6 14 18 34 20 64Z" fill="#7FA4E6" />
-        <path d="M22 70 C26 36 40 18 54 6 C52 30 40 52 26 70Z" fill="#5583D0" />
-        <path d="M20 70 C14 50 2 44 -10 40 C2 54 10 62 16 72Z" fill="#A9C4F5" />
-        <path d="M22 66 C32 52 44 48 56 46 C46 58 34 66 24 72Z" fill="#A9C4F5" />
+        <path d="M18 70 C10 40 -8 26 -14 4 C6 14 18 34 20 64Z" fill="#E58A5C" />
+        <path d="M22 70 C26 36 40 18 54 6 C52 30 40 52 26 70Z" fill="#C9553A" />
+        <path d="M20 70 C14 50 2 44 -10 40 C2 54 10 62 16 72Z" fill="#F4B996" />
+        <path d="M22 66 C32 52 44 48 56 46 C46 58 34 66 24 72Z" fill="#F4B996" />
         <rect x="6" y="68" width="30" height="20" rx="6" fill="#FFFFFF" filter="url(#ra-shadow)" />
       </g>
 
@@ -295,15 +295,15 @@ function ResultArt(props) {
             const bad = !props.passed && i === 2;
             return (
               <>
-                <rect x="106" y={y} width="14" height="14" rx="3.5" fill={bad ? "#E5484D" : "#3463AF"} />
+                <rect x="106" y={y} width="14" height="14" rx="3.5" fill={bad ? "#E5484D" : "#AC2334"} />
                 <Show
                   when={bad}
                   fallback={<path d={`M109 ${y + 7} L112 ${y + 10} L117 ${y + 4}`} stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />}
                 >
                   <path d={`M110 ${y + 4} L116 ${y + 10} M116 ${y + 4} L110 ${y + 10}`} stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
                 </Show>
-                <rect x="128" y={y + 2} width={i === 1 ? 52 : 66} height="4" rx="2" fill="#C8D8FF" />
-                <rect x="128" y={y + 9} width={i === 1 ? 40 : 50} height="3" rx="1.5" fill="#DFE8FD" />
+                <rect x="128" y={y + 2} width={i === 1 ? 52 : 66} height="4" rx="2" fill="#F8CDBB" />
+                <rect x="128" y={y + 9} width={i === 1 ? 40 : 50} height="3" rx="1.5" fill="#FDE4DA" />
               </>
             );
           }}
@@ -312,9 +312,9 @@ function ResultArt(props) {
 
       {/* Graduation cap */}
       <g transform="translate(176 22) rotate(12)">
-        <path d="M18 40 L18 56 C18 64 66 64 66 56 L66 40Z" fill="#1E3A6B" />
-        <path d="M0 30 L42 10 L84 30 L42 50Z" fill="#2A5195" />
-        <path d="M0 30 L42 50 L84 30 L84 33 L42 53 L0 33Z" fill="#1E3A6B" />
+        <path d="M18 40 L18 56 C18 64 66 64 66 56 L66 40Z" fill="#661321" />
+        <path d="M0 30 L42 10 L84 30 L42 50Z" fill="#8E1B2C" />
+        <path d="M0 30 L42 50 L84 30 L84 33 L42 53 L0 33Z" fill="#661321" />
         <path d="M42 30 L72 40 L72 66" stroke="#F59E0B" stroke-width="2.5" fill="none" stroke-linecap="round" />
         <rect x="68" y="64" width="8" height="14" rx="3" fill="#F59E0B" />
         <circle cx="42" cy="30" r="3" fill="#F59E0B" />

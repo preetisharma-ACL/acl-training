@@ -62,7 +62,7 @@ const currentTitle = () => {
 // plum → lime accent line on the right edge.
 function Sidebar(props) {
   return (
-    <div class="relative flex flex-col h-full bg-gradient-to-b from-surface via-surface to-canvas border-r border-line shadow-[1px_0_2px_rgba(47,24,53,0.04),8px_0_28px_-16px_rgba(47,24,53,0.16)]">
+    <div class="relative flex flex-col h-full bg-gradient-to-b from-surface via-surface to-canvas border-r border-line shadow-[1px_0_2px_rgba(80,30,20,0.04),8px_0_28px_-16px_rgba(110,30,25,0.16)]">
       <span class="absolute top-[18%] bottom-[30%] right-0 w-[3px] rounded-l-full bg-gradient-to-b from-plum-600 via-plum-400 to-lime-400" />
 
       <div class="relative px-6 pt-7 pb-5">
@@ -91,7 +91,7 @@ function Sidebar(props) {
                 class={cx(
                   "flex items-center gap-3 h-11 px-3 rounded-xl text-[15px] transition",
                   on()
-                    ? "bg-plum-50 text-plum-700 font-semibold shadow-[inset_3px_0_0_#3463AF] dark:bg-lime-400/10 dark:text-lime-300 dark:shadow-[inset_3px_0_0_#86B4FF]"
+                    ? "bg-plum-50 text-plum-700 font-semibold shadow-[inset_3px_0_0_#AC2334] dark:bg-lime-400/10 dark:text-lime-300 dark:shadow-[inset_3px_0_0_#F89B62]"
                     : "text-ink-2 hover:bg-sunken/70 hover:text-ink",
                 )}
               >

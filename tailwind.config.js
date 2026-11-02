@@ -22,27 +22,30 @@ export default {
         ink: v("ink"),
         "ink-2": v("ink-2"),
         muted: v("muted"),
-        // Brand blue (#3463AF) and navy (#0F172A), as on hack2skill.com.
-        // The scale keeps the name "plum" so every component picks it up.
+        // Brand: the Aajneeti logo crimson (700 = #AC2334). The scale keeps
+        // the name "plum" so every component picks it up.
         plum: {
-          50: "#EFF4FF", 100: "#DFE8FD", 200: "#C8D8FF", 300: "#A9C4F5", 400: "#7FA4E6", 500: "#5583D0",
-          600: "#3E6FC0", 700: "#3463AF", 800: "#2A5195", 900: "#1E3A6B", 950: "#0F172A",
+          50: "#FDF2F3", 100: "#FBE4E7", 200: "#F6C9CF", 300: "#EDA1AB", 400: "#DE6B7A", 500: "#CC4255",
+          600: "#BC2D40", 700: "#AC2334", 800: "#8E1C2B", 900: "#6E1622", 950: "#2E0A10",
         },
-        // Accent: light sky blue (#86B4FF family). Named "lime" for the same reason.
+        // Accent: the warm orange of the login scene's silk (400 = #F89B62).
+        // Named "lime" for the same reason.
         lime: {
-          50: "#F2F7FF", 100: "#E4EFFF", 200: "#CCE0FF", 300: "#A9CBFF", 400: "#86B4FF", 500: "#5E97F2",
-          600: "#387EF0", 700: "#2563C9", 800: "#1D4E9F", 900: "#173E7D",
+          50: "#FFF7F0", 100: "#FFEDDF", 200: "#FFD6BA", 300: "#FDBB8E", 400: "#F89B62", 500: "#EF7D3E",
+          600: "#DC6326", 700: "#B94E1D", 800: "#943E1B", 900: "#773419",
         },
-        ivory: "#F7F9FC",
-        navy: "#0F172A",
-        // Pastel card tints from the hack2skill programme cards.
+        ivory: "#FFF9F4",
+        // Deep wine-black for dark text and panels (name kept).
+        navy: "#2A0F14",
+        // Pastel card tints, warmed to sit with the brand. Names kept.
         tint: {
-          blue: "#EFF6FF", cream: "#FFF3DB", mint: "#F0FDFA", yellow: "#FEFCE8", lavender: "#EFECFD", sky: "#E6F4F9",
+          blue: "#FDEFEF", cream: "#FFF3DB", mint: "#EEF8F3", yellow: "#FEF8E5", lavender: "#F7EEF5", sky: "#FFF1E6",
         },
-        // Errors and destructive actions only.
+        // Errors and destructive actions only: a brighter rose-red, kept
+        // distinct from the wine-red brand.
         crimson: {
-          50: "#FDF1F3", 100: "#FADFE3", 200: "#F4BBC4", 300: "#EA8C9B", 400: "#DA5A6F", 500: "#C4364B",
-          600: "#AC2334", 700: "#8E1C2B", 800: "#701624", 900: "#55111C",
+          50: "#FFF1F2", 100: "#FFE4E6", 200: "#FECDD3", 300: "#FDA4AF", 400: "#FB7185", 500: "#F43F5E",
+          600: "#E11D48", 700: "#BE123C", 800: "#9F1239", 900: "#881337",
         },
       },
       boxShadow: {
@@ -70,8 +73,8 @@ export default {
         },
         shimmer: { from: { backgroundPosition: "-200% 0" }, to: { backgroundPosition: "200% 0" } },
         ring: {
-          "0%": { boxShadow: "0 0 0 0 rgba(172, 35, 52, 0.35)" },
-          "100%": { boxShadow: "0 0 0 16px rgba(172, 35, 52, 0)" },
+          "0%": { boxShadow: "0 0 0 0 rgba(225, 29, 72, 0.35)" },
+          "100%": { boxShadow: "0 0 0 16px rgba(225, 29, 72, 0)" },
         },
         sheet: {
           from: { transform: "translateY(100%)" },
