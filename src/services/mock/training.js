@@ -390,6 +390,13 @@ export async function getAttempt(me, id) {
   };
 }
 
+// Video courses need the real server (progress is credited there).
+export const listMyCourses = async () => [];
+export const getMyCourse = async () => {
+  throw new Error("Video courses aren't available in the demo.");
+};
+export const saveLessonProgress = async () => ({});
+
 export async function getAnnouncements() {
   await delay(150);
   return clone(db().announcements);

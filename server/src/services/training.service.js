@@ -7,6 +7,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { levelKey, levelPlural } from "../utils/levels.js";
 import { materialBaseOut, materialFileUrl, attemptSummaryOut, departmentOut } from "./serializers.js";
 import { orgOf, materialWhereFor, reaches, isComplete, assessmentFor, COUNTED_ATTEMPT, GRADED_ATTEMPT } from "./assignment.service.js";
+import { requiredCourses, courseCompletion } from "./course.service.js";
 import * as storage from "./storage.service.js";
 
 // End of the current month: the training cycle deadline.
@@ -119,7 +120,14 @@ export async function moduleState(user, db = prisma) {
   ]);
   const progressBy = new Map(progress.map((p) => [p.materialId, p]));
   const required = materials.filter((m) => m.required);
-  const completedRequired = required.filter((m) => isComplete(progressBy.get(m.id), m)).length;
+  const completedRequiredMaterials = required.filter((m) => isComplete(progressBy.get(m.id), m)).length;
+
+  // Required video courses count towards the same gate.
+  const courses = org ? (await requiredCourses(db)).filter((c) => reaches(c, org)) : [];
+  const courseDone = await courseCompletion([user.id], courses, db);
+  const completedRequiredCourses = courses.filter((c) => courseDone(user.id, c)).length;
+  const requiredTotal = required.length + courses.length;
+  const completedRequired = completedRequiredMaterials + completedRequiredCourses;
 
   let attempts = [];
   let bankSize = 0;
@@ -137,7 +145,7 @@ export async function moduleState(user, db = prisma) {
 
   const conditions = org
     ? [
-        { id: "materials", label: "Finish your required training", detail: `${completedRequired} of ${required.length} complete`, met: completedRequired === required.length },
+        { id: "materials", label: "Finish your required training", detail: `${completedRequired} of ${requiredTotal} complete`, met: completedRequired === requiredTotal },
         { id: "attempts", label: "Have an attempt remaining", detail: assessment ? `${attemptsLeft} of ${maxAttempts} left` : "No test yet", met: attemptsLeft > 0 },
         {
           id: "questions",
@@ -153,7 +161,7 @@ export async function moduleState(user, db = prisma) {
   // are also "0 attempts left", but that isn't the reason.)
   const blocker = BLOCK_ORDER.map((id) => conditions.find((c) => c.id === id)).find((c) => c && !c.met)?.id ?? null;
 
-  return { org, materials, progressBy, required, completedRequired, assessment, attempts, graded, inProgress, maxAttempts, attemptsLeft, bankSize, questionCount, conditions, blocker, eligible: !!org && conditions.every((c) => c.met) };
+  return { org, materials, progressBy, required, completedRequired, requiredTotal, completedRequiredMaterials, requiredCourses: courses, completedRequiredCourses, assessment, attempts, graded, inProgress, maxAttempts, attemptsLeft, bankSize, questionCount, conditions, blocker, eligible: !!org && conditions.every((c) => c.met) };
 }
 
 export async function getModule(user) {
@@ -192,8 +200,14 @@ export async function getModule(user) {
         }
       : null,
     materials,
-    requiredCount: s.required.length,
+    // Everything required before the test (documents + video courses)…
+    requiredCount: s.requiredTotal,
     completedRequired: s.completedRequired,
+    // …and the split, for the Training and Study Materials pages.
+    requiredMaterials: s.required.length,
+    completedRequiredMaterials: s.completedRequiredMaterials,
+    requiredCourses: s.requiredCourses.length,
+    completedRequiredCourses: s.completedRequiredCourses,
     completedTotal: materials.filter((m) => m.progress.completed).length,
     readingMinutesLeft: materials.filter((m) => !m.progress.completed).reduce((t, m) => t + m.estMinutes, 0),
     conditions: s.conditions,
@@ -203,7 +217,7 @@ export async function getModule(user) {
     best: best ? attemptSummaryOut(best) : null,
     lastAttempt: s.graded[0] ? attemptSummaryOut(s.graded[0]) : null,
     activeAttempt: s.inProgress ? { id: s.inProgress.id, expiresAt: s.inProgress.expiresAt } : null,
-    stage: !org ? "unassigned" : passed ? "done" : s.completedRequired === s.required.length ? "assess" : "learn",
+    stage: !org ? "unassigned" : passed ? "done" : s.completedRequired === s.requiredTotal ? "assess" : "learn",
     dueAt: cycleDue(),
     recentResults: recent.map(attemptSummaryOut),
   };

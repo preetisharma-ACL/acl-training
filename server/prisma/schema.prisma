@@ -98,6 +98,8 @@ model User {
   materialsCreated Material[]
   materialVersions MaterialVersion[]
   announcements    Announcement[]
+  coursesCreated   Course[]               @relation("CourseCreatedBy")
+  lessonProgress   LessonProgress[]
 
   @@index([designationId])
   @@index([role, status])
@@ -117,6 +119,92 @@ model Department {
   materials     Material[]
   assessments   Assessment[]
   announcements AnnouncementDepartment[]
+  courses       Course[]
+}
+
+// ── Video courses (Study Materials) ─────────────────────────────────────────
+// A course → sections → lessons (unlisted YouTube videos played inside the
+// portal). Assigned like materials: a department or company-wide (null),
+// and the chosen levels. Required courses must be completed to unlock the
+// assessment.
+
+model Course {
+  id           String            @id @default(cuid())
+  title        String
+  description  String            @default("")
+  departmentId String?
+  required     Boolean           @default(false)
+  status       PublicationStatus @default(DRAFT)
+  author       String            @default("")
+  createdById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  department Department?     @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  createdBy  User?           @relation("CourseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  levels     CourseLevel[]
+  sections   CourseSection[]
+
+  @@index([departmentId])
+}
+
+model CourseLevel {
+  courseId String
+  level    Level
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, level])
+}
+
+model CourseSection {
+  id       String @id @default(cuid())
+  courseId String
+  title    String
+  position Int
+
+  course  Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons CourseLesson[]
+
+  @@index([courseId])
+}
+
+model CourseLesson {
+  id              String @id @default(cuid())
+  sectionId       String
+  title           String
+  description     String @default("")
+  youtubeId       String
+  // Read from the YouTube player by the admin course builder.
+  durationSeconds Int
+  position        Int
+
+  section  CourseSection    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+
+  @@index([sectionId])
+}
+
+// One row per employee per video. watchedSeconds is credited by the server
+// from heartbeats and can never grow faster than real time (2× speed max);
+// watchedRanges ([[start, end], …], merged) is where they actually watched.
+model LessonProgress {
+  id             String    @id @default(cuid())
+  userId         String
+  lessonId       String
+  openedAt       DateTime  @default(now())
+  lastPingAt     DateTime  @default(now())
+  watchedSeconds Int       @default(0)
+  watchedRanges  Json      @default("[]")
+  position       Int       @default(0)
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
 }
 
 // Office locations an admin can assign to people and departments. User and

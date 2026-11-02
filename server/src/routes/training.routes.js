@@ -8,6 +8,7 @@ import { assessmentLock } from "../middleware/assessmentLock.js";
 import { validate } from "../middleware/validate.js";
 import { idParams } from "../validators/common.js";
 import { progressSchema, submitSchema, saveAnswersSchema } from "../validators/training.validator.js";
+import { lessonProgressSchema } from "../validators/course.validator.js";
 import { asyncHandler as h } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -22,6 +23,11 @@ router.get("/module", h(c.getModule));
 router.get("/materials/:id", byId, lock, h(c.getMaterial));
 router.get("/materials/:id/file", byId, lock, h(c.materialFile));
 router.post("/materials/:id/progress", byId, lock, validate({ body: progressSchema }), h(c.updateProgress));
+
+// Video courses (Study Materials)
+router.get("/courses", lock, h(c.listCourses));
+router.get("/courses/:id", byId, lock, h(c.getCourse));
+router.post("/lessons/:id/progress", byId, lock, validate({ body: lessonProgressSchema }), h(c.lessonProgress));
 
 // Assessment
 router.post("/attempts", requireEmployee, h(c.startAttempt));

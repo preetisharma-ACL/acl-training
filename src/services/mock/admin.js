@@ -322,6 +322,19 @@ export async function deleteDesignation(id) {
   commit();
 }
 
+// ── Video courses (need the real server) ────────────────────────────────────
+
+const noCourses = async () => {
+  throw new Error("Video courses aren't available in the demo.");
+};
+export const listCourses = async () => [];
+export const getCourse = noCourses;
+export const getCourseProgress = noCourses;
+export const saveCourse = noCourses;
+export const setCourseStatus = noCourses;
+export const setCourseRequired = noCourses;
+export const deleteCourse = noCourses;
+
 // ── Locations ───────────────────────────────────────────────────────────────
 
 export async function listLocations() {

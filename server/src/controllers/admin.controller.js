@@ -5,6 +5,7 @@ import * as users from "../services/adminUser.service.js";
 import * as departments from "../services/department.service.js";
 import * as designations from "../services/designation.service.js";
 import * as locations from "../services/location.service.js";
+import * as courses from "../services/course.service.js";
 import * as materials from "../services/material.service.js";
 import * as assessments from "../services/assessmentAdmin.service.js";
 import * as announcements from "../services/announcement.service.js";
@@ -59,6 +60,14 @@ export const listQuestions = async (req, res) => ok(res, await assessments.listQ
 export const createQuestion = async (req, res) => created(res, await assessments.createQuestion(req, pid(req), req.body));
 export const updateQuestion = async (req, res) => ok(res, await assessments.updateQuestion(req, pid(req), req.body));
 export const deleteQuestion = async (req, res) => ok(res, await assessments.removeQuestion(req, pid(req)));
+
+// Video courses
+export const listCourses = async (req, res) => ok(res, await courses.list());
+export const getCourse = async (req, res) => ok(res, await courses.get(pid(req)));
+export const createCourse = async (req, res) => created(res, await courses.create(req, req.body));
+export const updateCourse = async (req, res) => ok(res, await courses.update(req, pid(req), req.body));
+export const deleteCourse = async (req, res) => ok(res, await courses.remove(req, pid(req)));
+export const courseProgress = async (req, res) => ok(res, await courses.progressReport(req, pid(req)));
 
 // Locations
 export const listLocations = async (req, res) => ok(res, await locations.list());

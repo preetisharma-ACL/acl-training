@@ -32,11 +32,14 @@ export function createApp() {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", ...inlineScriptHashes(path.join(dist, "index.html"))],
-          // PDFs are shown in an <iframe> served by this same origin.
-          frameSrc: ["'self'", "blob:"],
+          // YouTube's IFrame Player API drives the course videos.
+          scriptSrc: ["'self'", ...inlineScriptHashes(path.join(dist, "index.html")), "https://www.youtube.com", "https://s.ytimg.com"],
+          // PDFs are shown in an <iframe> served by this same origin; course
+          // videos in YouTube's (privacy-enhanced) embedded player.
+          frameSrc: ["'self'", "blob:", "https://www.youtube-nocookie.com", "https://www.youtube.com"],
           frameAncestors: ["'self'"],
-          imgSrc: ["'self'", "data:", "blob:"],
+          // Video thumbnails.
+          imgSrc: ["'self'", "data:", "blob:", "https://i.ytimg.com"],
           // Media materials link to external video/audio hosts.
           mediaSrc: ["'self'", "https:", "blob:"],
           styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],

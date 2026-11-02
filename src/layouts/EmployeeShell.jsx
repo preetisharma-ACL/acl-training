@@ -6,7 +6,7 @@
 
 import { createResource, createSignal, For, Show } from "solid-js";
 import { Dynamic } from "solid-js/web";
-import { House, BookOpen, ClipboardCheck, Trophy, Bell, LogOut, Megaphone, ChevronDown, Moon, Sun, Settings } from "lucide-solid";
+import { House, BookOpen, MonitorPlay, ClipboardCheck, Trophy, Bell, LogOut, Megaphone, ChevronDown, Moon, Sun, Settings } from "lucide-solid";
 import { Link, isActive, navigate, pathname } from "../lib/router";
 import { cx, fmtRelative } from "../lib/format";
 import { user, signOut } from "../store/auth";
@@ -14,9 +14,11 @@ import { dark, toggleTheme } from "../store/theme";
 import { Logo, ThemeToggle, Avatar, Menu, MenuItem } from "../components/ui";
 import { loadAnnouncements } from "../store/announcements";
 
+// short: the label on the phone tab bar.
 const NAV = [
   { href: "/dashboard", label: "Home", icon: House },
   { href: "/training", label: "Training", icon: BookOpen },
+  { href: "/courses", label: "Study Materials", short: "Videos", icon: MonitorPlay },
   { href: "/test", label: "Test", icon: ClipboardCheck },
   { href: "/scoreboard", label: "Results", icon: Trophy },
 ];
@@ -25,6 +27,7 @@ const NAV = [
 const pageTitle = () => {
   const p = pathname();
   if (p.startsWith("/training/")) return "Training";
+  if (p.startsWith("/courses")) return "Study Materials";
   if (p === "/profile") return "Profile";
   return NAV.find((n) => isActive(n.href))?.label ?? "Aajneeti";
 };
@@ -85,15 +88,16 @@ function Account(props) {
       trigger={(open, toggle) => (
         <button
           onClick={toggle}
-          class={cx("flex items-center gap-2.5 h-11 pl-1 pr-1 md:pr-2.5 rounded-lg transition", open() ? "bg-sunken" : "hover:bg-sunken/70")}
+          class={cx("flex items-center gap-2.5 h-11 pl-1 pr-1 lg:pr-2.5 rounded-lg transition", open() ? "bg-sunken" : "hover:bg-sunken/70")}
           aria-label="Account menu"
         >
           <Avatar name={user()?.name} size={props.compact ? 34 : 36} />
-          <span class="hidden md:grid text-left leading-tight">
+          {/* Name from desktop width; tablets show the avatar only. */}
+          <span class="hidden lg:grid text-left leading-tight">
             <span class="text-[14px] font-semibold max-w-[150px] truncate">{user()?.name}</span>
             <span class="text-[12px] text-muted max-w-[150px] truncate">{user()?.designation?.title ?? "Employee"}</span>
           </span>
-          <ChevronDown size={16} class={cx("hidden md:block text-muted transition-transform", open() && "rotate-180")} />
+          <ChevronDown size={16} class={cx("hidden lg:block text-muted transition-transform", open() && "rotate-180")} />
         </button>
       )}
     >
@@ -134,11 +138,11 @@ export default function EmployeeShell(props) {
     <div class="min-h-screen flex flex-col overflow-x-clip">
       {/* Desktop / tablet bar */}
       <header class="hidden md:block sticky top-0 z-50 border-b border-line bg-surface">
-        <div class="max-w-[1240px] mx-auto h-[74px] px-6 flex items-center justify-between gap-6">
+        <div class="max-w-[1240px] mx-auto h-[74px] px-4 lg:px-6 flex items-center justify-between gap-4 lg:gap-6">
           <Link href="/dashboard" class="shrink-0" aria-label="Home">
             <Logo />
           </Link>
-          <nav class="flex items-center gap-8 h-full">
+          <nav class="flex items-center gap-5 lg:gap-8 h-full">
             <For each={NAV}>
               {(n) => (
                 <Link
@@ -152,7 +156,9 @@ export default function EmployeeShell(props) {
                   )}
                   aria-current={isActive(n.href) ? "page" : undefined}
                 >
-                  {n.label}
+                  {/* Tablets: the short label, so the bar fits. */}
+                  <span class="whitespace-nowrap lg:hidden">{n.short ?? n.label}</span>
+                  <span class="whitespace-nowrap hidden lg:inline">{n.label}</span>
                 </Link>
               )}
             </For>
@@ -219,7 +225,7 @@ export default function EmployeeShell(props) {
 
       {/* Phone tab bar */}
       <nav class="md:hidden fixed bottom-0 inset-x-0 z-50 bg-surface border-t border-line pb-[env(safe-area-inset-bottom)]">
-        <div class="grid grid-cols-4 h-[64px]">
+        <div class="grid grid-cols-5 h-[64px]">
           <For each={NAV}>
             {(n) => (
               <Link
@@ -230,10 +236,10 @@ export default function EmployeeShell(props) {
                   isActive(n.href) ? "text-plum-700 dark:text-lime-300" : "text-muted",
                 )}
               >
-                <span class={cx("grid place-items-center w-14 h-8 rounded-full transition", isActive(n.href) && "bg-plum-50 dark:bg-lime-400/15")}>
+                <span class={cx("grid place-items-center w-12 h-8 rounded-full transition", isActive(n.href) && "bg-plum-50 dark:bg-lime-400/15")}>
                   <Dynamic component={n.icon} size={20} stroke-width={isActive(n.href) ? 2.25 : 1.75} />
                 </span>
-                {n.label}
+                {n.short ?? n.label}
               </Link>
             )}
           </For>

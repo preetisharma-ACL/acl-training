@@ -31,6 +31,9 @@ import AdminUsers from "./pages/admin/Users";
 import AdminDepartments from "./pages/admin/Departments";
 import AdminDesignations from "./pages/admin/Designations";
 import AdminLocations from "./pages/admin/Locations";
+import AdminCourses from "./pages/admin/Courses";
+import Courses from "./pages/employee/Courses";
+import CoursePlayer from "./pages/employee/CoursePlayer";
 import AdminMaterials from "./pages/admin/Materials";
 import AdminAssessments from "./pages/admin/Assessments";
 import AdminQuestionBank from "./pages/admin/QuestionBank";
@@ -43,6 +46,8 @@ const EMPLOYEE_ROUTES = [
   ["/training", Training],
   ["/test", Test],
   ["/training/:id", Viewer],
+  ["/courses", Courses],
+  ["/courses/:id", CoursePlayer],
   ["/scoreboard", Scoreboard],
   ["/scoreboard/:id", Scoreboard],
   ["/profile", Profile],
@@ -56,6 +61,7 @@ const ADMIN_ROUTES = [
   ["/admin/locations", AdminLocations],
   ["/admin/materials", AdminMaterials],
   ["/admin/materials/:id", Viewer],
+  ["/admin/courses", AdminCourses],
   ["/admin/assessments", AdminAssessments],
   ["/admin/assessments/:id", AdminQuestionBank],
   ["/admin/results", AdminResults],

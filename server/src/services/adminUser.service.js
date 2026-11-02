@@ -8,6 +8,7 @@ import { hashPassword, temporaryPassword } from "../utils/password.js";
 import { levelKey } from "../utils/levels.js";
 import { USER_ORG_INCLUDE, apiRole, apiStatus, attemptSummaryOut } from "./serializers.js";
 import { orgOf, reaches, isComplete, GRADED_ATTEMPT } from "./assignment.service.js";
+import { requiredCourses, courseCompletion } from "./course.service.js";
 import { revokeSessions } from "./auth.service.js";
 import { audit } from "./audit.service.js";
 import { resolve as resolveLocation } from "./location.service.js";
@@ -18,8 +19,9 @@ const ROLE_FROM_API = { employee: "EMPLOYEE", admin: "ADMIN", super_admin: "SUPE
 // Training state for many users at once (few queries, computed in memory).
 export async function trainingSnapshot(users) {
   const ids = users.map((u) => u.id);
-  const [materials, progress, attempts, resetRequests] = await Promise.all([
+  const [materials, courses, progress, attempts, resetRequests] = await Promise.all([
     prisma.material.findMany({ where: { status: "PUBLISHED", required: true }, include: { levels: true } }),
+    requiredCourses(),
     prisma.materialProgress.findMany({ where: { userId: { in: ids }, completed: true } }),
     prisma.attempt.findMany({ where: { userId: { in: ids }, ...GRADED_ATTEMPT }, orderBy: { submittedAt: "desc" } }),
     prisma.passwordResetRequest.findMany({ where: { userId: { in: ids }, resolvedAt: null }, select: { userId: true, createdAt: true } }),
@@ -29,22 +31,24 @@ export async function trainingSnapshot(users) {
   const attemptsBy = new Map();
   for (const a of attempts) attemptsBy.set(a.userId, [...(attemptsBy.get(a.userId) ?? []), a]);
   const resetBy = new Map(resetRequests.map((r) => [r.userId, r.createdAt]));
+  const courseDone = await courseCompletion(ids, courses);
 
   return (u) => {
     const org = orgOf(u);
     const mine = attemptsBy.get(u.id) ?? [];
     // Training only counts for the employee's current assessment.
     const required = u.role === "EMPLOYEE" ? materials.filter((m) => reaches(m, org)) : [];
-    const done = required.filter((m) => isComplete(progressBy.get(`${u.id}:${m.id}`), m)).length;
+    const myCourses = u.role === "EMPLOYEE" ? courses.filter((c) => reaches(c, org)) : [];
+    const done = required.filter((m) => isComplete(progressBy.get(`${u.id}:${m.id}`), m)).length + myCourses.filter((c) => courseDone(u.id, c)).length;
     const passed = mine.some((a) => a.passed);
     return {
       org,
       attempts: mine,
       materialsDone: done,
-      materialsRequired: required.length,
+      materialsRequired: required.length + myCourses.length,
       passed,
       resetRequestedAt: resetBy.get(u.id) ?? null,
-      trainingStatus: !org ? "unassigned" : passed ? "certified" : mine.length ? "retake" : done === required.length ? "ready" : done ? "in-progress" : "not-started",
+      trainingStatus: !org ? "unassigned" : passed ? "certified" : mine.length ? "retake" : done === required.length + myCourses.length ? "ready" : done ? "in-progress" : "not-started",
     };
   };
 }

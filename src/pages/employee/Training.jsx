@@ -36,6 +36,9 @@ export default function Training() {
   const me = user();
   const [mod] = createResource(() => getMyModule(me));
   const left = () => (mod() ? mod().requiredCount - mod().completedRequired : 0);
+  // This page lists documents; required video courses live in Study Materials.
+  const matTotal = () => mod()?.requiredMaterials ?? mod()?.requiredCount ?? 0;
+  const matDone = () => mod()?.completedRequiredMaterials ?? mod()?.completedRequired ?? 0;
 
   return (
     <div class="grid gap-5 max-w-[960px] mx-auto">
@@ -55,12 +58,21 @@ export default function Training() {
             <h2 class="text-[16px] font-semibold">Modules</h2>
             <Show when={mod()}>
               <span class="text-[14px] text-muted tabular">
-                {mod().completedRequired}/{mod().requiredCount} required done
+                {matDone()}/{matTotal()} required done
               </span>
             </Show>
           </div>
           <Show when={mod()}>
-            <ProgressBar value={mod().requiredCount ? (mod().completedRequired / mod().requiredCount) * 100 : 0} class="mt-3" />
+            <ProgressBar value={matTotal() ? (matDone() / matTotal()) * 100 : 0} class="mt-3" />
+          </Show>
+          <Show when={mod()?.requiredCourses > mod()?.completedRequiredCourses}>
+            <p class="mt-3 text-[13.5px] text-ink-2">
+              You also have {mod().requiredCourses - mod().completedRequiredCourses} required video course{mod().requiredCourses - mod().completedRequiredCourses === 1 ? "" : "s"} to finish in{" "}
+              <Link href="/courses" class="font-semibold text-plum-700 dark:text-lime-300 underline underline-offset-2">
+                Study Materials
+              </Link>
+              .
+            </p>
           </Show>
         </header>
 

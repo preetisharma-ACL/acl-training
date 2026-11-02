@@ -63,6 +63,18 @@ export function saveDesignation(input) {
 
 export const deleteDesignation = (id) => del(`/admin/designations/${enc(id)}`);
 
+// ── Video courses ──
+// input: { id?, title, description, departmentId (null = company-wide),
+//   required, levels, status, sections: [{ id?, title, lessons: [{ id?,
+//   title, description, video (link or id), durationSeconds }] }] }
+export const listCourses = () => get("/admin/courses");
+export const getCourse = (id) => get(`/admin/courses/${enc(id)}`);
+export const getCourseProgress = (id) => get(`/admin/courses/${enc(id)}/progress`);
+export const saveCourse = ({ id, ...body }) => (id ? patch(`/admin/courses/${enc(id)}`, body) : post("/admin/courses", body));
+export const setCourseStatus = (id, status) => patch(`/admin/courses/${enc(id)}`, { status });
+export const setCourseRequired = (id, required) => patch(`/admin/courses/${enc(id)}`, { required: !!required });
+export const deleteCourse = (id) => del(`/admin/courses/${enc(id)}`);
+
 // ── Locations ── → [{ id, name, users, departments }]
 export const listLocations = () => get("/admin/locations");
 

@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Settings,
   MapPin,
+  MonitorPlay,
 } from "lucide-solid";
 import { Link, isActive, navigate, pathname } from "../lib/router";
 import { cx } from "../lib/format";
@@ -42,6 +43,7 @@ const GROUPS = [
     label: "Learning",
     items: [
       { href: "/admin/materials", label: "Training materials", icon: Library },
+      { href: "/admin/courses", label: "Video courses", icon: MonitorPlay },
       { href: "/admin/assessments", label: "Assessments", icon: ClipboardList },
     ],
   },

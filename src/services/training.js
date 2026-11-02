@@ -115,3 +115,11 @@ export const getAttempt = (me, id) => get(`/training/attempts/${encodeURICompone
 export const certificateUrl = (result) => (result?.certificate?.available ? fileUrl(result.certificate.url) : null);
 
 export const getAnnouncements = () => get("/announcements");
+
+// ── Video courses (Study Materials) ──
+//   GET  /training/courses               → assigned courses with progress
+//   GET  /training/courses/{id}          → sections, videos, per-video progress
+//   POST /training/lessons/{id}/progress { ranges?, position? } (heartbeat)
+export const listMyCourses = () => get("/training/courses");
+export const getMyCourse = (id) => get(`/training/courses/${encodeURIComponent(id)}`);
+export const saveLessonProgress = (lessonId, body = {}) => post(`/training/lessons/${encodeURIComponent(lessonId)}/progress`, body);

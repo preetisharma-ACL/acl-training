@@ -10,6 +10,7 @@ import { adminResetLimiter } from "../middleware/rateLimit.js";
 import { idParams } from "../validators/common.js";
 import * as v from "../validators/admin.validator.js";
 import { createMaterialSchema, updateMaterialSchema, listMaterialsQuery } from "../validators/material.validator.js";
+import { createCourseSchema, updateCourseSchema } from "../validators/course.validator.js";
 import { createAssessmentSchema, updateAssessmentSchema, questionSchema, updateQuestionSchema, listQuestionsQuery } from "../validators/assessment.validator.js";
 import { asyncHandler as h } from "../utils/asyncHandler.js";
 
@@ -52,6 +53,13 @@ router.post("/materials", body(createMaterialSchema), h(c.createMaterial));
 router.get("/materials/:id", byId, h(c.getMaterial));
 router.patch("/materials/:id", byId, body(updateMaterialSchema), h(c.updateMaterial));
 router.delete("/materials/:id", byId, h(c.deleteMaterial));
+
+router.get("/courses", h(c.listCourses));
+router.post("/courses", body(createCourseSchema), h(c.createCourse));
+router.get("/courses/:id", byId, h(c.getCourse));
+router.get("/courses/:id/progress", byId, h(c.courseProgress));
+router.patch("/courses/:id", byId, body(updateCourseSchema), h(c.updateCourse));
+router.delete("/courses/:id", byId, h(c.deleteCourse));
 
 router.get("/assessments", h(c.listAssessments));
 router.post("/assessments", body(createAssessmentSchema), h(c.createAssessment));

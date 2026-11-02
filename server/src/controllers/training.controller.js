@@ -1,6 +1,7 @@
 import * as training from "../services/training.service.js";
 import * as assessment from "../services/assessment.service.js";
 import { certificateFor } from "../services/certificate.service.js";
+import * as courses from "../services/course.service.js";
 import { ok, created } from "../utils/ApiResponse.js";
 
 const pid = (req) => req.validParams?.id ?? req.params.id;
@@ -11,6 +12,9 @@ export const disposition = (type, name) => `${type}; filename="${name.replace(/[
 export const getModule = async (req, res) => ok(res, await training.getModule(req.user));
 export const getMaterial = async (req, res) => ok(res, await training.getMaterial(req.user, pid(req)));
 export const updateProgress = async (req, res) => ok(res, await training.updateProgress(req.user, pid(req), req.body));
+export const listCourses = async (req, res) => ok(res, await courses.listForEmployee(req.user));
+export const getCourse = async (req, res) => ok(res, await courses.getForEmployee(req.user, pid(req)));
+export const lessonProgress = async (req, res) => ok(res, await courses.recordLessonProgress(req.user, pid(req), req.body));
 
 // PDF stream: inline for the viewer, attachment with ?download=1.
 export async function materialFile(req, res) {

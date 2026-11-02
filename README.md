@@ -116,7 +116,9 @@ Every variable is documented in [`.env.example`](.env.example). Only
 Admin screens live under `/admin`: overview dashboard, users, departments,
 designations (the designation → department mapping), office locations
 (Lucknow, Noida, Kolkata to start — add, rename, delete), materials (PDF upload
-and a manual editor with live preview), assessments with a question bank, and
+and a manual editor with live preview), video courses (sections of unlisted
+YouTube videos played in the portal, Required or Optional, with per-employee
+watch tracking — employees find them under Study Materials), assessments with a question bank, and
 results with CSV export. Admin changes show up in the employee experience
 straight away.
 
