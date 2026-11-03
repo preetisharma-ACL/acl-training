@@ -30,7 +30,7 @@ import { exportCsv } from "../../lib/csv";
 import { toast } from "../../store/toast";
 import { user as me } from "../../store/auth";
 import { listUsers, listDesignations, listLocations, saveUser, setUserStatus, resetUserPassword, resetUserAttempts, deleteUser } from "../../services/admin";
-import { PageHeader, SearchInput, Tabs, Avatar, Menu, MenuItem, Drawer, Field, Toggle, ConfirmDialog, EmptyState, Skeleton } from "../../components/ui";
+import { PageHeader, SearchInput, Tabs, Avatar, Menu, MenuItem, Drawer, Field, Toggle, ConfirmDialog, EmptyState, Skeleton, FormError } from "../../components/ui";
 import TempPasswordModal from "../../components/TempPasswordModal";
 import LocationSelect from "../../components/LocationSelect";
 import { phoneProblem } from "../../lib/phone";
@@ -208,8 +208,8 @@ export default function Users() {
                     <th>Designation · Department</th>
                     <th>Training</th>
                     <th class="!text-right">Best</th>
-                    <th>Last active</th>
-                    <th class="w-12" />
+                    <th class="hidden xl:table-cell">Last active</th>
+                    <th class="w-12 col-sticky" />
                   </tr>
                 </thead>
                 <tbody>
@@ -249,8 +249,8 @@ export default function Users() {
                           </Show>
                         </td>
                         <td class="text-right font-semibold tabular">{u.bestScore != null ? `${u.bestScore}%` : <span class="text-muted font-normal">—</span>}</td>
-                        <td class="whitespace-nowrap text-muted">{fmtRelative(u.lastActiveAt)}</td>
-                        <td>
+                        <td class="hidden xl:table-cell whitespace-nowrap text-muted">{fmtRelative(u.lastActiveAt)}</td>
+                        <td class="col-sticky">
                           <Menu
                             trigger={(open, toggle) => (
                               <button class={cx("btn btn-ghost btn-icon !w-9 !h-9", open() && "bg-sunken")} onClick={toggle} aria-label={`Actions for ${u.name}`}>
@@ -411,6 +411,7 @@ function UserDrawer(props) {
   const [touched, setTouched] = createSignal(false);
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal(null);
+  const [emailTaken, setEmailTaken] = createSignal(null);
 
   const derived = () => props.designations.find((d) => d.id === f().designationId);
   const errors = () => ({
@@ -446,7 +447,13 @@ function UserDrawer(props) {
       toast(isNew ? `${f().name} can now sign in with ${f().email.trim()}.` : f().password ? "User details and password saved." : "User details saved.", { title: isNew ? "User created" : undefined });
       props.onSaved();
     } catch (e) {
-      setError(e.message);
+      // A taken email belongs under the email field; anything else on top.
+      if (e.code === "EMAIL_TAKEN") {
+        setEmailTaken(e.message);
+        const input = document.getElementById("u-email");
+        input?.scrollIntoView({ block: "center", behavior: "smooth" });
+        input?.focus({ preventScroll: true });
+      } else setError(e.message);
       setBusy(false);
     }
   };
@@ -470,7 +477,7 @@ function UserDrawer(props) {
     >
       <div class="grid gap-5">
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
+          <FormError class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</FormError>
         </Show>
         <div>
           <p class="label">Role</p>
@@ -486,8 +493,17 @@ function UserDrawer(props) {
         <Field label="Full name" for="u-name" error={touched() && errors().name}>
           <input id="u-name" class={cx("input", touched() && errors().name && "input-invalid")} value={f().name} onInput={(e) => set("name")(e.currentTarget.value)} />
         </Field>
-        <Field label="Work email" for="u-email" error={touched() && errors().email} hint="This is what they sign in with.">
-          <input id="u-email" type="email" class={cx("input", touched() && errors().email && "input-invalid")} value={f().email} onInput={(e) => set("email")(e.currentTarget.value)} />
+        <Field label="Work email" for="u-email" error={(touched() && errors().email) || emailTaken()} hint="This is what they sign in with.">
+          <input
+            id="u-email"
+            type="email"
+            class={cx("input", ((touched() && errors().email) || emailTaken()) && "input-invalid")}
+            value={f().email}
+            onInput={(e) => {
+              setEmailTaken(null);
+              set("email")(e.currentTarget.value);
+            }}
+          />
         </Field>
         <Field
           label={isNew ? "Password" : "New password"}

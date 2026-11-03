@@ -74,7 +74,7 @@ export default function QuestionBank(props) {
 
       <div class="flex flex-wrap items-center gap-3">
         <SearchInput class="flex-1 min-w-[220px] max-w-lg" placeholder="Search questions and options…" value={q()} onInput={setQ} />
-        <span class="text-[13.5px] text-muted">Correct answers are marked in lime. Success rates come from attempts taken in the portal.</span>
+        <span class="text-[13.5px] text-muted">Correct answers are highlighted in orange. Success rates come from attempts taken in the portal.</span>
       </div>
 
       <Show when={questions()} fallback={<div class="grid gap-3"><For each={[1, 2, 3]}>{() => <Skeleton class="h-[170px] !rounded-2xl" />}</For></div>}>

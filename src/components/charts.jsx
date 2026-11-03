@@ -109,6 +109,12 @@ export function ColumnChart(props) {
                   d={path()}
                   class={cx("transition-[fill,opacity] duration-200", hover() == null || hover() === i() ? MARK : MARK_DIM)}
                 />
+                {/* No data (null) isn't a zero score: say so instead of an empty bar. */}
+                <Show when={d.value == null}>
+                  <text x={cx_()} y={pad.t + innerH - 6} text-anchor="middle" class="fill-muted text-[10.5px]">
+                    {props.emptyLabel ?? "No data"}
+                  </text>
+                </Show>
                 {/* Hit target: the whole column slot. */}
                 <rect
                   x={cx_() - slot() / 2}

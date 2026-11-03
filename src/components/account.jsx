@@ -7,10 +7,11 @@
 import { createSignal, For, Show } from "solid-js";
 import { Eye, EyeOff, KeyRound } from "lucide-solid";
 import { cx } from "../lib/format";
+import { Link } from "../lib/router";
 import { user, updateUser } from "../store/auth";
 import { updateProfile, changePassword, listOfficeLocations } from "../services/auth";
 import { toast } from "../store/toast";
-import { Field, Toggle } from "./ui";
+import { Field, Toggle, FormError } from "./ui";
 import LocationSelect from "./LocationSelect";
 import { phoneProblem } from "../lib/phone";
 
@@ -51,6 +52,7 @@ export function PasswordForm(props) {
   const [touched, setTouched] = createSignal(false);
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal(null);
+  const [wrongCurrent, setWrongCurrent] = createSignal(null);
 
   const errors = () => ({
     current: current() ? null : "Enter your current password.",
@@ -73,19 +75,35 @@ export function PasswordForm(props) {
       setTouched(false);
       await props.onDone?.(me);
     } catch (err) {
-      setError(err.message);
+      // A wrong current password belongs under that field.
+      if (err.code === "WRONG_PASSWORD") {
+        setWrongCurrent(err.message);
+        const input = document.getElementById("pw-current");
+        input?.scrollIntoView({ block: "center", behavior: "smooth" });
+        input?.focus({ preventScroll: true });
+      } else setError(err.message);
     } finally {
       setBusy(false);
     }
   };
+  const currentError = () => (touched() && errors().current) || wrongCurrent();
 
   return (
     <form class="grid gap-4" onSubmit={submit} novalidate>
       <Show when={error()}>
-        <p class="error-text !mt-0" role="alert">{error()}</p>
+        <FormError class="error-text !mt-0">{error()}</FormError>
       </Show>
-      <Field label={props.currentLabel ?? "Current password"} for="pw-current" error={touched() && errors().current}>
-        <PasswordInput id="pw-current" autocomplete="current-password" value={current()} onInput={setCurrent} invalid={touched() && errors().current} />
+      <Field label={props.currentLabel ?? "Current password"} for="pw-current" error={currentError()}>
+        <PasswordInput
+          id="pw-current"
+          autocomplete="current-password"
+          value={current()}
+          onInput={(v) => {
+            setWrongCurrent(null);
+            setCurrent(v);
+          }}
+          invalid={currentError()}
+        />
       </Field>
       <Field label="New password" for="pw-new" error={touched() && errors().next} hint="At least 8 characters, with a letter and a number.">
         <PasswordInput id="pw-new" autocomplete="new-password" value={next()} onInput={setNext} invalid={touched() && errors().next} />
@@ -147,7 +165,7 @@ export function ProfileDetails() {
   return (
     <form class="grid gap-5" onSubmit={save} novalidate>
       <Show when={error()}>
-        <p class="error-text !mt-0" role="alert">{error()}</p>
+        <FormError class="error-text !mt-0">{error()}</FormError>
       </Show>
       <div class="grid sm:grid-cols-2 gap-4">
         <ReadOnly label="Name" value={me().name} />
@@ -159,7 +177,21 @@ export function ProfileDetails() {
           <ReadOnly label="Joined" value={me().joinedAt ? new Date(me().joinedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""} />
         </Show>
       </div>
-      <p class="-mt-2 text-[13px] text-muted">These details are managed by your training admin.</p>
+      <p class="-mt-2 text-[13px] text-muted">
+        {me().isSuperAdmin ? (
+          <>
+            You can change these in{" "}
+            <Link href="/admin/users" class="font-semibold text-plum-700 dark:text-lime-300 hover:underline">
+              Users
+            </Link>
+            .
+          </>
+        ) : me().role === "admin" ? (
+          "These details are managed by a super admin."
+        ) : (
+          "These details are managed by your training admin."
+        )}
+      </p>
       <div class="h-px bg-line" />
       <div class="grid sm:grid-cols-2 gap-4">
         <Field label="Mobile number" for="acc-phone" error={phoneError()}>

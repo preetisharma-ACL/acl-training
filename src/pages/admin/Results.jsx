@@ -171,7 +171,7 @@ export default function Results() {
                         Employee <SortIcon k="userName" />
                       </button>
                     </th>
-                    <th>Department</th>
+                    <th class="hidden xl:table-cell">Department</th>
                     <th>
                       <button class="inline-flex items-center gap-1" onClick={() => sortBy("submittedAt")}>
                         Submitted <SortIcon k="submittedAt" />
@@ -189,7 +189,7 @@ export default function Results() {
                     </th>
                     <th>Focus</th>
                     <th>Result</th>
-                    <th class="w-12" />
+                    <th class="w-12 col-sticky" />
                   </tr>
                 </thead>
                 <tbody>
@@ -205,7 +205,7 @@ export default function Results() {
                             </span>
                           </span>
                         </td>
-                        <td class="whitespace-nowrap text-ink-2">{r.departmentName}</td>
+                        <td class="hidden xl:table-cell whitespace-nowrap text-ink-2">{r.departmentName}</td>
                         <td class="whitespace-nowrap text-muted">{fmtDateTime(r.submittedAt)}</td>
                         <td class="min-w-[150px]">
                           <div class="flex items-center gap-2.5">
@@ -238,7 +238,7 @@ export default function Results() {
                         <td>
                           <span class={cx("badge", r.passed ? "badge-success" : "badge-danger")}>{r.passed ? "Passed" : "Failed"}</span>
                         </td>
-                        <td>
+                        <td class="col-sticky">
                           <button
                             class="btn btn-ghost btn-icon !w-8 !h-8 hover:!text-crimson-600"
                             onClick={(e) => {

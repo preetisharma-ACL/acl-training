@@ -1,7 +1,8 @@
 // Course player (Training → a video course), laid out like Udemy: the video
 // on the left, "Course content" (sections → videos, with progress) on the
 // right, stacked on phones. Videos are unlisted YouTube videos played in the
-// embedded player; employees stay in the portal.
+// embedded player behind our own controls (components/videoStage.jsx), so
+// there are no YouTube links out; employees stay in the portal.
 //
 // Tracking: the player is sampled every second (lib/watch.js) and a
 // heartbeat with the watched ranges goes to the server every 10 s while
@@ -18,6 +19,8 @@ import { getMyCourse, saveLessonProgress } from "../../services/training";
 import { loadYouTubeApi, clock, totalLength } from "../../lib/youtube";
 import { createWatchTracker } from "../../lib/watch";
 import { ProgressRing, Skeleton, EmptyState } from "../../components/ui";
+import VideoStage from "../../components/videoStage";
+import { guardPage } from "../../lib/guard";
 
 const HEARTBEAT_MS = 10000;
 const NEXT_COUNTDOWN = 5;
@@ -30,6 +33,7 @@ const EMBED_ERRORS = {
 };
 
 export default function CoursePlayer(props) {
+  guardPage();
   const [data] = createResource(() => props.params.id, getMyCourse);
   const [course, setCourse] = createStore({ sections: [] });
   createEffect(() => data() && setCourse(reconcile(structuredClone(data()))));
@@ -69,6 +73,7 @@ export default function CoursePlayer(props) {
   let loadedId = null;
   const tracker = createWatchTracker();
   const [playerError, setPlayerError] = createSignal(null);
+  const [playerState, setPlayerState] = createSignal(-1); // YT.PlayerState, drives our controls
   const [upNext, setUpNext] = createSignal(null); // seconds left, or null
   let countdown;
 
@@ -92,6 +97,7 @@ export default function CoursePlayer(props) {
     if (loadedId && loadedId !== l.id) flush();
     tracker.reset();
     setPlayerError(null);
+    setPlayerState(-1);
     loadedId = l.id;
     const opts = { videoId: l.youtubeId, startSeconds: startPosition(l) };
     autoplay ? player.loadVideoById(opts) : player.cueVideoById(opts);
@@ -119,13 +125,16 @@ export default function CoursePlayer(props) {
       width: "100%",
       height: "100%",
       videoId: first.youtubeId,
-      playerVars: { rel: 0, modestbranding: 1, playsinline: 1, start: startPosition(first), origin: window.location.origin },
+      // YouTube's own controls, keyboard, fullscreen and annotations are off:
+      // components/videoStage.jsx draws ours.
+      playerVars: { controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, rel: 0, modestbranding: 1, playsinline: 1, start: startPosition(first), origin: window.location.origin },
       events: {
         onReady: () => {
           loadedId = first.id;
           send(first.id);
         },
         onStateChange: (e) => {
+          setPlayerState(e.data);
           if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) flush();
           if (e.data === YT.PlayerState.ENDED && next()) startCountdown();
           if (e.data === YT.PlayerState.PLAYING) cancelCountdown();
@@ -240,16 +249,19 @@ export default function CoursePlayer(props) {
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-4 sm:gap-5 items-start">
           {/* Player + details */}
           <div class="grid gap-4 min-w-0">
-            <div class="relative aspect-video rounded-2xl overflow-hidden bg-black shadow-float">
-              {/* YouTube swaps this div for its iframe (sized 100% below). */}
-              <div class="absolute inset-0">
-                <div ref={host} />
-              </div>
+            <VideoStage
+              class="aspect-video rounded-2xl shadow-float"
+              hostRef={(el) => (host = el)}
+              player={() => player}
+              state={playerState}
+              duration={current()?.durationSeconds}
+              poster={current() && `https://i.ytimg.com/vi/${current().youtubeId}/hqdefault.jpg`}
+            >
               <Show when={!data()}>
-                <div class="absolute inset-0 skeleton !rounded-none !bg-white/5" />
+                <div class="absolute inset-0 z-30 skeleton !rounded-none !bg-white/5" />
               </Show>
               <Show when={playerError()}>
-                <div class="absolute inset-0 grid place-items-center p-6 bg-black/85 text-center text-white">
+                <div class="absolute inset-0 z-30 grid place-items-center p-6 bg-black/85 text-center text-white">
                   <div class="max-w-[420px]">
                     <TriangleAlert size={26} class="mx-auto text-amber-300" />
                     <p class="mt-3 text-[15px] leading-relaxed">{playerError()}</p>
@@ -257,7 +269,7 @@ export default function CoursePlayer(props) {
                 </div>
               </Show>
               <Show when={upNext() != null && next()}>
-                <div class="absolute inset-0 grid place-items-center p-6 bg-black/80 text-center text-white">
+                <div class="absolute inset-0 z-30 grid place-items-center p-6 bg-black/80 text-center text-white">
                   <div>
                     <p class="text-[13px] uppercase tracking-[0.14em] text-white/60">Up next in {upNext()}s</p>
                     <p class="mt-2 text-[17px] font-semibold">{next().title}</p>
@@ -272,7 +284,7 @@ export default function CoursePlayer(props) {
                   </div>
                 </div>
               </Show>
-            </div>
+            </VideoStage>
 
             <Show when={current()} fallback={<Skeleton class="h-[120px] !rounded-2xl" />}>
               <section class="card p-4 sm:p-6">

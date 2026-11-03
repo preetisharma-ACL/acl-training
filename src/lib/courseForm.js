@@ -63,7 +63,7 @@ export function formProblems(f) {
     if (!s.lessons.length) p[`s${si}`] = "Add at least one video.";
     s.lessons.forEach((l, li) => {
       const k = `s${si}l${li}`;
-      if (!youtubeId(l.video)) p[k] = "Paste a YouTube video link.";
+      if (!youtubeId(l.video)) p[k] = l.video.trim() ? "This isn't a YouTube link. Paste the video's youtube.com or youtu.be address." : "Paste a YouTube video link.";
       else if (!l.title.trim()) p[k] = "Give this video a title.";
       else if (!(parseClock(l.duration) > 0)) p[k] = l.probing ? "Reading the video length…" : "Enter the video length (mm:ss).";
     });

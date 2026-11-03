@@ -6,7 +6,7 @@ import { Plus, Pencil, Trash2, Workflow, TriangleAlert, ArrowRight } from "lucid
 import { cx } from "../../lib/format";
 import { toast } from "../../store/toast";
 import { listDesignations, listDepartments, saveDesignation, deleteDesignation } from "../../services/admin";
-import { PageHeader, Skeleton, Modal, Field, ConfirmDialog, SearchInput } from "../../components/ui";
+import { PageHeader, Skeleton, Modal, Field, ConfirmDialog, SearchInput, FormError } from "../../components/ui";
 import { DeptIcon } from "../../components/icons";
 
 const LEVELS = ["Team head", "Senior", "Junior"];
@@ -103,9 +103,17 @@ export default function Designations() {
                           <button class="btn btn-ghost btn-icon !w-8 !h-8" onClick={() => setEditing(d)} aria-label={`Edit ${d.title}`}>
                             <Pencil size={15} />
                           </button>
-                          <button class="btn btn-ghost btn-icon !w-8 !h-8 hover:!text-crimson-600" onClick={() => setRemoving(d)} aria-label={`Delete ${d.title}`}>
-                            <Trash2 size={15} />
-                          </button>
+                          {/* Held designations can't be deleted: say why (the wrapper shows the tooltip, a disabled button can't). */}
+                          <span title={d.employees ? `${d.employees} employee${d.employees === 1 ? " holds" : "s hold"} this designation. Reassign them first.` : undefined}>
+                            <button
+                              class="btn btn-ghost btn-icon !w-8 !h-8 hover:!text-crimson-600 disabled:pointer-events-none disabled:opacity-40"
+                              disabled={d.employees > 0}
+                              onClick={() => setRemoving(d)}
+                              aria-label={d.employees ? `Can't delete ${d.title}: ${d.employees} employee(s) hold it` : `Delete ${d.title}`}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -189,7 +197,7 @@ function DesignationModal(props) {
     >
       <div class="grid gap-4">
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
+          <FormError class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</FormError>
         </Show>
         <Field label="Title" for="ds-title">
           <input id="ds-title" class="input" placeholder="e.g. Performance Analyst" value={title()} onInput={(e) => setTitle(e.currentTarget.value)} />

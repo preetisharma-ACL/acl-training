@@ -46,8 +46,8 @@ export async function overview() {
       employees: people.length,
       certified: people.filter((p) => p.passed).length,
       completion: pct(people.filter((p) => p.passed).length, people.length),
-      avgScore: Math.round(avg(da.map((a) => a.percentage ?? 0))),
-      passRate: pct(da.filter((a) => a.passed).length, da.length),
+      avgScore: da.length ? Math.round(avg(da.map((a) => a.percentage ?? 0))) : null,
+      passRate: da.length ? pct(da.filter((a) => a.passed).length, da.length) : null,
       attempts: da.length,
     };
   });
@@ -107,7 +107,8 @@ export async function overview() {
     weeks,
     statusBreakdown: ["certified", "retake", "ready", "in-progress", "not-started"].map((key) => ({ key, count: assigned.filter((e) => e.trainingStatus === key).length })),
     recent: attempts.slice(0, 7).map((a) => ({ ...attemptSummaryOut(a), userName: a.user.name })),
-    topPerformers: assigned.filter((e) => e.bestScore != null).sort((a, b) => b.bestScore - a.bestScore).slice(0, 5),
+    // Passed only: a failed best score isn't a top performance.
+    topPerformers: assigned.filter((e) => e.passed && e.bestScore != null).sort((a, b) => b.bestScore - a.bestScore).slice(0, 5),
     attention: assigned.filter((e) => e.trainingStatus === "not-started" || e.trainingStatus === "retake").slice(0, 5),
   };
 }

@@ -5,7 +5,7 @@ import { createResource, createSignal, For, Show } from "solid-js";
 import { Plus, Pencil, Trash2, MapPin } from "lucide-solid";
 import { toast } from "../../store/toast";
 import { listLocations, saveLocation, deleteLocation } from "../../services/admin";
-import { PageHeader, Skeleton, Modal, Field, ConfirmDialog, EmptyState } from "../../components/ui";
+import { PageHeader, Skeleton, Modal, Field, ConfirmDialog, EmptyState, FormError } from "../../components/ui";
 
 export default function Locations() {
   const [list, { refetch }] = createResource(listLocations);
@@ -156,7 +156,7 @@ function LocationModal(props) {
     >
       <form class="grid gap-4" onSubmit={save}>
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
+          <FormError class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</FormError>
         </Show>
         <Field label="Location name" for="loc-name" hint={!isNew && inUse() ? `${props.loc.users} people and ${props.loc.departments} departments will move to the new name.` : undefined}>
           <input id="loc-name" class="input" maxLength={60} placeholder="e.g. Kolkata" value={name()} onInput={(e) => setName(e.currentTarget.value)} autofocus />

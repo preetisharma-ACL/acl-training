@@ -29,7 +29,7 @@ import { cx, greeting, fmtDate, fmtRelative, daysUntil, dueLabel, plural } from 
 import { user } from "../../store/auth";
 import { getMyModule, listMyAttempts } from "../../services/training";
 import { loadAnnouncements } from "../../store/announcements";
-import { blockedMessage, pct } from "../../lib/progress";
+import { blockedMessage, pct, requiredSplit } from "../../lib/progress";
 import { ProgressRing, ProgressBar, Skeleton, EmptyState, SectionTitle, IconTile, CountUp } from "../../components/ui";
 import { DeptIcon, TypeIcon, MATERIAL_TYPES } from "../../components/icons";
 
@@ -237,8 +237,10 @@ function Hero(props) {
   const cta = () => {
     switch (mod().stage) {
       case "learn": {
-        const next = mod().materials.find((m) => m.required && !m.progress.completed);
-        return { label: next?.progress.opened ? "Continue training" : "Start training", href: next ? `/training/${next.id}` : "/training", icon: BookOpen };
+        // Always the Training page (modules and video courses together), so
+        // the employee picks what to carry on with.
+        const started = mod().materials.some((m) => m.progress.opened) || mod().completedRequired > 0;
+        return { label: started ? "Continue training" : "Start training", href: "/training", icon: BookOpen };
       }
       case "assess":
         return mod().eligible
@@ -254,7 +256,7 @@ function Hero(props) {
     ({ learn: "Keep going.", assess: mod().eligible ? "You're ready." : mod().requiredCount ? "Training complete." : "Nothing to do yet.", done: "Well done.", unassigned: "Welcome." })[mod().stage];
   const message = () =>
     ({
-      learn: `${mod().completedRequired} of ${mod().requiredCount} required modules done. Finish them to unlock your test.`,
+      learn: `${mod().completedRequired} of ${mod().requiredCount} required done (${requiredSplit(mod())}). Finish them to unlock your test.`,
       assess: mod().eligible ? "Your test is ready when you are." : blockedMessage(mod()),
       done: `You've passed your ${mod().department?.name} test. Your modules stay here for reference.`,
       unassigned: "There's no training module mapped to your designation yet. Company-wide materials are still available to you.",
@@ -323,7 +325,7 @@ function StatsBand(props) {
   const mod = () => props.mod;
   const items = () => [
     { value: `${mod().stage === "done" ? 100 : props.readPct}%`, label: "Training complete" },
-    { value: `${mod().completedTotal}/${mod().materials.length}`, label: "Materials done" },
+    { value: `${mod().completedRequired}/${mod().requiredCount}`, label: "Required done" },
     { value: mod().best ? `${Math.round(mod().best.percentage)}%` : "—", label: "Best score" },
     { value: mod().assessment ? `${mod().assessment.attemptsLeft}/${mod().assessment.maxAttempts}` : "—", label: "Attempts left" },
   ];

@@ -103,10 +103,16 @@ describe("progress and unlock", () => {
     const unopened = await material({ title: "Unopened" });
     expect((await a.post(`/api/v1/training/materials/${unopened.id}/progress`).send({ percent: 40 })).body.error.code).toBe("NOT_OPENED");
     await a.get(`/api/v1/training/materials/${company.id}`);
-    let r = await a.post(`/api/v1/training/materials/${company.id}/progress`).send({ percent: 40 });
-    expect(r.body.data).toMatchObject({ opened: true, percent: 40, completed: false });
+    const stored = async () => (await prisma.materialProgress.findFirst({ where: { userId: emp.id, materialId: company.id } })).percent;
+    // The reported percent comes from the completion evidence (reading time,
+    // sections), not the client's scroll position — and is never 100 before completion.
+    let r = await a.post(`/api/v1/training/materials/${company.id}/progress`).send({ percent: 100 });
+    expect(r.body.data).toMatchObject({ opened: true, completed: false });
+    expect(r.body.data.percent).toBeLessThan(100);
+    // The scroll position is still stored, and only ever goes up.
+    expect(await stored()).toBe(100);
     r = await a.post(`/api/v1/training/materials/${company.id}/progress`).send({ percent: 10 });
-    expect(r.body.data.percent).toBe(40);
+    expect(await stored()).toBe(100);
     expect((await a.post(`/api/v1/training/materials/${company.id}/progress`).send({ percent: 140 })).status).toBe(422);
   });
 

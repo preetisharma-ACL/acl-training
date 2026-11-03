@@ -26,5 +26,10 @@ async function shutdown(signal) {
   setTimeout(() => process.exit(1), 10000).unref();
 }
 
+// A stray promise rejection is logged, never fatal: one bad request must not
+// stop the API for everyone. (Uncaught exceptions still exit — the process
+// state can't be trusted — so run under a supervisor that restarts it.)
+process.on("unhandledRejection", (reason) => console.error(`[${new Date().toISOString()}] unhandled rejection`, reason));
+
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));

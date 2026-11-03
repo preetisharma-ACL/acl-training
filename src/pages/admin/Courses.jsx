@@ -9,7 +9,7 @@ import { Plus, Pencil, Trash2, Ellipsis, MonitorPlay, Send, Users, ArrowUp, Arro
 import { cx, fmtDate, fmtRelative } from "../../lib/format";
 import { toast } from "../../store/toast";
 import { listCourses, getCourse, getCourseProgress, saveCourse, setCourseStatus, setCourseRequired, deleteCourse, listDepartments } from "../../services/admin";
-import { PageHeader, Skeleton, Toggle, Menu, MenuItem, Drawer, Field, ConfirmDialog, EmptyState, ProgressBar, SearchInput } from "../../components/ui";
+import { PageHeader, Skeleton, Toggle, Menu, MenuItem, Drawer, Field, ConfirmDialog, EmptyState, ProgressBar, SearchInput, FormError } from "../../components/ui";
 import { LEVELS } from "../../lib/levels";
 import { youtubeId, thumbnail, clock, totalLength } from "../../lib/youtube";
 import { probeVideo } from "../../lib/ytProbe";
@@ -75,7 +75,7 @@ export default function Courses() {
                   </span>
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                      <h2 class="text-[15.5px] font-semibold truncate">{c.title}</h2>
+                      <h2 class="min-w-0 text-[15.5px] font-semibold line-clamp-2 break-words" title={c.title}>{c.title}</h2>
                       <Show when={c.status === "draft"}>
                         <span class="badge badge-warn">Draft · not visible to employees</span>
                       </Show>
@@ -274,7 +274,7 @@ function CourseBuilder(props) {
     >
       <div class="grid gap-5">
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
+          <FormError class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</FormError>
         </Show>
 
         <Field label="Select Department" for="c-dept" error={err("scope")}>

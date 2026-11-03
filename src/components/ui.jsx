@@ -355,6 +355,22 @@ export function Field(props) {
   );
 }
 
+// A form-level error from the server. It scrolls itself into view and takes
+// focus when it appears, so it's seen even when the submit button is far
+// below it in a long drawer.
+export function FormError(props) {
+  let el;
+  onMount(() => {
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.focus({ preventScroll: true });
+  });
+  return (
+    <p ref={el} tabIndex={-1} role="alert" class={cx("outline-none", props.class)}>
+      {props.children}
+    </p>
+  );
+}
+
 export function SearchInput(props) {
   const [local, rest] = splitProps(props, ["class", "value", "onInput"]);
   return (
@@ -451,10 +467,28 @@ function useScrollLock() {
   });
 }
 
+// Move focus into a dialog when it opens: an [autofocus] element, else the
+// first field, else the dialog itself. (The autofocus attribute alone does
+// nothing on elements added after the page loads.) On touch screens only the
+// dialog is focused, so the keyboard doesn't jump up uninvited.
+const FIELDS = "input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([disabled]), textarea:not([disabled]), select:not([disabled])";
+function useInitialFocus(dialog) {
+  onMount(() =>
+    requestAnimationFrame(() => {
+      const el = dialog();
+      if (!el || el.contains(document.activeElement)) return;
+      const field = matchMedia("(pointer: coarse)").matches ? null : (el.querySelector("[autofocus]") ?? el.querySelector(FIELDS));
+      (field ?? el).focus({ preventScroll: true });
+    }),
+  );
+}
+
 // Render inside <Show when={open()}>. size: "sm" | "md" | "lg".
 export function Modal(props) {
   useEscape(() => props.onClose?.());
   useScrollLock();
+  let dialog;
+  useInitialFocus(() => dialog);
   const width = () => ({ sm: "max-w-[420px]", md: "max-w-[520px]", lg: "max-w-[720px]" })[props.size || "md"];
   return (
     <Portal>
@@ -463,12 +497,14 @@ export function Modal(props) {
         onClick={(e) => e.target === e.currentTarget && props.onClose?.()}
       >
         <div
+          ref={dialog}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
           aria-labelledby={props.labelledBy}
           class={cx(
             // Phones: a sheet that slides up from the bottom. Larger screens: a centred dialog.
-            "w-full max-h-[90vh] sm:max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-thin rounded-t-[24px] sm:rounded-[22px] bg-surface border border-line shadow-float animate-sheet sm:animate-pop pb-[env(safe-area-inset-bottom)] sm:pb-0",
+            "outline-none w-full max-h-[90vh] sm:max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-thin rounded-t-[24px] sm:rounded-[22px] bg-surface border border-line shadow-float animate-sheet sm:animate-pop pb-[env(safe-area-inset-bottom)] sm:pb-0",
             width(),
             props.class,
           )}
@@ -504,13 +540,17 @@ export function Modal(props) {
 export function Drawer(props) {
   useEscape(() => props.onClose?.());
   useScrollLock();
+  let dialog;
+  useInitialFocus(() => dialog);
   return (
     <Portal>
       <div class="fixed inset-0 z-[1100] flex justify-end bg-plum-950/40 backdrop-blur-[4px] animate-fade-in" onClick={(e) => e.target === e.currentTarget && props.onClose?.()}>
         <aside
+          ref={dialog}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
-          class={cx("flex flex-col w-full h-full bg-surface border-l border-line shadow-float animate-slide-in-right", props.width || "max-w-[520px]")}
+          class={cx("outline-none flex flex-col w-full h-full bg-surface border-l border-line shadow-float animate-slide-in-right", props.width || "max-w-[520px]")}
         >
           <header class="flex items-start justify-between gap-4 px-6 py-5 border-b border-line">
             <div class="min-w-0">
@@ -642,17 +682,25 @@ export function Menu(props) {
   );
 }
 
+// disabled + hint: an action that can't be used right now, with the reason
+// shown under it (a tooltip wouldn't appear on a disabled button).
 export function MenuItem(props) {
   return (
     <button
       onClick={props.onClick}
+      disabled={props.disabled}
       class={cx(
-        "flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-left text-[14px] font-medium transition",
+        "flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-left text-[14px] font-medium transition disabled:opacity-55 disabled:cursor-not-allowed disabled:hover:bg-transparent",
         props.danger ? "text-crimson-600 dark:text-crimson-300 hover:bg-crimson-50 dark:hover:bg-crimson-500/10" : "text-ink-2 hover:bg-sunken hover:text-ink",
       )}
     >
       {props.icon}
-      {props.children}
+      <span class="min-w-0">
+        {props.children}
+        <Show when={props.hint}>
+          <span class="block max-w-[240px] text-[12px] font-normal text-muted">{props.hint}</span>
+        </Show>
+      </span>
     </button>
   );
 }

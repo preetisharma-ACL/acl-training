@@ -465,6 +465,17 @@
   .table tbody tr:last-child td {
     @apply border-b-0;
   }
+  /* A column pinned to the right edge (row actions, result), so it stays in
+     view when a wide table scrolls sideways on a laptop screen. */
+  .table .col-sticky {
+    @apply sticky right-0 z-[1] bg-surface shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.25)];
+  }
+  .table thead .col-sticky {
+    @apply bg-sunken;
+  }
+  .table tbody tr:hover .col-sticky {
+    @apply bg-plum-50 dark:bg-surface;
+  }
 
   /* Long-form reading (manuals, structured guides). */
   .prose-doc p {

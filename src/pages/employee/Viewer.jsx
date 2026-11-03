@@ -31,7 +31,7 @@ import {
   Printer,
 } from "lucide-solid";
 import { Link, navigate } from "../../lib/router";
-import { cx, fmtDate, fmtBytes } from "../../lib/format";
+import { cx, fmtDate, fmtBytes, plural } from "../../lib/format";
 import { user, isAdmin } from "../../store/auth";
 import { toast } from "../../store/toast";
 import { getMaterial, getMaterialFile, updateProgress, getMyModule } from "../../services/training";
@@ -40,6 +40,7 @@ import { Skeleton, ProgressBar, EmptyState } from "../../components/ui";
 import { TypeIcon, MATERIAL_TYPES } from "../../components/icons";
 import { parseMedia, PROVIDER_LABEL } from "../../lib/media";
 import { completionNeeded } from "../../lib/progress";
+import { guardPage } from "../../lib/guard";
 
 // Types that are read on the page (scroll progress, text size, print).
 const READING = ["manual", "structured"];
@@ -226,7 +227,7 @@ export default function Viewer(props) {
               </p>
               <p class="hidden sm:block mt-0.5 text-[13px] text-muted">
                 v{doc().version} · {doc().author} · Updated {fmtDate(doc().updatedAt)} · <Clock size={11} class="inline -mt-0.5" /> {doc().estMinutes} min
-                <Show when={file()?.pages}> · {file().pages} pages</Show>
+                <Show when={file()?.pages}> · {plural(file().pages, "page")}</Show>
                 <Show when={file()?.sizeBytes}> · {fmtBytes(file().sizeBytes)}</Show>
               </p>
             </div>
@@ -293,8 +294,12 @@ export default function Viewer(props) {
                 <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-plum-700 ring-2 ring-lime-50 dark:ring-[rgb(var(--canvas))] animate-pulse" />
               </span>
               <p class="text-[14.5px] leading-snug text-ink">
-                <span class="font-semibold text-lime-800 dark:text-lime-300">To complete this guide:</span> {needed()}
-                <span class="block mt-0.5 text-[13px] text-ink-2">"Mark as complete" unlocks as soon as you're done.</span>
+                <span class="font-semibold text-lime-800 dark:text-lime-300">To complete this {{ pdf: "PDF", manual: "manual", structured: "guide", media: "video" }[doc().type]}:</span> {needed()}
+                <span class="block mt-0.5 text-[13px] text-ink-2">
+                  {READING.includes(doc().type)
+                    ? `This ${doc().type === "manual" ? "manual" : "guide"} is marked complete automatically once you've read every ${doc().type === "manual" ? "chapter" : "section"}.`
+                    : `"Mark as complete" unlocks as soon as you're done.`}
+                </span>
               </p>
             </div>
           </Show>
@@ -441,6 +446,7 @@ function PdfFrame(props) {
 // ── Video / audio ───────────────────────────────────────────────────────────
 
 function MediaPlayer(props) {
+  guardPage();
   const m = () => parseMedia(props.doc.content?.url);
   const audio = () => props.doc.content?.kind === "audio";
   return (

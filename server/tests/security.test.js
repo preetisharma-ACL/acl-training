@@ -293,3 +293,16 @@ describe("6 · company-wide materials", () => {
     expect((await (await signedIn(headIn2)).get(`/api/v1/training/materials/${m.id}`)).status).toBe(403);
   });
 });
+
+describe("8 · a fake PDF is refused and the API keeps serving", () => {
+  it("a text file renamed .pdf gets a 400 whatever MIME type the browser sends", async () => {
+    const ad = await signedIn(await makeAdmin());
+    const fake = Buffer.from("just some text, not a PDF\n".repeat(20));
+    for (const contentType of ["application/pdf", "application/octet-stream", "text/plain"]) {
+      const r = await ad.post("/api/v1/admin/materials/upload").attach("file", fake, { filename: "fake.pdf", contentType });
+      expect(r.status).toBe(400);
+      expect(r.body.error.code).toBe("NOT_A_PDF");
+      expect((await ad.get("/api/v1/admin/materials")).status).toBe(200);
+    }
+  });
+});

@@ -7,7 +7,6 @@ import {
   ArrowRight,
   BookOpen,
   Lock,
-  LockOpen,
   CircleCheck,
   Circle,
   ListChecks,
@@ -24,7 +23,7 @@ import {
 } from "lucide-solid";
 import { Link, navigate } from "../../lib/router";
 import { cx } from "../../lib/format";
-import { pct } from "../../lib/progress";
+import { pct, requiredLeft, requiredSplit } from "../../lib/progress";
 import { user } from "../../store/auth";
 import { beginSession } from "../../store/assessment";
 import { getMyModule, startAttempt } from "../../services/training";
@@ -37,7 +36,7 @@ export default function Test() {
   return (
     <div class="grid gap-5 max-w-[760px] mx-auto">
       <div class="hidden md:block">
-        <p class="kicker mb-2">Step 2 of 3</p>
+        <p class="kicker mb-2">Step 2 of 4</p>
         <h1 class="text-[28px] font-semibold tracking-[-0.025em]">Your test</h1>
       </div>
 
@@ -94,9 +93,7 @@ function TestCard(props) {
               <h2 class="mt-0.5 text-[22px] font-semibold leading-tight">{a().title} test</h2>
             </div>
             <span class={cx("badge shrink-0 px-2.5 py-1", mod().passed ? "badge-success" : mod().eligible ? "badge-lime" : "badge-neutral")}>
-              <Show when={mod().eligible} fallback={<Lock size={12} />}>
-                <LockOpen size={12} />
-              </Show>
+              {mod().passed ? <CircleCheck size={12} /> : mod().eligible ? <Play size={12} /> : <Lock size={12} />}
               {mod().passed ? "Passed" : mod().eligible ? "Ready" : "Locked"}
             </span>
           </div>
@@ -163,9 +160,11 @@ function TestCard(props) {
                     <p class="text-[14.5px] text-ink-2 leading-relaxed">
                       {mod().activeAttempt
                         ? "You have a test in progress. Resume it before the timer runs out — your answers are saved."
-                        : blocker()?.id === "attempts"
-                          ? "You've used all your attempts. Your training admin can give you another one."
-                          : "Your test isn't ready yet. Please check back later or contact your training admin."}
+                        : blocker()?.id === "passed"
+                          ? "You've passed this test, so there's nothing more to take. Your result and certificate are in Results."
+                          : blocker()?.id === "attempts"
+                            ? "You've used all your attempts. Your training admin can give you another one."
+                            : "Your test isn't ready yet. Please check back later or contact your training admin."}
                     </p>
                     <Show when={mod().activeAttempt}>
                       <button class="btn btn-primary btn-sm" onClick={begin} disabled={starting()}>
@@ -184,8 +183,7 @@ function TestCard(props) {
                   <div>
                     <p class="text-[15px] font-semibold">Finish your training first</p>
                     <p class="text-[14px] text-muted">
-                      {mod().requiredCount - mod().completedRequired} required module{mod().requiredCount - mod().completedRequired === 1 ? "" : "s"} left. The test unlocks when
-                      they're done.
+                      {requiredLeft(mod())} left ({requiredSplit(mod())}). The test unlocks when they're done.
                     </p>
                   </div>
                 </div>
@@ -235,7 +233,7 @@ function TestCard(props) {
               <For
                 each={[
                   [Lock, "Training is locked until you submit."],
-                  [Eye, "Leaving this screen or switching apps pauses the test and is recorded."],
+                  [Eye, "Leaving this screen or switching apps is recorded, and the timer keeps running."],
                   [Clock, "Your answers are saved — you can resume where you stopped."],
                   [Send, "The test submits automatically when time runs out."],
                   [ShieldCheck, "Each question has four options and one correct answer."],

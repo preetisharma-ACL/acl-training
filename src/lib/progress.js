@@ -5,9 +5,24 @@
 export function blockedMessage(mod) {
   if (mod.activeAttempt) return "You have a test in progress. Open it to carry on before the timer runs out.";
   const c = mod.blocker ? { id: mod.blocker } : (mod.conditions ?? []).find((x) => !x.met);
+  if (c?.id === "passed") return "You've passed your test. There's nothing more to take.";
   if (c?.id === "materials") return "Finish your required training to unlock your test.";
   if (c?.id === "attempts") return "You've used all your attempts. Please contact your training admin to reset them.";
   return "Your test isn't open yet. Please check back later or contact your training admin.";
+}
+
+// What's required before the test is materials AND required video courses.
+// Every page counts them together and shows the split the same way.
+export function requiredSplit(mod) {
+  const parts = [`materials ${mod.completedRequiredMaterials ?? mod.completedRequired}/${mod.requiredMaterials ?? mod.requiredCount}`];
+  if (mod.requiredCourses) parts.push(`video courses ${mod.completedRequiredCourses ?? 0}/${mod.requiredCourses}`);
+  return parts.join(" · ");
+}
+
+// "1 required item" / "3 required items" still to finish.
+export function requiredLeft(mod) {
+  const n = Math.max(0, mod.requiredCount - mod.completedRequired);
+  return `${n} required item${n === 1 ? "" : "s"}`;
 }
 
 // What's still needed before a material can be marked complete, from the

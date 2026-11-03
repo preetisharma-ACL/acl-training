@@ -7,8 +7,18 @@ import { cx } from "../../lib/format";
 import { toast } from "../../store/toast";
 import { listDepartments, listLocations, saveDepartment, deleteDepartment } from "../../services/admin";
 import LocationSelect from "../../components/LocationSelect";
-import { PageHeader, Skeleton, Menu, MenuItem, Modal, Field, Toggle, ConfirmDialog, EmptyState } from "../../components/ui";
+import { PageHeader, Skeleton, Menu, MenuItem, Modal, Field, Toggle, ConfirmDialog, EmptyState, FormError } from "../../components/ui";
 import { DeptIcon } from "../../components/icons";
+
+// Why the server would refuse to delete this department (null = it can go).
+// Assessment history is only known to the server, which still checks it.
+function deleteBlocked(d) {
+  const n = d.designations?.length ?? 0;
+  if (d.employees) return `${d.employees} employee${d.employees === 1 ? "" : "s"} work here. Reassign them and move its designations first.`;
+  if (n) return `${n} designation${n === 1 ? " is" : "s are"} mapped to it. Move or delete ${n === 1 ? "it" : "them"} first.`;
+  if (d.materials) return `It still has ${d.materials} training material${d.materials === 1 ? "" : "s"}. Move or delete them first.`;
+  return null;
+}
 
 export default function Departments() {
   const [list, { refetch }] = createResource(listDepartments);
@@ -54,7 +64,7 @@ export default function Departments() {
                           <MenuItem icon={<ClipboardList size={15} />} onClick={() => navigate(`/admin/assessments?dept=${d.id}`)}>
                             Assessments
                           </MenuItem>
-                          <MenuItem icon={<Trash2 size={15} />} danger onClick={() => setRemoving(d)}>
+                          <MenuItem icon={<Trash2 size={15} />} danger disabled={!!deleteBlocked(d)} hint={deleteBlocked(d)} onClick={() => setRemoving(d)}>
                             Delete
                           </MenuItem>
                         </Menu>
@@ -165,7 +175,7 @@ function DepartmentModal(props) {
     >
       <div class="grid gap-4">
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
+          <FormError class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</FormError>
         </Show>
         <Field label="Name" for="d-name">
           <input id="d-name" class="input" placeholder="e.g. Performance Marketing" value={f().name} onInput={(e) => set("name")(e.currentTarget.value)} />

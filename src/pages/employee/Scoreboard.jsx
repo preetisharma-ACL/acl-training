@@ -487,6 +487,12 @@ function Review(props) {
       >
         <Show when={open()}>
         <div class="animate-fade-up">
+        <Show when={r().answersHidden}>
+          <div class="flex items-start gap-3 mt-5 p-4 rounded-2xl bg-sunken/60 text-[14px] text-ink-2">
+            <Info size={17} class="shrink-0 mt-0.5" />
+            You can see which answers were right or wrong. The correct options are shown once you pass, or after your final attempt.
+          </div>
+        </Show>
         <Tabs
           class="mt-5"
           value={filter()}
@@ -515,7 +521,8 @@ function Review(props) {
                   <ul class="grid gap-1.5 mt-3">
                     <Index each={item.options}>
                       {(opt, oi) => {
-                        const isCorrect = oi === item.correctIndex;
+                        // Hidden correct answers: only the employee's own right answer is marked.
+                        const isCorrect = item.correctIndex == null ? item.isCorrect && oi === item.chosen : oi === item.correctIndex;
                         const isWrong = oi === item.chosen && !item.isCorrect;
                         return (
                           <li
@@ -538,7 +545,7 @@ function Review(props) {
                             </span>
                             <span class="flex-1">{opt()}</span>
                             <Show when={isCorrect}>
-                              <span class="text-[12.5px] font-semibold">Correct answer</span>
+                              <span class="text-[12.5px] font-semibold">{item.correctIndex == null ? "Your answer" : "Correct answer"}</span>
                             </Show>
                             <Show when={isWrong}>
                               <span class="text-[12.5px] font-semibold">Your answer</span>

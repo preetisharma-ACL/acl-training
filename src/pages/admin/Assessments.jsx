@@ -8,7 +8,7 @@ import { LEVELS } from "../../lib/levels";
 import { cx } from "../../lib/format";
 import { toast } from "../../store/toast";
 import { listAssessments, saveAssessmentSettings } from "../../services/admin";
-import { PageHeader, Skeleton, Modal, Field, Toggle } from "../../components/ui";
+import { PageHeader, Skeleton, Modal, Field, Toggle, FormError } from "../../components/ui";
 import { DeptIcon } from "../../components/icons";
 
 export default function Assessments() {
@@ -99,11 +99,11 @@ export default function Assessments() {
                     </div>
                   </div>
                 </Show>
-                <div class="flex gap-2 mt-auto pt-5">
-                  <button class="btn btn-secondary btn-sm flex-1" onClick={() => setEditing(a)}>
+                <div class="flex flex-wrap gap-2 mt-auto pt-5">
+                  <button class="btn btn-secondary btn-sm flex-1 basis-[120px]" onClick={() => setEditing(a)}>
                     <Settings2 size={14} /> Settings
                   </button>
-                  <button class="btn btn-primary btn-sm flex-1" onClick={() => navigate(`/admin/assessments/${a.id}`)}>
+                  <button class="btn btn-primary btn-sm flex-1 basis-[150px]" onClick={() => navigate(`/admin/assessments/${a.id}`)}>
                     Question bank <ArrowRight size={14} />
                   </button>
                 </div>
@@ -140,25 +140,40 @@ export function SettingsModal(props) {
   const repeats = () => f().questionsPerAttempt * f().maxAttempts > bank();
   const set = (k) => (v) => setF({ ...f(), [k]: v });
   const [busy, setBusy] = createSignal(false);
-  const valid = () =>
-    f().durationMinutes >= 1 && f().durationMinutes <= 180 && f().passPercent >= 1 && f().passPercent <= 100 && f().maxAttempts >= 1 && f().marksPerQuestion >= 1 && f().questionsPerAttempt >= 1 && f().questionsPerAttempt <= Math.max(1, bank());
+  const [error, setError] = createSignal(null);
+  // One message per field, shown under it — Save stays disabled until none are left.
+  const range = (v, min, max, what) => (!Number.isInteger(v) || v < min ? `Enter at least ${min}${what}.` : v > max ? `Can't be more than ${max}${what}.` : null);
+  const errors = () => ({
+    durationMinutes: range(f().durationMinutes, 1, 180, " minutes"),
+    passPercent: range(f().passPercent, 1, 100, "%"),
+    marksPerQuestion: range(f().marksPerQuestion, 1, 10, ""),
+    maxAttempts: range(f().maxAttempts, 1, 10, ""),
+    questionsPerAttempt: !Number.isInteger(f().questionsPerAttempt) || f().questionsPerAttempt < 1 ? "Enter at least 1." : f().questionsPerAttempt > Math.max(1, bank()) ? `Can't be more than the question bank (${bank()}).` : null,
+  });
+  const valid = () => !Object.values(errors()).some(Boolean);
 
   const save = async () => {
     setBusy(true);
-    await saveAssessmentSettings(props.a.id, f());
-    toast(`${props.a.name} assessment settings saved. New attempts use them.`);
-    props.onSaved();
+    setError(null);
+    try {
+      await saveAssessmentSettings(props.a.id, f());
+      toast(`${props.a.name} assessment settings saved. New attempts use them.`);
+      props.onSaved();
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
   };
 
   const num = (k, label, suffix, min, max, hint) => (
-    <Field label={label} for={`s-${k}`} hint={hint}>
+    <Field label={label} for={`s-${k}`} hint={hint} error={errors()[k]}>
       <div class="relative">
         <input
           id={`s-${k}`}
           type="number"
           min={min}
           max={max}
-          class="input pr-14"
+          class={cx("input pr-14", errors()[k] && "input-invalid")}
           value={f()[k]}
           onInput={(e) => set(k)(Number(e.currentTarget.value))}
         />
@@ -184,6 +199,9 @@ export function SettingsModal(props) {
         </>
       }
     >
+      <Show when={error()}>
+        <FormError class="mb-4 px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</FormError>
+      </Show>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {num("durationMinutes", "Time limit", "min", 1, 180, "Auto-submits at 00:00.")}
         {num("passPercent", "Pass mark", "%", 1, 100)}
@@ -193,7 +211,7 @@ export function SettingsModal(props) {
           {num("questionsPerAttempt", "Questions per attempt", "Qs", 1, Math.max(1, bank()), `Drawn from a bank of ${bank()}. Each attempt picks questions the employee hasn't seen yet.`)}
         </div>
       </div>
-      <Show when={repeats() && bank() > 0}>
+      <Show when={repeats() && bank() > 0 && !errors().questionsPerAttempt}>
         <p class="flex items-start gap-2 mt-3 px-3.5 py-2.5 rounded-xl text-[13.5px] badge-warn !flex">
           <TriangleAlert size={15} class="shrink-0 mt-0.5" />
           {f().questionsPerAttempt} questions × {f().maxAttempts} attempts needs {f().questionsPerAttempt * f().maxAttempts} questions, but the bank has {bank()}. Later

@@ -474,7 +474,7 @@ const ALL_DEPARTMENTS = [
   {
     id: "crm_dashboard",
     name: "CRM / Dashboard",
-    description: "This reporting dashboard: roles, clients, leads, data quality and issues.",
+    description: "The CRM and reporting dashboard: user roles, client records, leads, data quality and issue handling.",
     durationMinutes: 10,
     passPercent: 70,
     marksPerQuestion: 1,

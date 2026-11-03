@@ -21,7 +21,7 @@ import {
   parseManual,
   manualToText,
 } from "../../services/admin";
-import { PageHeader, Tabs, SearchInput, Skeleton, Toggle, Menu, MenuItem, Drawer, Field, ConfirmDialog, EmptyState, ProgressBar } from "../../components/ui";
+import { PageHeader, Tabs, SearchInput, Skeleton, Toggle, Menu, MenuItem, Drawer, Field, ConfirmDialog, EmptyState, ProgressBar, FormError } from "../../components/ui";
 import { TypeIcon, MATERIAL_TYPES } from "../../components/icons";
 import { parseMedia, PROVIDER_LABEL } from "../../lib/media";
 import { LEVELS } from "../../lib/levels";
@@ -117,7 +117,7 @@ export default function Materials() {
                   </span>
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                      <button class="text-[15.5px] font-semibold text-left hover:text-plum-700 dark:hover:text-lime-300 truncate" onClick={() => navigate(`/admin/materials/${m.id}`)}>
+                      <button class="min-w-0 text-[15.5px] font-semibold text-left hover:text-plum-700 dark:hover:text-lime-300 line-clamp-2 break-words" title={m.title} onClick={() => navigate(`/admin/materials/${m.id}`)}>
                         {m.title}
                       </button>
                       <span class={cx("badge", MATERIAL_TYPES[m.type].badge)}>{MATERIAL_TYPES[m.type].short}</span>
@@ -368,7 +368,7 @@ function MaterialDrawer(props) {
     >
       <div class="grid gap-5">
         <Show when={error()}>
-          <p class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</p>
+          <FormError class="px-3.5 py-2.5 rounded-xl text-[14px] font-medium badge-danger !flex">{error()}</FormError>
         </Show>
 
         <Show when={isNew}>

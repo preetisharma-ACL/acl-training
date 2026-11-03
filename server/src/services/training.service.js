@@ -61,6 +61,16 @@ function notReadMessage(e, m) {
   return `Not quite done yet: ${parts.join(" and ")}.`;
 }
 
+// How far along the completion evidence is (reading time, sections seen, file
+// opened), so the percentage agrees with what completion actually needs.
+// Never 100 until the material is complete.
+function evidencePercent(e) {
+  const parts = [e.minSeconds ? e.activeSeconds / e.minSeconds : 1];
+  if (e.sectionsTotal) parts.push(e.sectionsSeen / e.sectionsTotal);
+  if (!e.fileOpened) parts.push(0);
+  return Math.min(99, Math.floor((parts.reduce((t, x) => t + Math.min(1, x), 0) / parts.length) * 100));
+}
+
 const progressOut = (p, m) => {
   const complete = isComplete(p, m);
   const e = evidence(p, m);
@@ -69,7 +79,7 @@ const progressOut = (p, m) => {
     completed: complete,
     // Completed an older version that must be read again.
     outdated: !!p?.completed && !complete,
-    percent: complete ? 100 : p?.completed ? 0 : p?.percent ?? 0,
+    percent: complete ? 100 : p ? evidencePercent(e) : 0,
     lastOpenedAt: p?.lastOpenedAt ?? null,
     completedAt: complete ? p.completedAt : null,
     completedVersion: p?.completedVersion ?? null,
@@ -159,9 +169,11 @@ export async function moduleState(user, db = prisma) {
   // The condition that blocks the test, by priority: training first, then
   // whether a test exists and is open, then attempts. (Without a test there
   // are also "0 attempts left", but that isn't the reason.)
-  const blocker = BLOCK_ORDER.map((id) => conditions.find((c) => c.id === id)).find((c) => c && !c.met)?.id ?? null;
+  // A pass ends the test: no retakes (an admin voiding the pass reopens it).
+  const passed = graded.some((a) => a.passed);
+  const blocker = passed ? "passed" : (BLOCK_ORDER.map((id) => conditions.find((c) => c.id === id)).find((c) => c && !c.met)?.id ?? null);
 
-  return { org, materials, progressBy, required, completedRequired, requiredTotal, completedRequiredMaterials, requiredCourses: courses, completedRequiredCourses, assessment, attempts, graded, inProgress, maxAttempts, attemptsLeft, bankSize, questionCount, conditions, blocker, eligible: !!org && conditions.every((c) => c.met) };
+  return { org, materials, progressBy, required, completedRequired, requiredTotal, completedRequiredMaterials, requiredCourses: courses, completedRequiredCourses, assessment, attempts, graded, inProgress, maxAttempts, attemptsLeft, bankSize, questionCount, conditions, blocker, eligible: !!org && !passed && conditions.every((c) => c.met) };
 }
 
 export async function getModule(user) {
@@ -209,7 +221,10 @@ export async function getModule(user) {
     requiredCourses: s.requiredCourses.length,
     completedRequiredCourses: s.completedRequiredCourses,
     completedTotal: materials.filter((m) => m.progress.completed).length,
-    readingMinutesLeft: materials.filter((m) => !m.progress.completed).reduce((t, m) => t + m.estMinutes, 0),
+    // The estimate, less the reading time already recorded (0 once it's met).
+    readingMinutesLeft: materials
+      .filter((m) => !m.progress.completed)
+      .reduce((t, { estMinutes, progress: { requirement: r } }) => t + Math.ceil(estMinutes * (1 - Math.min(1, r.activeSeconds / r.minSeconds))), 0),
     conditions: s.conditions,
     blocker: s.blocker,
     eligible: s.eligible && !s.inProgress,

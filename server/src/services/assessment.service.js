@@ -7,6 +7,7 @@
 // the deadline and flagged auto-submitted — whether the browser submits late,
 // or never comes back (finalised lazily on the user's next request).
 
+import crypto from "node:crypto";
 import { prisma } from "../config/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { levelKey } from "../utils/levels.js";
@@ -25,6 +26,7 @@ export const NOT_ELIGIBLE_MESSAGE = {
   materials: "Finish your required training first.",
   attempts: "You've used all your attempts. Your training admin can give you another one.",
   questions: "This test isn't ready yet. Ask your training admin.",
+  passed: "You've already passed this test.",
 };
 
 const graceEnd = (a) => new Date(a.expiresAt.getTime() + GRACE_SECONDS * 1000);
@@ -179,14 +181,19 @@ export async function start(user) {
             displayNumber: s.attempts.length + 1,
           },
           questions: {
-            create: picked.map((q, position) => ({
-              questionId: q.questionId,
-              position,
-              text: q.text,
-              explanation: q.explanation,
-              options: q.options,
-              correctOptionId: q.correctOptionId,
-            })),
+            create: picked.map((q, position) => {
+              // Opaque option ids per attempt: the bank's ids can give away
+              // the options' original order.
+              const ids = new Map(q.options.map((o) => [o.id, crypto.randomBytes(8).toString("hex")]));
+              return {
+                questionId: q.questionId,
+                position,
+                text: q.text,
+                explanation: q.explanation,
+                options: q.options.map((o) => ({ id: ids.get(o.id), text: o.text })),
+                correctOptionId: ids.get(q.correctOptionId),
+              };
+            }),
           },
         },
         include: WITH_QUESTIONS,
@@ -265,7 +272,10 @@ export async function submit(user, id, body) {
 
 // ── Results ─────────────────────────────────────────────────────────────────
 
-function reviewOut(a) {
+// reveal: show the correct option (and explanation). Employees only get it
+// once they've passed or have no attempts left, so a failed attempt can't be
+// used to memorise the bank before a retake; until then, right/wrong only.
+function reviewOut(a, reveal) {
   const chosenBy = new Map(a.answers.map((x) => [x.attemptQuestionId, x.selectedOptionId]));
   return a.questions.map((q) => {
     const chosenId = chosenBy.get(q.id) ?? null;
@@ -277,9 +287,9 @@ function reviewOut(a) {
       text: q.text,
       options: q.options.map((o) => o.text),
       chosen: chosen >= 0 ? chosen : null,
-      correctIndex,
+      correctIndex: reveal ? correctIndex : null,
       isCorrect: chosen >= 0 && chosen === correctIndex,
-      explanation: q.explanation,
+      explanation: reveal ? q.explanation : null,
     };
   });
 }
@@ -290,14 +300,18 @@ export async function getResult(viewer, id, { admin = false } = {}) {
   if (!a || (!admin && a.userId !== viewer.id)) throw ApiError.notFound("Result not found.");
   if (a.status !== "SUBMITTED") throw ApiError.conflict("This attempt is still running.", { code: "ATTEMPT_RUNNING" });
 
-  const [standing, history] = await Promise.all([
+  const [standing, history, assessment, used] = await Promise.all([
     departmentStanding(a.config?.departmentId, a.userId),
     prisma.attempt.findMany({ where: { userId: a.userId, assessmentId: a.assessmentId, status: "SUBMITTED", ...(admin ? {} : COUNTED_ATTEMPT) }, orderBy: { submittedAt: "desc" } }),
+    prisma.assessment.findUnique({ where: { id: a.assessmentId }, select: { maxAttempts: true } }),
+    prisma.attempt.count({ where: { userId: a.userId, assessmentId: a.assessmentId, ...COUNTED_ATTEMPT } }),
   ]);
+  const reveal = admin || history.some((h) => h.passed && !h.voidedAt) || used >= (assessment?.maxAttempts ?? 0);
   return {
     ...attemptSummaryOut(a),
     questionIds: a.questions.map((q) => q.id),
-    review: reviewOut(a),
+    review: reviewOut(a, reveal),
+    answersHidden: !reveal,
     standing,
     history: history.map(attemptSummaryOut),
     certificate: a.passed && !a.voidedAt ? { available: true, url: `/api/v1/training/attempts/${a.id}/certificate` } : { available: false, url: null },

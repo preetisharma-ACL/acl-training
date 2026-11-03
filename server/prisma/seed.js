@@ -47,20 +47,25 @@ const DEPARTMENT_META = {
 const DESIGNATIONS = [
   ["acc-exec", "Accounts Executive", "account", "JUNIOR"],
   ["acc-sr", "Senior Accountant", "account", "SENIOR"],
+  ["acc-lead", "Accounts Lead", "account", "TEAM_HEAD"],
   ["sales-exec", "Sales Executive", "sales", "JUNIOR"],
   ["sales-mgr", "Sales Manager", "sales", "TEAM_HEAD"],
   ["coord", "Client Coordinator", "coordination", "JUNIOR"],
   ["coord-lead", "Coordination Lead", "coordination", "TEAM_HEAD"],
   ["writer", "Content Writer", "content", "JUNIOR"],
   ["strategist", "Content Strategist", "content", "SENIOR"],
+  ["content-lead", "Content Lead", "content", "TEAM_HEAD"],
   ["seo-exec", "SEO Executive", "seo", "JUNIOR"],
   ["seo-analyst", "SEO Analyst", "seo", "SENIOR"],
+  ["seo-lead", "SEO Lead", "seo", "TEAM_HEAD"],
   ["cm", "Campaign Manager", "operation", "JUNIOR"],
   ["scm", "Senior Campaign Manager", "operation", "SENIOR"],
+  ["ops-lead", "Operations Lead", "operation", "TEAM_HEAD"],
   ["hr-exec", "HR Executive", "hr", "JUNIOR"],
   ["hr-mgr", "HR Manager", "hr", "TEAM_HEAD"],
   ["crm-exec", "CRM Executive", "crm_dashboard", "JUNIOR"],
   ["dash-analyst", "Dashboard Analyst", "crm_dashboard", "SENIOR"],
+  ["crm-lead", "CRM / Dashboard Lead", "crm_dashboard", "TEAM_HEAD"],
 ];
 
 const LOCATIONS = ["Lucknow", "Noida", "Kolkata"];

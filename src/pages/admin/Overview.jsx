@@ -154,7 +154,7 @@ export default function Overview() {
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section class="card p-5 sm:p-6">
-          <SectionTitle title="Top performers" subtitle="Best score per employee" action={<Crown size={18} class="text-lime-600 dark:text-lime-300" />} />
+          <SectionTitle title="Top performers" subtitle="Best passing score per employee" action={<Crown size={18} class="text-lime-600 dark:text-lime-300" />} />
           <ol class="mt-4 grid gap-1">
             <For
               each={data()?.topPerformers}
@@ -238,12 +238,13 @@ export default function Overview() {
               ticks={[0, 25, 50, 75, 100]}
               reference={70}
               referenceLabel="Pass mark 70%"
-              format={(v) => `${v}%`}
+              format={(v) => (v == null ? "No attempts yet" : `${v}%`)}
+              emptyLabel="No attempts"
               data={data().departments.map((d) => ({
                 label: d.name,
                 short: d.name.split(" (")[0],
                 value: d.avgScore,
-                tooltip: `avg ${d.avgScore}% · ${d.passRate}% pass rate · ${d.certified}/${d.employees} certified`,
+                tooltip: d.avgScore == null ? `No attempts yet · ${d.certified}/${d.employees} certified` : `avg ${d.avgScore}% · ${d.passRate}% pass rate · ${d.certified}/${d.employees} certified`,
               }))}
             />
             </Show>

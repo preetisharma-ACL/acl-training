@@ -132,7 +132,7 @@ function guardAdminChange(req, target, nextRole) {
 
 async function checkEmailFree(email, exceptId) {
   const clash = await prisma.user.findFirst({ where: { email, ...(exceptId ? { id: { not: exceptId } } : {}) } });
-  if (clash) throw ApiError.conflict("Another user already has this email address.");
+  if (clash) throw ApiError.conflict("Another user already has this email address.", { code: "EMAIL_TAKEN" });
 }
 
 async function checkDesignation(designationId) {

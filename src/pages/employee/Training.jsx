@@ -7,6 +7,7 @@ import { createResource, For, Show } from "solid-js";
 import { ArrowRight, Download, ExternalLink, Lock, LockOpen, CircleCheck, Play, Eye, BookOpen, Trophy } from "lucide-solid";
 import { Link, navigate } from "../../lib/router";
 import { cx } from "../../lib/format";
+import { requiredLeft, requiredSplit } from "../../lib/progress";
 import { user } from "../../store/auth";
 import { toast } from "../../store/toast";
 import { getMyModule, getMaterial, getMaterialFile } from "../../services/training";
@@ -46,7 +47,7 @@ export default function Training() {
   return (
     <div class="grid gap-5 max-w-[960px] mx-auto">
       <div class="hidden md:block">
-        <p class="kicker mb-2">Step 1 of 3</p>
+        <p class="kicker mb-2">Step 1 of 4</p>
         <h1 class="text-[28px] font-semibold tracking-[-0.025em]">Your training</h1>
         <p class="mt-1.5 text-[15px] text-muted">Open each required module and watch the required video courses. Your test unlocks when they're all complete.</p>
       </div>
@@ -142,7 +143,7 @@ function StatusBanner(props) {
               : state() === "passed"
                 ? "You've passed your test"
                 : state() === "reading"
-                  ? `${props.left} module${props.left === 1 ? "" : "s"} left before your test`
+                  ? `${requiredLeft(mod())} left before your test`
                   : state() === "none"
                     ? "No test assigned yet"
                     : "Your test isn't available right now"}
@@ -153,7 +154,7 @@ function StatusBanner(props) {
               : state() === "passed"
                 ? "Your modules stay here for reference."
                 : state() === "reading"
-                  ? "Complete the required modules below to unlock it."
+                  ? `Still to finish: ${requiredSplit(mod())}. Your test unlocks when they're done.`
                   : "Open the Test tab for details."}
           </p>
         </div>

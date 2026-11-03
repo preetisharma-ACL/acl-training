@@ -86,16 +86,48 @@ describe("grading", () => {
     expect(r.body.data).toMatchObject({ correct: 0, incorrect: 4, unanswered: 0, percentage: 0, passed: false });
 
     att = (await start(a)).body.data;
+    r = await submit(a, att.id, { answers: {} });
+    expect(r.body.data).toMatchObject({ correct: 0, unanswered: 4, passed: false });
+
+    att = (await start(a)).body.data;
     const right = correctAnswers(att);
     const wrong = wrongAnswers(att);
     const [q1, q2, q3] = att.questions.map((q) => q.id);
     r = await submit(a, att.id, { answers: { [q1]: right[q1], [q2]: right[q2], [q3]: wrong[q3] } });
     expect(r.body.data).toMatchObject({ correct: 2, incorrect: 1, unanswered: 1, percentage: 50, passed: true });
     expect(r.body.data.review.find((x) => x.id === att.questions[3].id).chosen).toBeNull();
+  });
 
+  it("refuses a retake once the test is passed", async () => {
+    const { a } = await ready({ maxAttempts: 3 });
+    const att = (await start(a)).body.data;
+    await submit(a, att.id, { answers: correctAnswers(att) });
+    const again = await start(a);
+    expect(again.status).toBe(403);
+    expect(again.body.error).toMatchObject({ code: "NOT_ELIGIBLE", details: { condition: "passed" } });
+    const m = (await a.get("/api/v1/training/module")).body.data;
+    expect(m).toMatchObject({ eligible: false, blocker: "passed", stage: "done" });
+  });
+
+  it("hides the correct options after a failed attempt until passing or the last attempt", async () => {
+    const { a } = await ready({ maxAttempts: 2 });
+    let att = (await start(a)).body.data;
+    let r = (await submit(a, att.id, { answers: wrongAnswers(att) })).body.data;
+    expect(r.answersHidden).toBe(true);
+    expect(r.review.every((x) => x.correctIndex === null && x.explanation === null && x.isCorrect === false)).toBe(true);
+
+    // Last attempt used: everything is revealed, on this result and the earlier one.
     att = (await start(a)).body.data;
-    r = await submit(a, att.id, { answers: {} });
-    expect(r.body.data).toMatchObject({ correct: 0, unanswered: 4, passed: false });
+    r = (await submit(a, att.id, { answers: wrongAnswers(att) })).body.data;
+    expect(r.answersHidden).toBe(false);
+    expect(r.review.every((x) => Number.isInteger(x.correctIndex))).toBe(true);
+    expect((await a.get(`/api/v1/training/attempts/${r.history[1].id}`)).body.data.answersHidden).toBe(false);
+  });
+
+  it("gives each attempt its own opaque option ids", async () => {
+    const { a } = await ready();
+    const att = (await start(a)).body.data;
+    for (const q of att.questions) for (const o of q.options) expect(o.id).toMatch(/^[a-f0-9]{16}$/);
   });
 
   it("ignores client-sent scores and timing", async () => {
