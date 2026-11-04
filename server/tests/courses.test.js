@@ -119,6 +119,15 @@ describe("admin course builder", () => {
     expect((await ad.delete(`/api/v1/admin/courses/${used.id}`)).body.data).toEqual({ archived: true });
   });
 
+  it("admins can preview any course in the player (drafts too) without recording progress", async () => {
+    const draft = (await create({ title: "Preview me", status: "draft" })).body.data;
+    const r = await ad.get(`/api/v1/training/courses/${draft.id}`);
+    expect(r.status).toBe(200);
+    expect(r.body.data.sections[0].lessons[0].progress).toMatchObject({ opened: false, completed: false });
+    expect((await ad.post(`/api/v1/training/lessons/${draft.sections[0].lessons[0].id}/progress`).send({})).status).toBe(403);
+    expect(await prisma.lessonProgress.count({ where: { lessonId: draft.sections[0].lessons[0].id } })).toBe(0);
+  });
+
   it("is admin-only", async () => {
     const a = await signedIn(await makeUser({ designationId: track.designation.id }));
     expect((await a.get("/api/v1/admin/courses")).status).toBe(403);

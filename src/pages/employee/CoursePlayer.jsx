@@ -8,13 +8,17 @@
 // heartbeat with the watched ranges goes to the server every 10 s while
 // playing, and on pause, end, switching video and leaving the page. The
 // server credits it (capped to real time) and decides completion (90%).
+//
+// Also used by admins (/admin/courses/:id) as a preview: the same player,
+// any course (drafts too), no progress tracked.
 
 import { createResource, createSignal, createEffect, onMount, onCleanup, For, Show, batch } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
-import { ArrowLeft, ChevronDown, CircleCheck, PlayCircle, Circle, SkipForward, SkipBack, Trophy, MonitorPlay, TriangleAlert } from "lucide-solid";
+import { ArrowLeft, ChevronDown, CircleCheck, PlayCircle, Circle, SkipForward, SkipBack, Trophy, MonitorPlay, TriangleAlert, Eye } from "lucide-solid";
 import { Link, navigate, query } from "../../lib/router";
 import { cx } from "../../lib/format";
 import { toast } from "../../store/toast";
+import { isAdmin } from "../../store/auth";
 import { getMyCourse, saveLessonProgress } from "../../services/training";
 import { loadYouTubeApi, clock, totalLength } from "../../lib/youtube";
 import { createWatchTracker } from "../../lib/watch";
@@ -34,6 +38,8 @@ const EMBED_ERRORS = {
 
 export default function CoursePlayer(props) {
   guardPage();
+  const admin = isAdmin();
+  const backHref = admin ? "/admin/courses" : "/training";
   const [data] = createResource(() => props.params.id, getMyCourse);
   const [course, setCourse] = createStore({ sections: [] });
   createEffect(() => data() && setCourse(reconcile(structuredClone(data()))));
@@ -78,6 +84,7 @@ export default function CoursePlayer(props) {
   let countdown;
 
   const send = async (lessonId, body = {}) => {
+    if (admin) return; // previews aren't tracked
     try {
       apply(lessonId, await saveLessonProgress(lessonId, body));
     } catch {
@@ -178,7 +185,7 @@ export default function CoursePlayer(props) {
   const select = (l, autoplay = true) => {
     cancelCountdown();
     setCurrentId(l.id);
-    navigate(`/courses/${props.params.id}?lesson=${l.id}`, { replace: true });
+    navigate(`${admin ? "/admin/courses" : "/courses"}/${props.params.id}?lesson=${l.id}`, { replace: true });
     show(l, autoplay);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -209,8 +216,8 @@ export default function CoursePlayer(props) {
             icon={<MonitorPlay size={24} />}
             title="Course unavailable"
             action={
-              <Link href="/training" class="btn btn-secondary">
-                <ArrowLeft size={15} /> Training
+              <Link href={backHref} class="btn btn-secondary">
+                <ArrowLeft size={15} /> {admin ? "Video courses" : "Training"}
               </Link>
             }
           >
@@ -222,14 +229,19 @@ export default function CoursePlayer(props) {
       <div class="grid gap-4">
         {/* Course bar */}
         <header class="flex items-center gap-3 px-3 sm:px-5 py-3 rounded-2xl bg-plum-950 text-white">
-          <Link href="/training" class="grid place-items-center w-9 h-9 rounded-lg hover:bg-white/10 shrink-0" aria-label="Back to Training">
+          <Link href={backHref} class="grid place-items-center w-9 h-9 rounded-lg hover:bg-white/10 shrink-0" aria-label={admin ? "Back to Video courses" : "Back to Training"}>
             <ArrowLeft size={18} />
           </Link>
           <div class="min-w-0 flex-1">
-            <p class="text-[12px] uppercase tracking-[0.14em] text-white/50">Training</p>
+            <p class="text-[12px] uppercase tracking-[0.14em] text-white/50">{admin ? "Preview · as employees see it" : "Training"}</p>
             <h1 class="text-[15px] sm:text-[17px] font-semibold truncate !text-white">{course.title ?? "Loading…"}</h1>
           </div>
-          <Show when={data()}>
+          <Show when={admin && data()}>
+            <span class="badge shrink-0 hidden sm:inline-flex !bg-white/10 !text-white">
+              <Eye size={12} /> {course.status === "draft" ? "Draft · not visible to employees" : "Progress isn't recorded"}
+            </span>
+          </Show>
+          <Show when={!admin && data()}>
             <div class="flex items-center gap-2.5 shrink-0">
               <ProgressRing value={course.percent ?? 0} size={42} stroke={4} tone="lime" trackClass="stroke-white/15">
                 <Show when={course.completed} fallback={<span class="text-[11px] font-semibold tabular">{course.percent}%</span>}>
@@ -294,17 +306,19 @@ export default function CoursePlayer(props) {
                 <h2 class="mt-1 text-[19px] sm:text-[21px] font-semibold tracking-[-0.015em]">{current().title}</h2>
                 <div class="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
                   <span class="badge badge-neutral">{clock(current().durationSeconds)}</span>
-                  <Show
-                    when={current().progress.completed}
-                    fallback={
-                      <span class="text-muted">
-                        {current().progress.percent ? `${current().progress.percent}% watched` : "Not watched yet"} · counts as complete at 90%
+                  <Show when={!admin} fallback={<span class="text-muted">Employees complete a video at 90% watched</span>}>
+                    <Show
+                      when={current().progress.completed}
+                      fallback={
+                        <span class="text-muted">
+                          {current().progress.percent ? `${current().progress.percent}% watched` : "Not watched yet"} · counts as complete at 90%
+                        </span>
+                      }
+                    >
+                      <span class="badge badge-success">
+                        <CircleCheck size={12} /> Completed
                       </span>
-                    }
-                  >
-                    <span class="badge badge-success">
-                      <CircleCheck size={12} /> Completed
-                    </span>
+                    </Show>
                   </Show>
                 </div>
                 <Show when={current().description}>
@@ -326,7 +340,7 @@ export default function CoursePlayer(props) {
                 <h3 class="text-[15px] font-semibold">About this course</h3>
                 <p class="mt-2 text-[14.5px] text-ink-2 leading-relaxed whitespace-pre-line">{course.description}</p>
                 <p class="mt-3 text-[13px] text-muted">
-                  {course.lessonsTotal} videos · {totalLength(course.durationSeconds)} · {course.required ? "Required before your test" : "Optional"}
+                  {course.lessonsTotal} videos · {totalLength(course.durationSeconds)} · {course.required ? (admin ? "Required before the test" : "Required before your test") : "Optional"}
                 </p>
               </section>
             </Show>
@@ -339,7 +353,7 @@ export default function CoursePlayer(props) {
             </div>
             <Show when={data()} fallback={<div class="p-4 grid gap-2"><For each={[1, 2, 3]}>{() => <Skeleton class="h-14" />}</For></div>}>
               <div class="overflow-y-auto scrollbar-thin">
-                <For each={course.sections}>{(s, si) => <SectionBlock s={s} n={si() + 1} currentId={currentId()} open={current()?.si === si()} onSelect={select} />}</For>
+                <For each={course.sections}>{(s, si) => <SectionBlock s={s} n={si() + 1} admin={admin} currentId={currentId()} open={current()?.si === si()} onSelect={select} />}</For>
               </div>
             </Show>
           </aside>
@@ -360,7 +374,7 @@ function SectionBlock(props) {
             Section {props.n}: {props.s.title}
           </span>
           <span class="block mt-1 text-[12.5px] text-muted tabular">
-            {props.s.completed} / {props.s.lessons.length} | {totalLength(props.s.durationSeconds)}
+            {props.admin ? `${props.s.lessons.length} video${props.s.lessons.length === 1 ? "" : "s"}` : `${props.s.completed} / ${props.s.lessons.length}`} | {totalLength(props.s.durationSeconds)}
           </span>
         </span>
         <ChevronDown size={17} class={cx("shrink-0 mt-0.5 text-muted transition", open() && "rotate-180")} />

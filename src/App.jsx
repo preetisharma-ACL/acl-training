@@ -60,6 +60,7 @@ const ADMIN_ROUTES = [
   ["/admin/materials", AdminMaterials],
   ["/admin/materials/:id", Viewer],
   ["/admin/courses", AdminCourses],
+  ["/admin/courses/:id", CoursePlayer],
   ["/admin/assessments", AdminAssessments],
   ["/admin/assessments/:id", AdminQuestionBank],
   ["/admin/results", AdminResults],

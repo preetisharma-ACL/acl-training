@@ -5,8 +5,9 @@
 
 import { createResource, createSignal, createMemo, For, Show } from "solid-js";
 import { createStore, produce } from "solid-js/store";
-import { Plus, Pencil, Trash2, Ellipsis, MonitorPlay, Send, Users, ArrowUp, ArrowDown, Link2, Clock, ListVideo, CircleCheck, Circle, ChevronDown, Loader } from "lucide-solid";
+import { Plus, Pencil, Trash2, Ellipsis, MonitorPlay, Send, Users, ArrowUp, ArrowDown, Link2, Clock, ListVideo, CircleCheck, Circle, ChevronDown, Loader, Eye } from "lucide-solid";
 import { cx, fmtDate, fmtRelative } from "../../lib/format";
+import { navigate } from "../../lib/router";
 import { toast } from "../../store/toast";
 import { listCourses, getCourse, getCourseProgress, saveCourse, setCourseStatus, setCourseRequired, deleteCourse, listDepartments } from "../../services/admin";
 import { PageHeader, Skeleton, Toggle, Menu, MenuItem, Drawer, Field, ConfirmDialog, EmptyState, ProgressBar, SearchInput, FormError } from "../../components/ui";
@@ -68,14 +69,18 @@ export default function Courses() {
             <For each={list()}>
               {(c) => (
                 <article class="card card-hover grid grid-cols-[auto_minmax(0,1fr)] md:grid-cols-[auto_minmax(0,1fr)_170px_150px_auto] items-center gap-x-4 gap-y-3 p-4">
-                  <span class="relative block w-[88px] sm:w-[112px] aspect-video rounded-xl overflow-hidden bg-plum-950">
+                  <button class="relative block w-[88px] sm:w-[112px] aspect-video rounded-xl overflow-hidden bg-plum-950" onClick={() => navigate(`/admin/courses/${c.id}`)} aria-label={`Preview ${c.title}`} tabindex="-1">
                     <Show when={c.thumbnail}>
                       <img src={thumbnail(c.thumbnail)} alt="" loading="lazy" class="w-full h-full object-cover" />
                     </Show>
-                  </span>
+                  </button>
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                      <h2 class="min-w-0 text-[15.5px] font-semibold line-clamp-2 break-words" title={c.title}>{c.title}</h2>
+                      <h2 class="min-w-0 text-[15.5px] font-semibold line-clamp-2 break-words" title={c.title}>
+                        <button class="text-left hover:text-plum-700 dark:hover:text-lime-300" onClick={() => navigate(`/admin/courses/${c.id}`)}>
+                          {c.title}
+                        </button>
+                      </h2>
                       <Show when={c.status === "draft"}>
                         <span class="badge badge-warn">Draft · not visible to employees</span>
                       </Show>
@@ -98,6 +103,9 @@ export default function Courses() {
                     {c.required ? "Required" : "Optional"}
                   </label>
                   <div class="flex items-center gap-1 justify-end">
+                    <button class="btn btn-secondary btn-sm" onClick={() => navigate(`/admin/courses/${c.id}`)} disabled={!c.lessonsCount} title={c.lessonsCount ? undefined : "Add a video first"}>
+                      <Eye size={14} /> Preview
+                    </button>
                     <button class="btn btn-secondary btn-sm" onClick={() => setWatching(c)}>
                       <Users size={14} /> Progress
                     </button>
