@@ -12,7 +12,7 @@ import { toast } from "../../store/toast";
 import { listCourses, getCourse, getCourseProgress, saveCourse, setCourseStatus, setCourseRequired, deleteCourse, listDepartments } from "../../services/admin";
 import { PageHeader, Skeleton, Toggle, Menu, MenuItem, Drawer, Field, ConfirmDialog, EmptyState, ProgressBar, SearchInput, FormError } from "../../components/ui";
 import { LEVELS } from "../../lib/levels";
-import { youtubeId, thumbnail, clock, totalLength } from "../../lib/youtube";
+import { youtubeId, thumbnail, clock, totalLength, parseClock } from "../../lib/youtube";
 import { probeVideo } from "../../lib/ytProbe";
 import { courseToForm, formToPayload, formProblems, blankLesson, blankSection, move } from "../../lib/courseForm";
 
@@ -197,6 +197,20 @@ function CourseBuilder(props) {
 
   const toggleLevel = (k, on) => setF("levels", on ? [...new Set([...f.levels, k])] : f.levels.filter((x) => x !== k));
 
+  // Collapsed sections, by key (so it follows a section when it's moved).
+  // Existing multi-section courses open collapsed; new sections open expanded.
+  const [collapsed, setCollapsed] = createSignal(new Set(!isNew && f.sections.length > 1 ? f.sections.map((s) => s.key) : []));
+  const isOpen = (s) => !collapsed().has(s.key);
+  const setOpen = (keys, open) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      for (const k of keys) open ? next.delete(k) : next.add(k);
+      return next;
+    });
+  const allOpen = () => f.sections.every(isOpen);
+  const sectionInvalid = (si) => Object.keys(problems()).some((k) => k === `s${si}` || k.startsWith(`s${si}l`));
+  const sectionSeconds = (s) => s.lessons.reduce((t, l) => t + (parseClock(l.duration) ?? 0), 0);
+
   // Fill in the length (and title, if empty) from YouTube.
   const probe = async (si, li) => {
     const l = f.sections[si]?.lessons[li];
@@ -235,6 +249,8 @@ function CourseBuilder(props) {
   const save = async (status) => {
     setTouched(true);
     if (Object.keys(problems()).length) {
+      // Open any collapsed section with a problem, so nothing red is hidden.
+      setOpen(f.sections.filter((_, si) => sectionInvalid(si)).map((s) => s.key), true);
       setError("Some fields need attention — they're marked in red.");
       return;
     }
@@ -353,12 +369,29 @@ function CourseBuilder(props) {
 
         {/* Sections → videos */}
         <div class="grid gap-4">
-          <p class="label !mb-0">Course content</p>
+          <div class="flex items-center justify-between gap-3">
+            <p class="label !mb-0">Course content</p>
+            <Show when={f.sections.length > 1}>
+              <button type="button" class="btn btn-ghost btn-sm" onClick={() => setOpen(f.sections.map((s) => s.key), !allOpen())}>
+                <ChevronDown size={14} class={cx("transition", allOpen() && "rotate-180")} /> {allOpen() ? "Collapse all" : "Expand all"}
+              </button>
+            </Show>
+          </div>
           <For each={f.sections}>
             {(s, si) => (
               <section class="rounded-2xl border border-line p-3 sm:p-4 grid gap-3 bg-sunken/30">
                 <div class="flex items-center gap-2">
-                  <span class="shrink-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-muted">Section {si() + 1}</span>
+                  <button
+                    type="button"
+                    class="shrink-0 flex items-center gap-1.5 -ml-1 pl-1 pr-1.5 h-8 rounded-lg text-[12px] font-semibold uppercase tracking-[0.1em] text-muted hover:text-ink hover:bg-sunken transition"
+                    onClick={() => setOpen([s.key], !isOpen(s))}
+                    aria-expanded={isOpen(s)}
+                    aria-controls={`c-sec-${s.key}`}
+                    aria-label={`${isOpen(s) ? "Collapse" : "Expand"} section ${si() + 1}`}
+                  >
+                    <ChevronDown size={15} class={cx("transition", !isOpen(s) && "-rotate-90")} />
+                    Section {si() + 1}
+                  </button>
                   <input
                     class={cx("input flex-1 min-w-0", err(`s${si()}`) && "input-invalid")}
                     placeholder="Section title, e.g. Intro to Facebook marketing"
@@ -380,75 +413,94 @@ function CourseBuilder(props) {
                   <p class="error-text !mt-0">{err(`s${si()}`)}</p>
                 </Show>
 
-                <For each={s.lessons}>
-                  {(l, li) => {
-                    const id = () => youtubeId(l.video);
-                    const k = () => `s${si()}l${li()}`;
-                    return (
-                      <div class={cx("rounded-xl border bg-surface p-3 grid gap-2.5", err(k()) ? "border-crimson-400" : "border-line")}>
-                        <div class="flex items-start gap-3">
-                          <span class="shrink-0 w-[96px] aspect-video rounded-lg overflow-hidden bg-plum-950 grid place-items-center text-white/50">
-                            <Show when={id()} fallback={<MonitorPlay size={18} />}>
-                              <img src={thumbnail(id())} alt="" class="w-full h-full object-cover" />
-                            </Show>
-                          </span>
-                          <div class="flex-1 min-w-0 grid gap-2">
-                            <div class="relative">
-                              <Link2 size={15} class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
-                              <input
-                                class="input pl-9"
-                                inputmode="url"
-                                placeholder="YouTube link, e.g. https://youtu.be/…"
-                                aria-label={`Video ${li() + 1} link`}
-                                value={l.video}
-                                onInput={(e) => setF("sections", si(), "lessons", li(), { video: e.currentTarget.value, probeError: null })}
-                                onChange={() => probe(si(), li())}
-                              />
+                <Show
+                  when={isOpen(s)}
+                  fallback={
+                    <button type="button" class="flex flex-wrap items-center gap-x-2 gap-y-1 text-left text-[13px] text-muted hover:text-ink transition" onClick={() => setOpen([s.key], true)}>
+                      <ListVideo size={14} class="shrink-0" />
+                      <span class="tabular">
+                        {s.lessons.length} video{s.lessons.length === 1 ? "" : "s"}
+                        {sectionSeconds(s) > 0 ? ` · ${totalLength(sectionSeconds(s))}` : ""}
+                      </span>
+                      <Show when={touched() && sectionInvalid(si())}>
+                        <span class="badge badge-danger">Needs attention</span>
+                      </Show>
+                      <span class="font-medium text-plum-700 dark:text-lime-300">Show videos</span>
+                    </button>
+                  }
+                >
+                  <div id={`c-sec-${s.key}`} class="grid gap-3">
+                    <For each={s.lessons}>
+                      {(l, li) => {
+                        const id = () => youtubeId(l.video);
+                        const k = () => `s${si()}l${li()}`;
+                        return (
+                          <div class={cx("rounded-xl border bg-surface p-3 grid gap-2.5", err(k()) ? "border-crimson-400" : "border-line")}>
+                            <div class="flex items-start gap-3">
+                              <span class="shrink-0 w-[96px] aspect-video rounded-lg overflow-hidden bg-plum-950 grid place-items-center text-white/50">
+                                <Show when={id()} fallback={<MonitorPlay size={18} />}>
+                                  <img src={thumbnail(id())} alt="" class="w-full h-full object-cover" />
+                                </Show>
+                              </span>
+                              <div class="flex-1 min-w-0 grid gap-2">
+                                <div class="relative">
+                                  <Link2 size={15} class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+                                  <input
+                                    class="input pl-9"
+                                    inputmode="url"
+                                    placeholder="YouTube link, e.g. https://youtu.be/…"
+                                    aria-label={`Video ${li() + 1} link`}
+                                    value={l.video}
+                                    onInput={(e) => setF("sections", si(), "lessons", li(), { video: e.currentTarget.value, probeError: null })}
+                                    onChange={() => probe(si(), li())}
+                                  />
+                                </div>
+                                <input class="input" placeholder="Video title" aria-label={`Video ${li() + 1} title`} value={l.title} onInput={(e) => setF("sections", si(), "lessons", li(), "title", e.currentTarget.value)} />
+                              </div>
+                              <div class="shrink-0 flex flex-col gap-1">
+                                <button type="button" class="btn btn-ghost btn-icon !w-8 !h-8" disabled={li() === 0} onClick={() => setF("sections", si(), "lessons", move(s.lessons, li(), -1))} aria-label="Move video up">
+                                  <ArrowUp size={14} />
+                                </button>
+                                <button type="button" class="btn btn-ghost btn-icon !w-8 !h-8" disabled={li() === s.lessons.length - 1} onClick={() => setF("sections", si(), "lessons", move(s.lessons, li(), 1))} aria-label="Move video down">
+                                  <ArrowDown size={14} />
+                                </button>
+                                <button type="button" class="btn btn-ghost btn-icon !w-8 !h-8 hover:!text-crimson-600" disabled={s.lessons.length === 1} onClick={() => setF("sections", si(), "lessons", s.lessons.filter((_, j) => j !== li()))} aria-label="Delete video">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             </div>
-                            <input class="input" placeholder="Video title" aria-label={`Video ${li() + 1} title`} value={l.title} onInput={(e) => setF("sections", si(), "lessons", li(), "title", e.currentTarget.value)} />
+                            <div class="flex flex-wrap items-center gap-2">
+                              <div class="relative w-[120px]">
+                                <Clock size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+                                <input class="input pl-8 !h-9 tabular" placeholder="mm:ss" aria-label={`Video ${li() + 1} length`} value={l.duration} onInput={(e) => setF("sections", si(), "lessons", li(), "duration", e.currentTarget.value)} />
+                              </div>
+                              <Show when={l.probing}>
+                                <span class="inline-flex items-center gap-1.5 text-[12.5px] text-muted">
+                                  <Loader size={13} class="animate-spin" /> Reading from YouTube…
+                                </span>
+                              </Show>
+                              <Show when={id() && !l.probing && !l.duration}>
+                                <button type="button" class="btn btn-ghost btn-sm" onClick={() => probe(si(), li())}>
+                                  Read length from YouTube
+                                </button>
+                              </Show>
+                            </div>
+                            <textarea rows="2" class="input text-[13.5px]" placeholder="Short description (optional)" aria-label={`Video ${li() + 1} description`} value={l.description} onInput={(e) => setF("sections", si(), "lessons", li(), "description", e.currentTarget.value)} />
+                            <Show when={l.probeError}>
+                              <p class="text-[12.5px] font-medium text-amber-700 dark:text-amber-300">{l.probeError}</p>
+                            </Show>
+                            <Show when={err(k())}>
+                              <p class="error-text !mt-0">{err(k())}</p>
+                            </Show>
                           </div>
-                          <div class="shrink-0 flex flex-col gap-1">
-                            <button type="button" class="btn btn-ghost btn-icon !w-8 !h-8" disabled={li() === 0} onClick={() => setF("sections", si(), "lessons", move(s.lessons, li(), -1))} aria-label="Move video up">
-                              <ArrowUp size={14} />
-                            </button>
-                            <button type="button" class="btn btn-ghost btn-icon !w-8 !h-8" disabled={li() === s.lessons.length - 1} onClick={() => setF("sections", si(), "lessons", move(s.lessons, li(), 1))} aria-label="Move video down">
-                              <ArrowDown size={14} />
-                            </button>
-                            <button type="button" class="btn btn-ghost btn-icon !w-8 !h-8 hover:!text-crimson-600" disabled={s.lessons.length === 1} onClick={() => setF("sections", si(), "lessons", s.lessons.filter((_, j) => j !== li()))} aria-label="Delete video">
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                          <div class="relative w-[120px]">
-                            <Clock size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
-                            <input class="input pl-8 !h-9 tabular" placeholder="mm:ss" aria-label={`Video ${li() + 1} length`} value={l.duration} onInput={(e) => setF("sections", si(), "lessons", li(), "duration", e.currentTarget.value)} />
-                          </div>
-                          <Show when={l.probing}>
-                            <span class="inline-flex items-center gap-1.5 text-[12.5px] text-muted">
-                              <Loader size={13} class="animate-spin" /> Reading from YouTube…
-                            </span>
-                          </Show>
-                          <Show when={id() && !l.probing && !l.duration}>
-                            <button type="button" class="btn btn-ghost btn-sm" onClick={() => probe(si(), li())}>
-                              Read length from YouTube
-                            </button>
-                          </Show>
-                        </div>
-                        <textarea rows="2" class="input text-[13.5px]" placeholder="Short description (optional)" aria-label={`Video ${li() + 1} description`} value={l.description} onInput={(e) => setF("sections", si(), "lessons", li(), "description", e.currentTarget.value)} />
-                        <Show when={l.probeError}>
-                          <p class="text-[12.5px] font-medium text-amber-700 dark:text-amber-300">{l.probeError}</p>
-                        </Show>
-                        <Show when={err(k())}>
-                          <p class="error-text !mt-0">{err(k())}</p>
-                        </Show>
-                      </div>
-                    );
-                  }}
-                </For>
-                <button type="button" class="btn btn-secondary btn-sm justify-self-start" onClick={() => setF("sections", si(), "lessons", [...s.lessons, blankLesson()])}>
-                  <Plus size={14} /> Add video
-                </button>
+                        );
+                      }}
+                    </For>
+                    <button type="button" class="btn btn-secondary btn-sm justify-self-start" onClick={() => setF("sections", si(), "lessons", [...s.lessons, blankLesson()])}>
+                      <Plus size={14} /> Add video
+                    </button>
+                  </div>
+                </Show>
               </section>
             )}
           </For>
