@@ -3,7 +3,7 @@
 
 import { prisma } from "../config/db.js";
 import { ApiError } from "../utils/ApiError.js";
-import { audit } from "./audit.service.js";
+import { audit, changes } from "./audit.service.js";
 
 const byName = { orderBy: { name: "asc" } };
 
@@ -40,7 +40,7 @@ async function checkNameFree(name, exceptId) {
 export async function create(req, { name }) {
   await checkNameFree(name);
   const l = await prisma.location.create({ data: { name } });
-  await audit(req, "LOCATION_CREATED", "Location", l.id, { name });
+  await audit(req, "LOCATION_CREATED", "Location", l.id, { label: name });
   return l;
 }
 
@@ -52,7 +52,7 @@ export async function update(req, id, { name }) {
     prisma.user.updateMany({ where: { location: current.name }, data: { location: name } }),
     prisma.department.updateMany({ where: { location: current.name }, data: { location: name } }),
   ]);
-  await audit(req, "LOCATION_UPDATED", "Location", id, { from: current.name, to: name, users: users.count, departments: departments.count });
+  await audit(req, "LOCATION_UPDATED", "Location", id, { label: name, changes: changes({ name: current.name }, { name }), users: users.count, departments: departments.count });
   return l;
 }
 
@@ -64,7 +64,7 @@ export async function remove(req, id) {
     throw ApiError.conflict(`${l.name} is still used by ${parts.join(" and ")}. Move them to another location first.`);
   }
   await prisma.location.delete({ where: { id } });
-  await audit(req, "LOCATION_DELETED", "Location", id, { name: l.name });
+  await audit(req, "LOCATION_DELETED", "Location", id, { label: l.name });
 }
 
 async function getOr404(id) {

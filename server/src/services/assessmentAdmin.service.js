@@ -6,7 +6,26 @@ import { ApiError } from "../utils/ApiError.js";
 import { levelKey, levelPlural, toLevelEnum } from "../utils/levels.js";
 import { GRADED_ATTEMPT } from "./assignment.service.js";
 import { defaultAssessment } from "./department.service.js";
-import { audit } from "./audit.service.js";
+import { audit, changes } from "./audit.service.js";
+
+// What the activity log compares on an edit.
+const settingsSnap = (a) => {
+  const { title, description, passPercent, marksPerQuestion, maxAttempts, questionsPerAttempt, durationMinutes, shuffle, active } = assessmentSettingsOut(a);
+  return { title, description, passPercent, marksPerQuestion, maxAttempts, questionsPerAttempt, durationMinutes, shuffle, active };
+};
+const questionSnap = (q) => {
+  const opts = [...q.options].sort((x, y) => x.position - y.position);
+  return {
+    question: q.text,
+    options: opts.map((o) => o.text),
+    answer: opts.find((o) => o.isCorrect)?.text ?? null,
+    explanation: q.explanation,
+    difficulty: q.difficulty.toLowerCase(),
+    active: q.active,
+  };
+};
+const short = (t) => (t.length > 90 ? `${t.slice(0, 90)}…` : t);
+const assessmentTitle = async (id) => (await prisma.assessment.findUnique({ where: { id }, select: { title: true } }))?.title ?? null;
 
 export function assessmentSettingsOut(a) {
   return {
@@ -78,7 +97,7 @@ export async function create(req, input) {
   const base = defaultAssessment(dept, level);
   if (await prisma.assessment.findUnique({ where: { id: base.id } })) delete base.id;
   const a = await prisma.assessment.create({ data: { ...base, ...toData(input) } });
-  await audit(req, "ASSESSMENT_CREATED", "Assessment", a.id, { departmentId: dept.id, level });
+  await audit(req, "ASSESSMENT_CREATED", "Assessment", a.id, { label: a.title, department: dept.name, ...settingsSnap(a) });
   return assessmentSettingsOut(a);
 }
 
@@ -88,7 +107,7 @@ export async function update(req, id, patch) {
   const before = await prisma.assessment.findUnique({ where: { id } });
   if (!before) throw ApiError.notFound("Assessment not found.");
   const a = await prisma.assessment.update({ where: { id }, data: toData(patch) });
-  await audit(req, "ASSESSMENT_UPDATED", "Assessment", id, { before: assessmentSettingsOut(before), patch });
+  await audit(req, "ASSESSMENT_UPDATED", "Assessment", id, { label: a.title, changes: changes(settingsSnap(before), settingsSnap(a)) });
   return assessmentSettingsOut(a);
 }
 
@@ -97,7 +116,7 @@ export async function remove(req, id) {
   if (!a) throw ApiError.notFound("Assessment not found.");
   if (await prisma.attempt.count({ where: { assessmentId: id } })) throw ApiError.conflict("This assessment has attempts. Deactivate it instead of deleting it.");
   await prisma.$transaction([prisma.question.deleteMany({ where: { assessmentId: id } }), prisma.assessment.delete({ where: { id } })]);
-  await audit(req, "ASSESSMENT_DELETED", "Assessment", id, { departmentId: a.departmentId, level: a.level });
+  await audit(req, "ASSESSMENT_DELETED", "Assessment", id, { label: a.title });
 }
 
 // ── Question bank ───────────────────────────────────────────────────────────
@@ -157,7 +176,7 @@ export async function createQuestion(req, assessmentId, input) {
     },
     include: { options: true },
   });
-  await audit(req, "QUESTION_CREATED", "Question", q.id, { assessmentId });
+  await audit(req, "QUESTION_CREATED", "Question", q.id, { label: short(q.text), assessmentId, assessment: await assessmentTitle(assessmentId), ...questionSnap(q) });
   return questionOut(q);
 }
 
@@ -182,7 +201,7 @@ export async function updateQuestion(req, id, patch) {
     }
     return tx.question.findUnique({ where: { id }, include: { options: true } });
   });
-  await audit(req, "QUESTION_UPDATED", "Question", id, { fields: Object.keys(patch) });
+  await audit(req, "QUESTION_UPDATED", "Question", id, { label: short(updated.text), assessmentId: q.assessmentId, assessment: await assessmentTitle(q.assessmentId), changes: changes(questionSnap(q), questionSnap(updated)) });
   return questionOut(updated);
 }
 
@@ -190,12 +209,13 @@ export async function updateQuestion(req, id, patch) {
 export async function removeQuestion(req, id) {
   const q = await prisma.question.findUnique({ where: { id } });
   if (!q) throw ApiError.notFound("Question not found.");
+  const meta = { label: short(q.text), assessmentId: q.assessmentId, assessment: await assessmentTitle(q.assessmentId) };
   if (await prisma.attemptQuestion.count({ where: { questionId: id } })) {
     await prisma.question.update({ where: { id }, data: { archivedAt: new Date(), active: false } });
-    await audit(req, "QUESTION_ARCHIVED", "Question", id);
+    await audit(req, "QUESTION_ARCHIVED", "Question", id, meta);
     return { archived: true };
   }
   await prisma.question.delete({ where: { id } });
-  await audit(req, "QUESTION_DELETED", "Question", id);
+  await audit(req, "QUESTION_DELETED", "Question", id, meta);
   return { deleted: true };
 }

@@ -37,6 +37,7 @@ import AdminMaterials from "./pages/admin/Materials";
 import AdminAssessments from "./pages/admin/Assessments";
 import AdminQuestionBank from "./pages/admin/QuestionBank";
 import AdminResults from "./pages/admin/Results";
+import AdminActivity from "./pages/admin/Activity";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 
@@ -64,6 +65,7 @@ const ADMIN_ROUTES = [
   ["/admin/assessments", AdminAssessments],
   ["/admin/assessments/:id", AdminQuestionBank],
   ["/admin/results", AdminResults],
+  ["/admin/activity", AdminActivity],
   ["/admin/profile", Profile],
 ];
 

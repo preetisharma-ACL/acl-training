@@ -81,6 +81,7 @@ router.post("/announcements", body(v.createAnnouncementSchema), h(c.createAnnoun
 router.patch("/announcements/:id", byId, body(v.updateAnnouncementSchema), h(c.updateAnnouncement));
 router.delete("/announcements/:id", byId, h(c.deleteAnnouncement));
 
-router.get("/audit-logs", h(c.listAuditLogs));
+router.get("/activity", validate({ query: v.activityQuery }), h(c.listActivity));
+router.get("/activity/actors", h(c.activityActors));
 
 export default router;

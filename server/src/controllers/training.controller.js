@@ -2,6 +2,7 @@ import * as training from "../services/training.service.js";
 import * as assessment from "../services/assessment.service.js";
 import { certificateFor } from "../services/certificate.service.js";
 import * as courses from "../services/course.service.js";
+import { audit } from "../services/audit.service.js";
 import { ok, created } from "../utils/ApiResponse.js";
 
 const pid = (req) => req.validParams?.id ?? req.params.id;
@@ -32,11 +33,18 @@ export async function materialFile(req, res) {
 
 export async function startAttempt(req, res) {
   const a = await assessment.start(req.user);
+  if (!a.resumed) await audit(req, "ATTEMPT_STARTED", "Attempt", a.id, { label: a.assessmentTitle, assessmentId: a.assessmentId });
   return a.resumed ? ok(res, a) : created(res, a);
 }
 export const activeAttempt = async (req, res) => ok(res, await assessment.getActive(req.user));
 export const saveAnswers = async (req, res) => ok(res, await assessment.saveAnswers(req.user, pid(req), req.body));
-export const submitAttempt = async (req, res) => ok(res, await assessment.submit(req.user, pid(req), req.body));
+export async function submitAttempt(req, res) {
+  const r = await assessment.submit(req.user, pid(req), req.body);
+  if (!r.alreadySubmitted) {
+    await audit(req, "ATTEMPT_SUBMITTED", "Attempt", r.id, { label: r.assessmentTitle, assessmentId: r.assessmentId, percentage: r.percentage, passed: r.passed, autoSubmitted: !!r.autoSubmitted });
+  }
+  ok(res, r);
+}
 export const listMine = async (req, res) => ok(res, await assessment.listMine(req.user));
 export const getAttempt = async (req, res) => ok(res, await assessment.getResult(req.user, pid(req)));
 

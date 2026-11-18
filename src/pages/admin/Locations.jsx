@@ -2,7 +2,9 @@
 // (users, departments and each person's profile).
 
 import { createResource, createSignal, For, Show } from "solid-js";
-import { Plus, Pencil, Trash2, MapPin } from "lucide-solid";
+import { Plus, Pencil, Trash2, MapPin, History } from "lucide-solid";
+import { navigate } from "../../lib/router";
+import { historyHref } from "../../lib/activity";
 import { toast } from "../../store/toast";
 import { listLocations, saveLocation, deleteLocation } from "../../services/admin";
 import { PageHeader, Skeleton, Modal, Field, ConfirmDialog, EmptyState, FormError } from "../../components/ui";
@@ -63,6 +65,9 @@ export default function Locations() {
                           <div class="flex justify-end gap-1">
                             <button class="btn btn-ghost btn-icon !w-8 !h-8" onClick={() => setEditing(l)} aria-label={`Rename ${l.name}`}>
                               <Pencil size={15} />
+                            </button>
+                            <button class="btn btn-ghost btn-icon !w-8 !h-8" onClick={() => navigate(historyHref("Location", l.id, l.name))} aria-label={`History of ${l.name}`} title="History">
+                              <History size={15} />
                             </button>
                             <button class="btn btn-ghost btn-icon !w-8 !h-8 hover:!text-crimson-600" onClick={() => setRemoving(l)} aria-label={`Delete ${l.name}`}>
                               <Trash2 size={15} />

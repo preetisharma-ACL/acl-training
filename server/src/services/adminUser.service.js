@@ -10,11 +10,27 @@ import { USER_ORG_INCLUDE, apiRole, apiStatus, attemptSummaryOut } from "./seria
 import { orgOf, reaches, isComplete, GRADED_ATTEMPT } from "./assignment.service.js";
 import { requiredCourses, courseCompletion } from "./course.service.js";
 import { revokeSessions } from "./auth.service.js";
-import { audit } from "./audit.service.js";
+import { audit, changes } from "./audit.service.js";
 import { resolve as resolveLocation } from "./location.service.js";
 
 const isAdminRole = (r) => r === "ADMIN" || r === "SUPER_ADMIN";
 const ROLE_FROM_API = { employee: "EMPLOYEE", admin: "ADMIN", super_admin: "SUPER_ADMIN" };
+const ROLE_LABEL = { EMPLOYEE: "Employee", ADMIN: "Admin", SUPER_ADMIN: "Super admin" };
+
+// What the activity log compares on an edit (display values, not ids).
+const userSnap = (u) => ({
+  name: u.name,
+  email: u.email,
+  phone: u.phone,
+  location: u.location,
+  code: u.employeeCode,
+  role: ROLE_LABEL[u.role],
+  adminTitle: u.adminTitle,
+  designation: u.designation ? `${u.designation.title} · ${u.designation.department?.name ?? "—"}` : null,
+  status: apiStatus(u.status),
+  joined: u.joinedAt ? new Date(u.joinedAt).toISOString().slice(0, 10) : null,
+  bio: u.bio,
+});
 
 // Training state for many users at once (few queries, computed in memory).
 export async function trainingSnapshot(users) {
@@ -120,7 +136,7 @@ export async function get(req, id) {
   const u = await getUserOr404(id);
   const t = (await trainingSnapshot([u]))(u);
   const history = await prisma.attempt.findMany({ where: { userId: id, status: "SUBMITTED" }, orderBy: { submittedAt: "desc" } });
-  await audit(req, "USER_VIEWED", "User", id);
+  await audit(req, "USER_VIEWED", "User", id, { label: u.name });
   return { ...userRowOut(u, t), history: history.map(attemptSummaryOut) };
 }
 
@@ -177,7 +193,7 @@ export async function create(req, input) {
     },
     include: USER_ORG_INCLUDE,
   });
-  await audit(req, "USER_CREATED", "User", user.id, { email: user.email, role, designationId: user.designationId });
+  await audit(req, "USER_CREATED", "User", user.id, { label: user.name, ...userSnap(user) });
   const row = userRowOut(user, (await trainingSnapshot([user]))(user));
   return { user: row, ...(generated ? { temporaryPassword: password } : {}) };
 }
@@ -222,8 +238,7 @@ export async function update(req, id, patch) {
 
   const user = await prisma.user.update({ where: { id }, data, include: USER_ORG_INCLUDE });
   if (data.authVersion) await revokeSessions(id);
-  const changed = Object.keys(data).filter((k) => k !== "passwordHash" && k !== "authVersion");
-  await audit(req, "USER_UPDATED", "User", id, { fields: changed, passwordSet: !!patch.password });
+  await audit(req, "USER_UPDATED", "User", id, { label: user.name, changes: changes(userSnap(target), userSnap(user)), passwordSet: !!patch.password });
   return { user: userRowOut(user, (await trainingSnapshot([user]))(user)) };
 }
 
@@ -240,7 +255,7 @@ export async function setStatus(req, id, status) {
   const s = status.toUpperCase();
   await prisma.user.update({ where: { id }, data: { status: s, ...(s !== "ACTIVE" ? { authVersion: { increment: 1 } } : {}) } });
   if (s !== "ACTIVE") await revokeSessions(id);
-  await audit(req, "USER_STATUS_CHANGED", "User", id, { from: target.status, to: s });
+  await audit(req, "USER_STATUS_CHANGED", "User", id, { label: target.name, changes: { status: { from: apiStatus(target.status), to: apiStatus(s) } } });
   return { id, status };
 }
 
@@ -256,7 +271,7 @@ export async function resetPassword(req, id) {
     prisma.passwordResetRequest.updateMany({ where: { userId: id, resolvedAt: null }, data: { resolvedAt: new Date() } }),
   ]);
   await revokeSessions(id);
-  await audit(req, "USER_PASSWORD_RESET", "User", id, { email: target.email });
+  await audit(req, "USER_PASSWORD_RESET", "User", id, { label: target.name, email: target.email });
   return { email: target.email, temporaryPassword: password };
 }
 
@@ -268,7 +283,8 @@ export async function resetAttempts(req, id, { assessmentId } = {}) {
     where: { userId: id, voidedAt: null, ...(assessmentId ? { assessmentId } : {}) },
     data: { voidedAt: new Date(), voidedById: req.user.id },
   });
-  await audit(req, "USER_ATTEMPTS_RESET", "User", id, { voided: r.count, assessmentId: assessmentId ?? null });
+  const assessment = assessmentId ? await prisma.assessment.findUnique({ where: { id: assessmentId }, select: { title: true } }) : null;
+  await audit(req, "USER_ATTEMPTS_RESET", "User", id, { label: target.name, voided: r.count, assessmentId: assessmentId ?? null, assessment: assessment?.title ?? null });
   return { voided: r.count };
 }
 
@@ -282,6 +298,6 @@ export async function remove(req, id) {
   if (target.role === "SUPER_ADMIN") await ensureAnotherSuperAdmin(id);
   await revokeSessions(id);
   const [attempts] = await prisma.$transaction([prisma.attempt.deleteMany({ where: { userId: id } }), prisma.user.delete({ where: { id } })]);
-  await audit(req, "USER_DELETED", "User", id, { email: target.email, name: target.name, attemptsDeleted: attempts.count });
+  await audit(req, "USER_DELETED", "User", id, { label: target.name, email: target.email, role: ROLE_LABEL[target.role], attemptsDeleted: attempts.count });
   return { attemptsDeleted: attempts.count };
 }

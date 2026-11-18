@@ -10,9 +10,9 @@ import * as materials from "../services/material.service.js";
 import * as assessments from "../services/assessmentAdmin.service.js";
 import * as announcements from "../services/announcement.service.js";
 import * as results from "../services/results.service.js";
+import * as activity from "../services/activity.service.js";
 import { certificateFor } from "../services/certificate.service.js";
 import { disposition } from "./training.controller.js";
-import { prisma } from "../config/db.js";
 import { ok, created } from "../utils/ApiResponse.js";
 
 const pid = (req) => req.validParams?.id ?? req.params.id;
@@ -97,8 +97,6 @@ export const updateAnnouncement = async (req, res) => ok(res, await announcement
 export const deleteAnnouncement = async (req, res) => ok(res, await announcements.remove(req, pid(req)));
 
 // Audit log (latest first)
-export async function listAuditLogs(req, res) {
-  const take = Math.min(Number(req.query.limit) || 100, 500);
-  const rows = await prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take, include: { actor: { select: { name: true, email: true } } } });
-  ok(res, rows.map(({ actor, ...r }) => ({ ...r, actorName: actor?.name ?? null, actorEmail: actor?.email ?? null })));
-}
+// Activity log
+export const listActivity = async (req, res) => ok(res, await activity.list(req.validQuery));
+export const activityActors = async (req, res) => ok(res, await activity.actors());

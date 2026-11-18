@@ -322,8 +322,8 @@ describe("overview & audit", () => {
   });
 
   it("records admin actions", async () => {
-    const r = await ad.get("/api/v1/admin/audit-logs");
-    const actions = r.body.data.map((x) => x.action);
+    const r = await ad.get("/api/v1/admin/activity?limit=200");
+    const actions = r.body.data.items.map((x) => x.action);
     expect(actions).toEqual(expect.arrayContaining(["USER_CREATED", "DEPARTMENT_CREATED", "MATERIAL_CREATED", "QUESTION_CREATED"]));
   });
 });

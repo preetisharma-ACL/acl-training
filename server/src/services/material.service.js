@@ -8,7 +8,26 @@ import { manualContent, structuredContent, mediaContent } from "../validators/ma
 import { materialBaseOut, materialFileUrl, materialTypeEnum } from "./serializers.js";
 import { reaches, isComplete, orgOf } from "./assignment.service.js";
 import * as storage from "./storage.service.js";
-import { audit } from "./audit.service.js";
+import { audit, changes } from "./audit.service.js";
+
+// What the activity log compares on an edit (display values, not ids).
+const AUDIT_INCLUDE = { levels: true, department: { select: { name: true } } };
+const levelsText = (rows) => {
+  const enums = rows.map((l) => l.level);
+  return enums.length >= LEVELS.length ? "All levels" : LEVELS.filter((l) => enums.includes(l.enum)).map((l) => levelPlural(l.enum)).join(", ");
+};
+const snap = (m) => ({
+  title: m.title,
+  description: m.description,
+  department: m.department?.name ?? "All departments",
+  levels: levelsText(m.levels),
+  required: m.required,
+  readingMinutes: m.estMinutes,
+  author: m.author,
+  status: m.status.toLowerCase(),
+  file: m.fileName ?? null,
+  version: m.version,
+});
 
 const CONTENT_SCHEMA = { MANUAL: manualContent, STRUCTURED_GUIDE: structuredContent, MEDIA: mediaContent };
 
@@ -107,7 +126,7 @@ export async function upload(req, file) {
   const meta = { fileName: file.safeName, sizeBytes: file.size, pages: file.pages };
   await storage.put(key, file.buffer);
   await storage.writePendingMeta(key, meta);
-  await audit(req, "MATERIAL_FILE_UPLOADED", "Material", null, meta);
+  await audit(req, "MATERIAL_FILE_UPLOADED", "Material", null, { label: meta.fileName, ...meta });
   return { uploadId: key.slice("pending/".length, -".pdf".length), ...meta };
 }
 
@@ -142,14 +161,15 @@ export async function create(req, input) {
     });
   }
   await prisma.materialVersion.create({ data: { materialId: m.id, ...versionRow(final, req.user.id) } });
-  await audit(req, "MATERIAL_CREATED", "Material", m.id, { title: m.title, type });
+  const created = await prisma.material.findUnique({ where: { id: m.id }, include: AUDIT_INCLUDE });
+  await audit(req, "MATERIAL_CREATED", "Material", m.id, { label: m.title, type, ...snap(created) });
   return get(m.id);
 }
 
 // Content, file or title changes create a new version. With
 // requireRecompletion, earlier completions stop counting.
 export async function update(req, id, patch) {
-  const m = await prisma.material.findUnique({ where: { id }, include: { levels: true } });
+  const m = await prisma.material.findUnique({ where: { id }, include: AUDIT_INCLUDE });
   if (!m) throw ApiError.notFound("Material not found.");
   if ("departmentId" in patch) await checkDepartment(patch.departmentId);
 
@@ -183,8 +203,11 @@ export async function update(req, id, patch) {
     if (contentChanged) await tx.materialVersion.create({ data: { materialId: id, ...versionRow(u, req.user.id) } });
     return u;
   });
+  const after = await prisma.material.findUnique({ where: { id }, include: AUDIT_INCLUDE });
   await audit(req, "MATERIAL_UPDATED", "Material", id, {
-    fields: Object.keys(patch).filter((k) => k !== "content"),
+    label: updated.title,
+    changes: changes(snap(m), snap(after)),
+    contentChanged: "content" in data && JSON.stringify(data.content) !== JSON.stringify(m.content),
     newVersion: contentChanged ? updated.version : null,
     requireRecompletion: !!(contentChanged && patch.requireRecompletion),
   });
@@ -199,12 +222,12 @@ export async function remove(req, id) {
   const used = await prisma.materialProgress.count({ where: { materialId: id } });
   if (used) {
     await prisma.material.update({ where: { id }, data: { status: "ARCHIVED" } });
-    await audit(req, "MATERIAL_ARCHIVED", "Material", id, { title: m.title });
+    await audit(req, "MATERIAL_ARCHIVED", "Material", id, { label: m.title });
     return { archived: true };
   }
   await prisma.material.delete({ where: { id } });
   const keys = new Set([m.fileKey, ...m.versions.map((v) => v.fileKey)].filter(Boolean));
   for (const k of keys) await storage.remove(k).catch(() => {});
-  await audit(req, "MATERIAL_DELETED", "Material", id, { title: m.title });
+  await audit(req, "MATERIAL_DELETED", "Material", id, { label: m.title });
   return { deleted: true };
 }

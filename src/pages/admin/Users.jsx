@@ -23,7 +23,9 @@ import {
   EyeOff,
   Wand,
   Trash2,
+  History,
 } from "lucide-solid";
+import { historyHref } from "../../lib/activity";
 import { navigate, query } from "../../lib/router";
 import { cx, fmtDate, fmtRelative } from "../../lib/format";
 import { exportCsv } from "../../lib/csv";
@@ -260,6 +262,9 @@ export default function Users() {
                           >
                             <MenuItem icon={<Pencil size={15} />} onClick={() => setEditing(u)}>
                               Edit details
+                            </MenuItem>
+                            <MenuItem icon={<History size={15} />} onClick={() => navigate(historyHref("User", u.id, u.name))}>
+                              History
                             </MenuItem>
                             <Show when={u.role === "employee"}>
                               <MenuItem icon={<ChartColumn size={15} />} onClick={() => navigate(`/admin/results?user=${u.id}`)}>

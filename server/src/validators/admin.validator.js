@@ -111,6 +111,20 @@ export const updateAnnouncementSchema = z
   .strict();
 
 // ── Results ──
+// ── Activity log ──
+export const activityQuery = z.object({
+  q: z.string().trim().max(100).optional(),
+  actorId: z.string().max(64).optional(),
+  entityType: z.enum(["User", "Department", "Designation", "Location", "Material", "Course", "Assessment", "Question", "Announcement", "Attempt"]).optional(),
+  entityId: z.string().max(64).optional(),
+  kind: z.enum(["created", "updated", "deleted", "access", "tests", "views"]).optional(),
+  views: z.enum(["true", "false"]).transform((s) => s === "true").optional(),
+  from: date.optional(),
+  to: date.optional(),
+  cursor: z.string().max(64).optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+});
+
 export const resultsQuery = z.object({
   q: z.string().trim().max(100).optional(),
   departmentId: z.string().max(64).optional(),

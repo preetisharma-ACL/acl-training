@@ -19,6 +19,7 @@ import {
   Settings,
   MapPin,
   MonitorPlay,
+  History,
 } from "lucide-solid";
 import { Link, isActive, navigate, pathname } from "../lib/router";
 import { cx } from "../lib/format";
@@ -47,7 +48,13 @@ const GROUPS = [
       { href: "/admin/assessments", label: "Assessments", icon: ClipboardList },
     ],
   },
-  { label: "Insights", items: [{ href: "/admin/results", label: "Employee results", icon: ChartColumn }] },
+  {
+    label: "Insights",
+    items: [
+      { href: "/admin/results", label: "Employee results", icon: ChartColumn },
+      { href: "/admin/activity", label: "Activity log", icon: History },
+    ],
+  },
 ];
 
 const ALL = GROUPS.flatMap((g) => g.items);

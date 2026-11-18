@@ -7,7 +7,7 @@ import { pgPool } from "../config/session.js";
 import { ApiError } from "../utils/ApiError.js";
 import { hashPassword, verifyPassword, burnPasswordCheck } from "../utils/password.js";
 import { USER_ORG_INCLUDE, meOut } from "./serializers.js";
-import { audit } from "./audit.service.js";
+import { audit, changes } from "./audit.service.js";
 import { resolve as resolveLocation } from "./location.service.js";
 
 const BAD_CREDENTIALS = "That email and password don't match our records.";
@@ -35,7 +35,7 @@ export async function login(req, { email, password, remember }) {
   }
   // Verify the password before revealing anything about the account state.
   if (!(await verifyPassword(user.passwordHash, password))) {
-    await audit(req, "LOGIN_FAILED", "User", user.id);
+    await audit(req, "LOGIN_FAILED", "User", user.id, { label: user.name, email: user.email });
     throw ApiError.unauthorized(BAD_CREDENTIALS, { code: "INVALID_CREDENTIALS" });
   }
   if (user.status !== "ACTIVE") {
@@ -54,21 +54,33 @@ export async function login(req, { email, password, remember }) {
     data: { lastLoginAt: new Date(), lastActiveAt: new Date() },
     include: USER_ORG_INCLUDE,
   });
+  req.user = updated;
+  await audit(req, "LOGIN_SUCCEEDED", "User", user.id, { label: user.name, remember: !!remember });
   return meOut(updated);
 }
 
 export async function logout(req) {
+  const id = req.session?.userId;
+  const user = id ? await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true } }) : null;
+  if (user) {
+    req.user = user;
+    await audit(req, "LOGOUT", "User", user.id, { label: user.name });
+  }
   await destroySession(req);
 }
 
 // ── Profile ─────────────────────────────────────────────────────────────────
 
-export async function updateProfile(user, patch) {
+export async function updateProfile(req, patch) {
+  const user = req.user;
   const data = {};
   for (const k of ["phone", "location", "bio"]) if (k in patch) data[k] = patch[k];
   if ("location" in patch) data.location = await resolveLocation(patch.location);
   if (patch.preferences) data.preferences = { ...(user.preferences ?? {}), ...patch.preferences };
   const updated = await prisma.user.update({ where: { id: user.id }, data, include: USER_ORG_INCLUDE });
+  const prefs = (u) => Object.entries(u.preferences ?? {}).filter(([, on]) => on).map(([k]) => k).sort().join(", ") || "none";
+  const snap = (u) => ({ phone: u.phone, location: u.location, bio: u.bio, notifications: prefs(u) });
+  await audit(req, "PROFILE_UPDATED", "User", user.id, { label: user.name, changes: changes(snap(user), snap(updated)) });
   return meOut(updated);
 }
 
@@ -89,7 +101,7 @@ export async function changePassword(req, { current_password, new_password }) {
   req.session.authVersion = updated.authVersion;
   await saveSession(req);
   await revokeSessions(user.id, req.sessionID);
-  await audit(req, "PASSWORD_CHANGED", "User", user.id);
+  await audit(req, "PASSWORD_CHANGED", "User", user.id, { label: user.name });
   return meOut(updated);
 }
 
@@ -97,14 +109,14 @@ export async function changePassword(req, { current_password, new_password }) {
 // the admins (who reset the password and share it directly). Always the
 // same answer, whether or not the account exists.
 export async function requestPasswordReset(req, { email }) {
-  const user = await prisma.user.findUnique({ where: { email }, select: { id: true, status: true } });
+  const user = await prisma.user.findUnique({ where: { email }, select: { id: true, name: true, status: true } });
   if (user && user.status === "ACTIVE") {
     const recent = await prisma.passwordResetRequest.findFirst({
       where: { userId: user.id, resolvedAt: null, createdAt: { gt: new Date(Date.now() - 86400000) } },
     });
     if (!recent) {
       await prisma.passwordResetRequest.create({ data: { userId: user.id } });
-      await audit(req, "PASSWORD_RESET_REQUESTED", "User", user.id);
+      await audit(req, "PASSWORD_RESET_REQUESTED", "User", user.id, { label: user.name });
     }
   }
   return { ok: true };

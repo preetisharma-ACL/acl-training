@@ -5,7 +5,8 @@
 
 import { createResource, createSignal, createMemo, For, Show } from "solid-js";
 import { createStore, produce } from "solid-js/store";
-import { Plus, Pencil, Trash2, Ellipsis, MonitorPlay, Send, Users, ArrowUp, ArrowDown, Link2, Clock, ListVideo, CircleCheck, Circle, ChevronDown, Loader, Eye } from "lucide-solid";
+import { Plus, Pencil, Trash2, Ellipsis, MonitorPlay, Send, Users, ArrowUp, ArrowDown, Link2, Clock, ListVideo, CircleCheck, Circle, ChevronDown, Loader, Eye, History } from "lucide-solid";
+import { historyHref } from "../../lib/activity";
 import { cx, fmtDate, fmtRelative } from "../../lib/format";
 import { navigate } from "../../lib/router";
 import { toast } from "../../store/toast";
@@ -135,6 +136,9 @@ export default function Courses() {
                           Publish
                         </MenuItem>
                       </Show>
+                      <MenuItem icon={<History size={15} />} onClick={() => navigate(historyHref("Course", c.id, c.title))}>
+                        History
+                      </MenuItem>
                       <MenuItem icon={<Trash2 size={15} />} danger onClick={() => setRemoving(c)}>
                         Delete
                       </MenuItem>

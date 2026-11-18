@@ -14,7 +14,7 @@ import { levelsFromApi, levelsToApi, levelPlural, LEVELS } from "../utils/levels
 import { addWatched, covered, mergeRanges } from "../utils/ranges.js";
 import { orgOf, reaches } from "./assignment.service.js";
 import { USER_ORG_INCLUDE } from "./serializers.js";
-import { audit } from "./audit.service.js";
+import { audit, changes } from "./audit.service.js";
 
 export const COMPLETE_AT = 0.9;
 const PING_CAP = 40; // seconds credited per heartbeat gap at most
@@ -30,6 +30,18 @@ const STRUCTURE = {
 const apiStatus = (s) => s.toLowerCase();
 const levelsLabel = (enums) => (enums.length >= LEVELS.length ? "All levels" : LEVELS.filter((l) => enums.includes(l.enum)).map((l) => levelPlural(l.enum)).join(", "));
 const lessonsOf = (c) => c.sections.flatMap((s) => s.lessons);
+
+// What the activity log compares on an edit (display values, not ids).
+const snap = (c) => ({
+  title: c.title,
+  description: c.description,
+  department: c.departmentId ? c.department?.name ?? "—" : "All departments",
+  levels: levelsLabel(c.levels.map((l) => l.level)),
+  required: c.required,
+  status: apiStatus(c.status),
+  sections: c.sections.length,
+  videos: lessonsOf(c).length,
+});
 
 // Prisma `where` for the courses an employee may see.
 export function courseWhereFor(org) {
@@ -181,12 +193,13 @@ export async function create(req, input) {
     await writeStructure(tx, course.id, input.sections);
     return course;
   });
-  await audit(req, "COURSE_CREATED", "Course", c.id, { title: c.title, status: input.status });
+  const created = await prisma.course.findUnique({ where: { id: c.id }, include: STRUCTURE });
+  await audit(req, "COURSE_CREATED", "Course", c.id, { label: c.title, ...snap(created) });
   return get(c.id);
 }
 
 export async function update(req, id, patch) {
-  const c = await prisma.course.findUnique({ where: { id } });
+  const c = await prisma.course.findUnique({ where: { id }, include: STRUCTURE });
   if (!c) throw ApiError.notFound("Course not found.");
   if ("departmentId" in patch) await checkDepartment(patch.departmentId);
   const data = {};
@@ -200,7 +213,9 @@ export async function update(req, id, patch) {
     if (patch.sections) await writeStructure(tx, id, patch.sections);
     await tx.course.update({ where: { id }, data });
   });
-  await audit(req, "COURSE_UPDATED", "Course", id, { fields: Object.keys(patch).filter((k) => k !== "sections"), structureChanged: !!patch.sections });
+  const after = await prisma.course.findUnique({ where: { id }, include: STRUCTURE });
+  const videosOf = (x) => JSON.stringify(x.sections.map((s) => [s.title, s.lessons.map((l) => [l.title, l.youtubeId, l.durationSeconds, l.description])]));
+  await audit(req, "COURSE_UPDATED", "Course", id, { label: after.title, changes: changes(snap(c), snap(after)), videosChanged: videosOf(c) !== videosOf(after) });
   return get(id);
 }
 
@@ -212,11 +227,11 @@ export async function remove(req, id) {
   const used = await prisma.lessonProgress.count({ where: { lesson: { section: { courseId: id } } } });
   if (used) {
     await prisma.course.update({ where: { id }, data: { status: "ARCHIVED" } });
-    await audit(req, "COURSE_ARCHIVED", "Course", id, { title: c.title });
+    await audit(req, "COURSE_ARCHIVED", "Course", id, { label: c.title });
     return { archived: true };
   }
   await prisma.course.delete({ where: { id } });
-  await audit(req, "COURSE_DELETED", "Course", id, { title: c.title });
+  await audit(req, "COURSE_DELETED", "Course", id, { label: c.title });
   return { deleted: true };
 }
 
@@ -228,7 +243,7 @@ export async function progressReport(req, id) {
   const employees = (await prisma.user.findMany({ where: { role: "EMPLOYEE", status: "ACTIVE" }, include: USER_ORG_INCLUDE, orderBy: { name: "asc" } })).filter((u) => reaches({ ...c, status: "PUBLISHED" }, orgOf(u)));
   const rows = await prisma.lessonProgress.findMany({ where: { lessonId: { in: lessons.map((l) => l.id) }, userId: { in: employees.map((u) => u.id) } } });
   const by = new Map(rows.map((r) => [`${r.userId}:${r.lessonId}`, r]));
-  await audit(req, "COURSE_PROGRESS_VIEWED", "Course", id);
+  await audit(req, "COURSE_PROGRESS_VIEWED", "Course", id, { label: c.title });
   return {
     course: { id: c.id, title: c.title, lessonsTotal: lessons.length },
     sections: c.sections.map((s) => ({ id: s.id, title: s.title, lessons: s.lessons.map((l) => ({ id: l.id, title: l.title, durationSeconds: l.durationSeconds })) })),

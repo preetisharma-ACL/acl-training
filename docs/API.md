@@ -146,7 +146,7 @@ While an attempt is running, material endpoints and past results return `403 ASS
 | Questions | `GET /admin/assessments/:id/questions?q&difficulty&active&archived` · `POST /admin/assessments/:id/questions` · `PATCH/DELETE /admin/questions/:id` |
 | Results | `GET /admin/results?q&departmentId&designation&level&assessmentId&userId&passed&from&to&includeVoided` · `GET /admin/results/export` (CSV, same filters) · `GET /admin/results/:id` · `DELETE /admin/results/:id` (permanent; the attempt no longer counts towards best score, standing or attempts used) · `GET /admin/results/:id/certificate` |
 | Announcements | `GET/POST /admin/announcements` · `PATCH/DELETE /admin/announcements/:id` |
-| Audit log | `GET /admin/audit-logs?limit` |
+| Activity log | `GET /admin/activity?q&actorId&entityType&entityId&kind&views&from&to&cursor&limit` → `{ items, nextCursor }` · `GET /admin/activity/actors` |
 
 **Users.** `POST` body: `{ name, email, password?, role?: "employee"|"admin"|"super_admin", designationId?, adminTitle?, phone?, location?, code?, joinedAt?, status?, mustChangePassword? }`. Without a `password` the server generates one and returns it once as `temporaryPassword`. Admin-set passwords work straight away (pass `mustChangePassword: true` to force a change). `POST /admin/users/:id/reset-password` always forces a change at the next sign-in. Only a super admin may create or modify admin accounts. Admins can't demote or deactivate themselves. There is always at least one active super admin. Employees must have a designation (`designationId` is required for `role: "employee"` and can't be cleared later) — their department and level come from it. A password reset, deactivation or role change ends all of that user's sessions.
 

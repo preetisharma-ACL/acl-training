@@ -3,9 +3,21 @@
 import { prisma } from "../config/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { orgOf } from "./assignment.service.js";
-import { audit } from "./audit.service.js";
+import { audit, changes } from "./audit.service.js";
 
 const INCLUDE = { departments: { select: { departmentId: true } } };
+
+// What the activity log compares on an edit (department names, not ids).
+const AUDIT_INCLUDE = { departments: { select: { department: { select: { name: true } } } } };
+const snap = (a) => ({
+  title: a.title,
+  body: a.body,
+  tone: a.tone,
+  author: a.authorName,
+  published: a.published,
+  archived: !!a.archivedAt,
+  departments: a.departments.length ? a.departments.map((d) => d.department.name).sort().join(", ") : "Everyone",
+});
 
 const out = (a) => ({
   id: a.id,
@@ -57,12 +69,12 @@ export async function create(req, input) {
     },
     include: INCLUDE,
   });
-  await audit(req, "ANNOUNCEMENT_CREATED", "Announcement", a.id, { title: a.title });
+  await audit(req, "ANNOUNCEMENT_CREATED", "Announcement", a.id, { label: a.title, ...snap(await prisma.announcement.findUnique({ where: { id: a.id }, include: AUDIT_INCLUDE })) });
   return out(a);
 }
 
 export async function update(req, id, patch) {
-  const before = await prisma.announcement.findUnique({ where: { id } });
+  const before = await prisma.announcement.findUnique({ where: { id }, include: AUDIT_INCLUDE });
   if (!before) throw ApiError.notFound("Announcement not found.");
   await checkDepartments(patch.departmentIds);
   const data = {};
@@ -80,12 +92,14 @@ export async function update(req, id, patch) {
     }
     return tx.announcement.update({ where: { id }, data, include: INCLUDE });
   });
-  await audit(req, "ANNOUNCEMENT_UPDATED", "Announcement", id, { fields: Object.keys(patch) });
+  const after = await prisma.announcement.findUnique({ where: { id }, include: AUDIT_INCLUDE });
+  await audit(req, "ANNOUNCEMENT_UPDATED", "Announcement", id, { label: a.title, changes: changes(snap(before), snap(after)) });
   return out(a);
 }
 
 export async function remove(req, id) {
-  if (!(await prisma.announcement.findUnique({ where: { id } }))) throw ApiError.notFound("Announcement not found.");
+  const a = await prisma.announcement.findUnique({ where: { id } });
+  if (!a) throw ApiError.notFound("Announcement not found.");
   await prisma.announcement.delete({ where: { id } });
-  await audit(req, "ANNOUNCEMENT_DELETED", "Announcement", id);
+  await audit(req, "ANNOUNCEMENT_DELETED", "Announcement", id, { label: a.title });
 }

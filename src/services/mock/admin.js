@@ -587,3 +587,7 @@ export async function resetDemoData() {
   await delay(400);
   resetDb();
 }
+
+// The activity log is recorded by the real server only.
+export const listActivity = async () => ({ items: [], nextCursor: null });
+export const listActivityActors = async () => [];

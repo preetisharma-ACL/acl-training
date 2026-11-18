@@ -155,5 +155,9 @@ export const postAnnouncement = ({ title, body, author, departmentIds, tone }) =
 export const updateAnnouncement = (id, p) => patch(`/admin/announcements/${enc(id)}`, p);
 export const deleteAnnouncement = (id) => del(`/admin/announcements/${enc(id)}`);
 
+// ── Activity log ──
+export const listActivity = (filters) => get("/admin/activity", filters);
+export const listActivityActors = () => get("/admin/activity/actors");
+
 // Demo data only exists in mock mode.
 export const resetDemoData = async () => {};

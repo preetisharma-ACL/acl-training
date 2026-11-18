@@ -2,7 +2,8 @@
 // juniors — each with its own rules and question bank.
 
 import { createResource, createSignal, createMemo, For, Show } from "solid-js";
-import { Settings2, ListChecks, Timer, Target, RotateCcw, Shuffle, ArrowRight, TriangleAlert } from "lucide-solid";
+import { Settings2, ListChecks, Timer, Target, RotateCcw, Shuffle, ArrowRight, TriangleAlert, History } from "lucide-solid";
+import { historyHref } from "../../lib/activity";
 import { navigate, query } from "../../lib/router";
 import { LEVELS } from "../../lib/levels";
 import { cx } from "../../lib/format";
@@ -102,6 +103,9 @@ export default function Assessments() {
                 <div class="flex flex-wrap gap-2 mt-auto pt-5">
                   <button class="btn btn-secondary btn-sm flex-1 basis-[120px]" onClick={() => setEditing(a)}>
                     <Settings2 size={14} /> Settings
+                  </button>
+                  <button class="btn btn-ghost btn-icon !w-9 !h-9 shrink-0" onClick={() => navigate(historyHref("Assessment", a.id, a.title))} aria-label={`History of ${a.title}`} title="History">
+                    <History size={15} />
                   </button>
                   <button class="btn btn-primary btn-sm flex-1 basis-[150px]" onClick={() => navigate(`/admin/assessments/${a.id}`)}>
                     Question bank <ArrowRight size={14} />

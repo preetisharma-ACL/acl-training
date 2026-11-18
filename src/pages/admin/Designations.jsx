@@ -2,7 +2,9 @@
 // (and so their training module). Employees never choose it themselves.
 
 import { createResource, createSignal, createMemo, For, Show } from "solid-js";
-import { Plus, Pencil, Trash2, Workflow, TriangleAlert, ArrowRight } from "lucide-solid";
+import { Plus, Pencil, Trash2, Workflow, TriangleAlert, ArrowRight, History } from "lucide-solid";
+import { navigate } from "../../lib/router";
+import { historyHref } from "../../lib/activity";
 import { cx } from "../../lib/format";
 import { toast } from "../../store/toast";
 import { listDesignations, listDepartments, saveDesignation, deleteDesignation } from "../../services/admin";
@@ -102,6 +104,9 @@ export default function Designations() {
                         <div class="flex justify-end gap-1">
                           <button class="btn btn-ghost btn-icon !w-8 !h-8" onClick={() => setEditing(d)} aria-label={`Edit ${d.title}`}>
                             <Pencil size={15} />
+                          </button>
+                          <button class="btn btn-ghost btn-icon !w-8 !h-8" onClick={() => navigate(historyHref("Designation", d.id, d.title))} aria-label={`History of ${d.title}`} title="History">
+                            <History size={15} />
                           </button>
                           {/* Held designations can't be deleted: say why (the wrapper shows the tooltip, a disabled button can't). */}
                           <span title={d.employees ? `${d.employees} employee${d.employees === 1 ? " holds" : "s hold"} this designation. Reassign them first.` : undefined}>

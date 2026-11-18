@@ -5,7 +5,10 @@
 import { prisma } from "../config/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { levelKey, levelLabel } from "../utils/levels.js";
-import { audit } from "./audit.service.js";
+import { audit, changes } from "./audit.service.js";
+
+// What the activity log compares on an edit (with the department included).
+const snap = (d) => ({ title: d.title, department: d.department?.name ?? null, level: levelLabel(d.level) });
 
 const out = (d) => ({
   id: d.id,
@@ -49,25 +52,25 @@ export async function create(req, input) {
   await checkUnique(input.title);
   await checkDepartment(input.departmentId);
   const d = await prisma.designation.create({ data: input, include: INCLUDE });
-  await audit(req, "DESIGNATION_CREATED", "Designation", d.id, input);
+  await audit(req, "DESIGNATION_CREATED", "Designation", d.id, { label: d.title, ...snap(d) });
   return out(d);
 }
 
 export async function update(req, id, patch) {
-  const before = await prisma.designation.findUnique({ where: { id } });
+  const before = await prisma.designation.findUnique({ where: { id }, include: INCLUDE });
   if (!before) throw ApiError.notFound("Designation not found.");
   if (patch.title) await checkUnique(patch.title, id);
   if (patch.departmentId) await checkDepartment(patch.departmentId);
   const d = await prisma.designation.update({ where: { id }, data: patch, include: INCLUDE });
   const remapped = (patch.departmentId && patch.departmentId !== before.departmentId) || (patch.level && patch.level !== before.level);
-  await audit(req, "DESIGNATION_UPDATED", "Designation", id, { before: { departmentId: before.departmentId, level: before.level, title: before.title }, patch, employeesRemapped: remapped ? d._count.users : 0 });
+  await audit(req, "DESIGNATION_UPDATED", "Designation", id, { label: d.title, changes: changes(snap(before), snap(d)), employeesRemapped: remapped ? d._count.users : 0 });
   return out(d);
 }
 
 export async function remove(req, id) {
-  const d = await prisma.designation.findUnique({ where: { id }, include: { _count: { select: { users: true } } } });
+  const d = await prisma.designation.findUnique({ where: { id }, include: INCLUDE });
   if (!d) throw ApiError.notFound("Designation not found.");
   if (d._count.users) throw ApiError.conflict("Reassign the employees with this designation first.");
   await prisma.designation.delete({ where: { id } });
-  await audit(req, "DESIGNATION_DELETED", "Designation", id, { title: d.title });
+  await audit(req, "DESIGNATION_DELETED", "Designation", id, { label: d.title, ...snap(d) });
 }

@@ -1,7 +1,8 @@
 // Admin · Departments: each one owns a training module and an assessment.
 
 import { createResource, createSignal, For, Show } from "solid-js";
-import { Plus, Pencil, Trash2, Ellipsis, MapPin, UserRound, ClipboardList, Building2 } from "lucide-solid";
+import { Plus, Pencil, Trash2, Ellipsis, MapPin, UserRound, ClipboardList, Building2, History } from "lucide-solid";
+import { historyHref } from "../../lib/activity";
 import { navigate } from "../../lib/router";
 import { cx } from "../../lib/format";
 import { toast } from "../../store/toast";
@@ -63,6 +64,9 @@ export default function Departments() {
                           </MenuItem>
                           <MenuItem icon={<ClipboardList size={15} />} onClick={() => navigate(`/admin/assessments?dept=${d.id}`)}>
                             Assessments
+                          </MenuItem>
+                          <MenuItem icon={<History size={15} />} onClick={() => navigate(historyHref("Department", d.id, d.name))}>
+                            History
                           </MenuItem>
                           <MenuItem icon={<Trash2 size={15} />} danger disabled={!!deleteBlocked(d)} hint={deleteBlocked(d)} onClick={() => setRemoving(d)}>
                             Delete

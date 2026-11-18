@@ -7,7 +7,7 @@ export function getMe(req, res) {
 }
 
 export async function updateMe(req, res) {
-  ok(res, await auth.updateProfile(req.user, req.body));
+  ok(res, await auth.updateProfile(req, req.body));
 }
 
 export async function changePassword(req, res) {

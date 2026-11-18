@@ -3,7 +3,7 @@
 import { prisma } from "../config/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { LEVELS, levelPlural } from "../utils/levels.js";
-import { audit } from "./audit.service.js";
+import { audit, changes } from "./audit.service.js";
 import { resolve as resolveLocation } from "./location.service.js";
 
 const DEFAULT_PASS = { TEAM_HEAD: 80, SENIOR: 75, JUNIOR: 70 };
@@ -64,24 +64,27 @@ export async function create(req, input) {
     }
     return d;
   });
-  await audit(req, "DEPARTMENT_CREATED", "Department", dept.id, { name: dept.name });
+  await audit(req, "DEPARTMENT_CREATED", "Department", dept.id, { label: dept.name, ...snap(dept) });
   return dept;
 }
 
+// What the activity log compares on an edit.
+const snap = (d) => ({ name: d.name, description: d.description, head: d.head, location: d.location, active: d.active });
+
 export async function update(req, id, patch) {
-  await getOr404(id);
+  const before = await getOr404(id);
   if (patch.name && (await prisma.department.findFirst({ where: { id: { not: id }, name: { equals: patch.name, mode: "insensitive" } } }))) {
     throw ApiError.conflict("A department with this name already exists.");
   }
   if ("location" in patch) patch = { ...patch, location: await resolveLocation(patch.location) };
   const dept = await prisma.department.update({ where: { id }, data: patch });
-  await audit(req, "DEPARTMENT_UPDATED", "Department", id, patch);
+  await audit(req, "DEPARTMENT_UPDATED", "Department", id, { label: dept.name, changes: changes(snap(before), snap(dept)) });
   return dept;
 }
 
 // Only an empty department can be deleted; otherwise deactivate it.
 export async function remove(req, id) {
-  await getOr404(id);
+  const dept = await getOr404(id);
   const [designations, materials, attempts, announcements] = await Promise.all([
     prisma.designation.count({ where: { departmentId: id } }),
     prisma.material.count({ where: { departmentId: id } }),
@@ -97,7 +100,7 @@ export async function remove(req, id) {
     prisma.assessment.deleteMany({ where: { departmentId: id } }),
     prisma.department.delete({ where: { id } }),
   ]);
-  await audit(req, "DEPARTMENT_DELETED", "Department", id, { announcementsDetached: announcements });
+  await audit(req, "DEPARTMENT_DELETED", "Department", id, { label: dept.name, announcementsDetached: announcements });
 }
 
 async function getOr404(id) {

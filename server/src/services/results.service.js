@@ -48,17 +48,18 @@ export async function list(req, filters) {
 
 export async function get(req, id) {
   const r = await getResult(req.user, id, { admin: true });
-  await audit(req, "RESULT_VIEWED", "Attempt", id, { userId: r.userId });
+  await audit(req, "RESULT_VIEWED", "Attempt", id, { label: `${r.userName} · ${r.assessmentTitle ?? "test"}`, userId: r.userId });
   return r;
 }
 
 // Permanently deletes one attempt and its answers. The employee's standing,
 // best score and remaining attempts are recalculated from what's left.
 export async function remove(req, id) {
-  const a = await prisma.attempt.findUnique({ where: { id }, include: { user: { select: { email: true } } } });
+  const a = await prisma.attempt.findUnique({ where: { id }, include: { user: { select: { name: true, email: true } } } });
   if (!a) throw ApiError.notFound("Result not found.");
   await prisma.attempt.delete({ where: { id } });
   await audit(req, "RESULT_DELETED", "Attempt", id, {
+    label: `${a.user.name} · ${a.config?.title ?? "test"}`,
     userId: a.userId,
     email: a.user.email,
     assessmentId: a.assessmentId,
