@@ -38,7 +38,7 @@ const snap = (c) => ({
   department: c.departmentId ? c.department?.name ?? "—" : "All departments",
   levels: levelsLabel(c.levels.map((l) => l.level)),
   required: c.required,
-  status: apiStatus(c.status),
+  status: { PUBLISHED: "active", DRAFT: "inactive", ARCHIVED: "archived" }[c.status],
   sections: c.sections.length,
   videos: lessonsOf(c).length,
 });

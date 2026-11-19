@@ -5,12 +5,12 @@
 
 import { createResource, createSignal, createMemo, For, Show } from "solid-js";
 import { createStore, produce } from "solid-js/store";
-import { Plus, Pencil, Trash2, Ellipsis, MonitorPlay, Send, Users, ArrowUp, ArrowDown, Link2, Clock, ListVideo, CircleCheck, Circle, ChevronDown, Loader, Eye, History } from "lucide-solid";
+import { Plus, Pencil, Trash2, Ellipsis, MonitorPlay, Users, ArrowUp, ArrowDown, Link2, Clock, ListVideo, CircleCheck, Circle, ChevronDown, Loader, Eye, History, EyeOff } from "lucide-solid";
 import { historyHref } from "../../lib/activity";
 import { cx, fmtDate, fmtRelative } from "../../lib/format";
 import { navigate } from "../../lib/router";
 import { toast } from "../../store/toast";
-import { listCourses, getCourse, getCourseProgress, saveCourse, setCourseStatus, setCourseRequired, deleteCourse, listDepartments } from "../../services/admin";
+import { listCourses, getCourse, getCourseProgress, saveCourse, setCourseStatus, deleteCourse, listDepartments } from "../../services/admin";
 import { PageHeader, Skeleton, Toggle, Menu, MenuItem, Drawer, Field, ConfirmDialog, EmptyState, ProgressBar, SearchInput, FormError } from "../../components/ui";
 import { LEVELS } from "../../lib/levels";
 import { youtubeId, thumbnail, clock, totalLength, parseClock } from "../../lib/youtube";
@@ -23,6 +23,7 @@ export default function Courses() {
   const [editing, setEditing] = createSignal(null); // course (full) or {} for new
   const [removing, setRemoving] = createSignal(null);
   const [watching, setWatching] = createSignal(null); // course for the progress drawer
+  const [deactivating, setDeactivating] = createSignal(null); // course to confirm hiding
 
   const open = async (c) => {
     try {
@@ -31,11 +32,14 @@ export default function Courses() {
       toast(e.message, { tone: "error" });
     }
   };
-  const toggleRequired = async (c, v) => {
-    mutate(list().map((x) => (x.id === c.id ? { ...x, required: v } : x)));
+
+  // Active = shown on the selected employees' Training page; inactive = hidden
+  // from every employee (nothing is deleted, progress is kept).
+  const setActive = async (c, on) => {
+    mutate(list().map((x) => (x.id === c.id ? { ...x, status: on ? "published" : "draft" } : x)));
     try {
-      await setCourseRequired(c.id, v);
-      toast(v ? `“${c.title}” is now required before the assessment.` : `“${c.title}” is now optional.`);
+      await setCourseStatus(c.id, on ? "published" : "draft");
+      toast(on ? `“${c.title}” is now visible to the selected employees.` : `“${c.title}” is now hidden from employees.`, { title: on ? "Course active" : "Course inactive" });
     } catch (e) {
       toast(e.message, { tone: "error" });
       refetch();
@@ -47,7 +51,7 @@ export default function Courses() {
       <PageHeader
         kicker="Learning"
         title="Video courses"
-        subtitle="Courses built from unlisted YouTube videos, watched inside the portal. Required courses must be completed before the assessment unlocks."
+        subtitle="Courses built from unlisted YouTube videos, watched inside the portal. Only active courses are shown to employees; required ones must be completed before the assessment unlocks."
         actions={
           <button class="btn btn-primary" onClick={() => setEditing({})}>
             <Plus size={16} /> Add course
@@ -82,12 +86,14 @@ export default function Courses() {
                           {c.title}
                         </button>
                       </h2>
-                      <Show when={c.status === "draft"}>
-                        <span class="badge badge-warn">Draft · not visible to employees</span>
+                      <Show when={c.status !== "published"}>
+                        <span class="badge badge-warn">
+                          <EyeOff size={11} /> Inactive · hidden from employees
+                        </span>
                       </Show>
                     </div>
                     <p class="mt-1 text-[13px] text-muted truncate">
-                      {c.departmentName} · {c.levelsLabel} · {c.sectionsCount} section{c.sectionsCount === 1 ? "" : "s"} · {c.lessonsCount} video{c.lessonsCount === 1 ? "" : "s"} · {totalLength(c.durationSeconds)} · updated {fmtDate(c.updatedAt)}
+                      {c.departmentName} · {c.levelsLabel} · {c.required ? "Required" : "Optional"} · {c.sectionsCount} section{c.sectionsCount === 1 ? "" : "s"} · {c.lessonsCount} video{c.lessonsCount === 1 ? "" : "s"} · {totalLength(c.durationSeconds)} · updated {fmtDate(c.updatedAt)}
                     </p>
                   </div>
                   <div class="col-span-2 md:col-span-1">
@@ -100,8 +106,8 @@ export default function Courses() {
                     <ProgressBar value={c.audience ? (c.completed / c.audience) * 100 : 0} tone="plum" />
                   </div>
                   <label class="flex items-center gap-2.5 text-[13.5px] font-medium text-ink-2 cursor-pointer">
-                    <Toggle checked={c.required} onChange={(v) => toggleRequired(c, v)} label={`Required: ${c.title}`} />
-                    {c.required ? "Required" : "Optional"}
+                    <Toggle checked={c.status === "published"} onChange={(v) => (v ? setActive(c, true) : setDeactivating(c))} label={`Active (visible to employees): ${c.title}`} />
+                    {c.status === "published" ? "Active" : "Inactive"}
                   </label>
                   <div class="flex items-center gap-1 justify-end">
                     <button class="btn btn-secondary btn-sm" onClick={() => navigate(`/admin/courses/${c.id}`)} disabled={!c.lessonsCount} title={c.lessonsCount ? undefined : "Add a video first"}>
@@ -120,22 +126,6 @@ export default function Courses() {
                       <MenuItem icon={<Pencil size={15} />} onClick={() => open(c)}>
                         Edit
                       </MenuItem>
-                      <Show when={c.status === "draft"}>
-                        <MenuItem
-                          icon={<Send size={15} />}
-                          onClick={async () => {
-                            try {
-                              await setCourseStatus(c.id, "published");
-                              toast(`“${c.title}” is now live for the selected employees.`, { title: "Published" });
-                              refetch();
-                            } catch (e) {
-                              toast(e.message, { tone: "error" });
-                            }
-                          }}
-                        >
-                          Publish
-                        </MenuItem>
-                      </Show>
                       <MenuItem icon={<History size={15} />} onClick={() => navigate(historyHref("Course", c.id, c.title))}>
                         History
                       </MenuItem>
@@ -164,6 +154,15 @@ export default function Courses() {
       </Show>
       <Show when={watching()}>
         <ProgressDrawer c={watching()} onClose={() => setWatching(null)} />
+      </Show>
+      <Show when={deactivating()}>
+        <ConfirmDialog
+          title={`Make “${deactivating().title}” inactive?`}
+          message={`Employees won't see it on their Training page any more. Nothing is deleted: their watch progress is kept and comes back if you make it active again.${deactivating().required ? " It's a Required course, so while it's inactive it isn't needed to unlock the test." : ""}`}
+          confirmLabel="Make inactive"
+          onClose={() => setDeactivating(null)}
+          onConfirm={() => setActive(deactivating(), false)}
+        />
       </Show>
       <Show when={removing()}>
         <ConfirmDialog
@@ -262,7 +261,7 @@ function CourseBuilder(props) {
     setError(null);
     try {
       await saveCourse({ id: props.c.id, ...formToPayload(f, status) });
-      toast(status === "draft" ? "Saved as a draft. Publish it when it's ready." : isDraft() ? "Course published to the selected employees." : "Course updated.", { title: status === "draft" ? "Draft saved" : "Saved" });
+      toast(status === "draft" ? "Saved as inactive: hidden from employees until you make it active." : isDraft() ? "Course is active and visible to the selected employees." : "Course updated.", { title: status === "draft" ? "Saved as inactive" : "Saved" });
       props.onSaved();
     } catch (e) {
       setError(e.message);
@@ -291,10 +290,10 @@ function CourseBuilder(props) {
             }
           >
             <button class="btn btn-secondary" onClick={() => save("draft")} disabled={busy()}>
-              {busy() ? "Saving…" : "Save as draft"}
+              {busy() ? "Saving…" : "Save as inactive"}
             </button>
             <button class="btn btn-primary" onClick={() => save("published")} disabled={busy()}>
-              {busy() ? "Publishing…" : "Publish"}
+              {busy() ? "Saving…" : "Save & make active"}
             </button>
           </Show>
         </>

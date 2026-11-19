@@ -119,6 +119,33 @@ describe("admin course builder", () => {
     expect((await ad.delete(`/api/v1/admin/courses/${used.id}`)).body.data).toEqual({ archived: true });
   });
 
+  it("inactive hides a course from employees; active shows it again with their progress intact", async () => {
+    const c = (await create({ title: "On and off", required: true })).body.data;
+    const u = await makeUser({ designationId: track.designation.id });
+    const a = await signedIn(u);
+    const lessonId = c.sections[0].lessons[0].id;
+    await ping(a, lessonId);
+    const visible = async () => (await a.get("/api/v1/training/courses")).body.data.some((x) => x.id === c.id);
+    expect(await visible()).toBe(true);
+    const requiredCount = async () => (await a.get("/api/v1/training/module")).body.data.requiredCourses;
+    const before = await requiredCount();
+
+    // Inactive: off the employee's list, can't be opened, not needed for the test.
+    expect((await ad.patch(`/api/v1/admin/courses/${c.id}`).send({ status: "draft" })).status).toBe(200);
+    expect(await visible()).toBe(false);
+    expect((await a.get(`/api/v1/training/courses/${c.id}`)).status).toBe(404);
+    expect(await requiredCount()).toBe(before - 1);
+
+    // Active again: back, with the progress kept.
+    await ad.patch(`/api/v1/admin/courses/${c.id}`).send({ status: "published" });
+    expect(await visible()).toBe(true);
+    expect((await a.get(`/api/v1/training/courses/${c.id}`)).body.data.sections[0].lessons[0].progress.opened).toBe(true);
+
+    // The activity log reads Active / Inactive.
+    const log = (await ad.get(`/api/v1/admin/activity?entityType=Course&entityId=${c.id}&kind=updated`)).body.data.items.map((i) => i.changes?.status);
+    expect(log).toEqual([{ from: "inactive", to: "active" }, { from: "active", to: "inactive" }]);
+  });
+
   it("admins can preview any course in the player (drafts too) without recording progress", async () => {
     const draft = (await create({ title: "Preview me", status: "draft" })).body.data;
     const r = await ad.get(`/api/v1/training/courses/${draft.id}`);

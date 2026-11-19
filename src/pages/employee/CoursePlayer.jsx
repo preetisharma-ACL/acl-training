@@ -10,7 +10,7 @@
 // server credits it (capped to real time) and decides completion (90%).
 //
 // Also used by admins (/admin/courses/:id) as a preview: the same player,
-// any course (drafts too), no progress tracked.
+// any course (inactive ones too), no progress tracked.
 
 import { createResource, createSignal, createEffect, onMount, onCleanup, For, Show, batch } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
@@ -238,7 +238,7 @@ export default function CoursePlayer(props) {
           </div>
           <Show when={admin && data()}>
             <span class="badge shrink-0 hidden sm:inline-flex !bg-white/10 !text-white">
-              <Eye size={12} /> {course.status === "draft" ? "Draft · not visible to employees" : "Progress isn't recorded"}
+              <Eye size={12} /> {course.status !== "published" ? "Inactive · hidden from employees" : "Progress isn't recorded"}
             </span>
           </Show>
           <Show when={!admin && data()}>
