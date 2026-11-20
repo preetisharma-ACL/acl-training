@@ -87,8 +87,8 @@ export default function Courses() {
                         </button>
                       </h2>
                       <Show when={c.status !== "published"}>
-                        <span class="badge badge-warn">
-                          <EyeOff size={11} /> Inactive · hidden from employees
+                        <span class="badge badge-warn max-w-full" title="Hidden from employees">
+                          <EyeOff size={11} class="shrink-0" /> Inactive<span class="hidden sm:inline">&nbsp;· hidden from employees</span>
                         </span>
                       </Show>
                     </div>
@@ -105,34 +105,38 @@ export default function Courses() {
                     </div>
                     <ProgressBar value={c.audience ? (c.completed / c.audience) * 100 : 0} tone="plum" />
                   </div>
-                  <label class="flex items-center gap-2.5 text-[13.5px] font-medium text-ink-2 cursor-pointer">
-                    <Toggle checked={c.status === "published"} onChange={(v) => (v ? setActive(c, true) : setDeactivating(c))} label={`Active (visible to employees): ${c.title}`} />
-                    {c.status === "published" ? "Active" : "Inactive"}
-                  </label>
-                  <div class="flex items-center gap-1 justify-end">
-                    <button class="btn btn-secondary btn-sm" onClick={() => navigate(`/admin/courses/${c.id}`)} disabled={!c.lessonsCount} title={c.lessonsCount ? undefined : "Add a video first"}>
-                      <Eye size={14} /> Preview
-                    </button>
-                    <button class="btn btn-secondary btn-sm" onClick={() => setWatching(c)}>
-                      <Users size={14} /> Progress
-                    </button>
-                    <Menu
-                      trigger={(o, toggle) => (
-                        <button class="btn btn-ghost btn-icon !w-9 !h-9" onClick={toggle} aria-label={`Actions for ${c.title}`}>
-                          <Ellipsis size={17} />
-                        </button>
-                      )}
-                    >
-                      <MenuItem icon={<Pencil size={15} />} onClick={() => open(c)}>
-                        Edit
-                      </MenuItem>
-                      <MenuItem icon={<History size={15} />} onClick={() => navigate(historyHref("Course", c.id, c.title))}>
-                        History
-                      </MenuItem>
-                      <MenuItem icon={<Trash2 size={15} />} danger onClick={() => setRemoving(c)}>
-                        Delete
-                      </MenuItem>
-                    </Menu>
+                  {/* Phones: switch and buttons share a full-width row (wrapping if
+                      needed); from md they're separate grid columns. */}
+                  <div class="col-span-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 md:contents">
+                    <label class="flex items-center gap-2.5 text-[13.5px] font-medium text-ink-2 cursor-pointer whitespace-nowrap">
+                      <Toggle checked={c.status === "published"} onChange={(v) => (v ? setActive(c, true) : setDeactivating(c))} label={`Active (visible to employees): ${c.title}`} />
+                      {c.status === "published" ? "Active" : "Inactive"}
+                    </label>
+                    <div class="flex items-center gap-1 justify-end ml-auto md:ml-0">
+                      <button class="btn btn-secondary btn-sm" onClick={() => navigate(`/admin/courses/${c.id}`)} disabled={!c.lessonsCount} title={c.lessonsCount ? undefined : "Add a video first"}>
+                        <Eye size={14} /> Preview
+                      </button>
+                      <button class="btn btn-secondary btn-sm" onClick={() => setWatching(c)}>
+                        <Users size={14} /> Progress
+                      </button>
+                      <Menu
+                        trigger={(o, toggle) => (
+                          <button class="btn btn-ghost btn-icon !w-9 !h-9" onClick={toggle} aria-label={`Actions for ${c.title}`}>
+                            <Ellipsis size={17} />
+                          </button>
+                        )}
+                      >
+                        <MenuItem icon={<Pencil size={15} />} onClick={() => open(c)}>
+                          Edit
+                        </MenuItem>
+                        <MenuItem icon={<History size={15} />} onClick={() => navigate(historyHref("Course", c.id, c.title))}>
+                          History
+                        </MenuItem>
+                        <MenuItem icon={<Trash2 size={15} />} danger onClick={() => setRemoving(c)}>
+                          Delete
+                        </MenuItem>
+                      </Menu>
+                    </div>
                   </div>
                 </article>
               )}

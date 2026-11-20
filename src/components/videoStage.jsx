@@ -44,6 +44,9 @@ export default function VideoStage(props) {
   const [active, setActive] = createSignal(true);
   const [menu, setMenu] = createSignal(false);
   const [native, setNative] = createSignal(false);
+  // Touch screen (phone/tablet): no hover, so controls work like YouTube's
+  // mobile player. Updated from the pointer actually used.
+  const [touch, setTouch] = createSignal(typeof matchMedia === "function" && matchMedia("(hover: none)").matches);
   const [pseudo, setPseudoFull] = createSignal(false); // iPhone: no element fullscreen
   // Pseudo fullscreen covers the page, so stop it scrolling underneath.
   const setPseudo = (v) => {
@@ -156,17 +159,23 @@ export default function VideoStage(props) {
   onCleanup(() => clearTimeout(idle));
 
   // ── Clicks on the video ──
-  let pointerType = "mouse";
   let clickTimer;
   onCleanup(() => clearTimeout(clickTimer));
   const onVideoClick = (e) => {
     if (menu()) return setMenu(false);
-    // First tap on a phone just brings the controls back.
-    if (pointerType === "touch" && !shown()) return poke();
+    // Touch: a tap on the picture shows or hides the controls; play/pause
+    // is the big centre button (as in YouTube's mobile player).
+    if (touch()) {
+      if (shown() && playing()) {
+        clearTimeout(idle);
+        return setActive(false);
+      }
+      return poke();
+    }
     clearTimeout(clickTimer);
     if (e.detail > 1) return toggleFull();
     // Wait a beat so a double-click (fullscreen) doesn't also pause.
-    clickTimer = setTimeout(toggle, pointerType === "mouse" ? 200 : 0);
+    clickTimer = setTimeout(toggle, 200);
     poke();
   };
 
@@ -242,8 +251,10 @@ export default function VideoStage(props) {
       onKeyDown={onKey}
       onContextMenu={(e) => e.preventDefault()}
       onPointerMove={poke}
-      onPointerDown={(e) => (pointerType = e.pointerType || "mouse")}
-      onPointerLeave={() => playing() && setActive(false)}
+      onPointerDown={(e) => setTouch(e.pointerType === "touch" || e.pointerType === "pen")}
+      // Only a mouse leaving hides the controls: a finger "leaves" on every
+      // lift, which used to hide them before the tap reached the button.
+      onPointerLeave={(e) => e.pointerType === "mouse" && playing() && setActive(false)}
     >
       {/* The iframe: full width, 3× tall, centred; never takes the pointer. */}
       <div class="absolute inset-0 pointer-events-none">
@@ -272,32 +283,37 @@ export default function VideoStage(props) {
         <Show when={state() === BUFFERING}>
           <LoaderCircle size={44} class="text-white/90 animate-spin drop-shadow" />
         </Show>
-        <Show when={fresh() || state() === PAUSED || state() === ENDED}>
+        {/* On touch screens it also pauses: shown with the controls while playing. */}
+        <Show when={fresh() || state() === PAUSED || state() === ENDED || (touch() && playing() && shown())}>
           <button
             class="pointer-events-auto grid place-items-center w-16 h-16 sm:w-[76px] sm:h-[76px] rounded-full bg-lime-400 text-plum-950 shadow-float transition hover:scale-105 active:scale-95"
-            aria-label={state() === ENDED ? "Replay" : "Play"}
+            aria-label={state() === ENDED ? "Replay" : playing() ? "Pause" : "Play"}
             onClick={() => {
               toggle();
               poke();
             }}
           >
             <Show when={state() !== ENDED} fallback={<RotateCcw size={28} />}>
-              <Play size={28} class="ml-1" fill="currentColor" />
+              <Show when={playing()} fallback={<Play size={28} class="ml-1" fill="currentColor" />}>
+                <Pause size={28} fill="currentColor" />
+              </Show>
             </Show>
           </button>
         </Show>
       </div>
 
-      {/* Control bar */}
+      {/* Control bar. Its gradient (the tall see-through top padding) never
+          takes taps: on a small phone it reaches up over the big centre
+          button. Only the seek bar and the button row do. */}
       <div
         class={cx(
-          "absolute inset-x-0 bottom-0 z-20 px-2 sm:px-4 pt-10 pb-1.5 sm:pb-2.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white transition-opacity duration-300",
-          shown() ? "opacity-100" : "opacity-0 pointer-events-none"
+          "absolute inset-x-0 bottom-0 z-20 px-2 sm:px-4 pt-10 pb-1.5 sm:pb-2.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white transition-opacity duration-300 pointer-events-none",
+          shown() ? "opacity-100" : "opacity-0"
         )}
       >
         <div
           ref={bar}
-          class="group/bar relative h-5 flex items-center cursor-pointer touch-none"
+          class={cx("group/bar relative h-5 flex items-center cursor-pointer touch-none", shown() && "pointer-events-auto")}
           role="slider"
           aria-label="Seek"
           aria-valuemin={0}
@@ -328,7 +344,7 @@ export default function VideoStage(props) {
           </Show>
         </div>
 
-        <div class="flex items-center gap-0.5 sm:gap-1">
+        <div class={cx("flex items-center gap-0.5 sm:gap-1", shown() && "pointer-events-auto")}>
           <CtrlButton label={playing() ? "Pause (K)" : "Play (K)"} onClick={toggle}>
             <Show when={playing() || state() === BUFFERING} fallback={<Play size={20} fill="currentColor" />}>
               <Pause size={20} fill="currentColor" />
